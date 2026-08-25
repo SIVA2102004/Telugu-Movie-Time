@@ -2,53 +2,64 @@ import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
-// Default 10×10 layout (A–J, 10 seats each, no gaps)
-export function buildDefaultLayout(rows = 10, cols = 10) {
-  const rowLabels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, rows);
-  const layout = {
-    rows: rowLabels.split(""),
-    screenPosition: "top",
-    rowTiers: {
-      A: "Platinum",
-      B: "Gold",
-      C: "Gold",
-      D: "Gold",
-      E: "Gold",
-      F: "Gold",
-      G: "Gold",
-      H: "Gold",
-      I: "Gold",
-      J: "Silver",
-      K: "Silver",
-      L: "Silver",
-      M: "Silver",
-      N: "Silver",
-      O: "Silver",
-    },
-    tierPrices: {
-      Platinum: 300,
-      Gold: 250,
-      Silver: 200,
-    }
-  };
-  layout.seats = {};
-  rowLabels.split("").forEach((r) => {
-    layout.seats[r] = Array.from({ length: cols }, (_, i) => i + 1);
-  });
-  return layout;
-}
+// The exact blueprint hall layout (15 Rows, 274 Seats, Recliner / Gold / Silver with Aisle gaps)
+export const BLUEPRINT_LAYOUT = {
+  rows: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"],
+  screenPosition: "top",
+  rowTiers: {
+    A: "Platinum",
+    B: "Gold",
+    C: "Gold",
+    D: "Gold",
+    E: "Gold",
+    F: "Gold",
+    G: "Gold",
+    H: "Gold",
+    I: "Gold",
+    J: "Silver",
+    K: "Silver",
+    L: "Silver",
+    M: "Silver",
+    N: "Silver",
+    O: "Silver",
+  },
+  tierPrices: {
+    Platinum: 300,
+    Gold: 250,
+    Silver: 200,
+  },
+  seats: {
+    A: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+    B: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    C: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    D: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    E: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    F: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    G: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    H: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    I: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    J: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    K: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    L: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    M: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    N: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    O: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+  },
+};
 
-const DEFAULT_LAYOUT = buildDefaultLayout(10, 10);
+export function buildDefaultLayout() {
+  return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+}
 
 const DEFAULT_CONFIG = {
   movieName: "Telugu Talkies",
-  date: "",
-  theater: "",
-  showTime: "",
-  pricePerSeat: parseInt(import.meta.env.VITE_TICKET_PRICE || "200"),
+  date: "2026-08-30",
+  theater: "Rajshree Cinema (Screen 1)",
+  showTime: "6:30 PM",
+  pricePerSeat: 200,
   blockedSeats: [],
   bookingDeadline: null,
-  layout: null,
+  layout: BLUEPRINT_LAYOUT,
   blueprintImageUrl: null,
   upiId: "telugutalkies@upi",
   payeeName: "Telugu Talkies",
@@ -65,13 +76,17 @@ export function useMovieConfig() {
     try {
       const saved = localStorage.getItem("telugu_talkies_movie_config");
       if (saved) {
-        return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_CONFIG,
+          ...parsed,
+          layout: parsed.layout || BLUEPRINT_LAYOUT,
+        };
       }
     } catch (e) {}
     return DEFAULT_CONFIG;
   });
 
-  // Never block UI with loading: false by default since local cache/defaults exist immediately
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -83,7 +98,11 @@ export function useMovieConfig() {
         (snap) => {
           if (snap.exists()) {
             const data = snap.data();
-            const merged = { ...DEFAULT_CONFIG, ...data };
+            const merged = {
+              ...DEFAULT_CONFIG,
+              ...data,
+              layout: data.layout || BLUEPRINT_LAYOUT,
+            };
             setConfig(merged);
             try {
               localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(merged));
@@ -100,7 +119,7 @@ export function useMovieConfig() {
     return () => unsubscribe();
   }, []);
 
-  const layout = config.layout || DEFAULT_LAYOUT;
+  const layout = config.layout || BLUEPRINT_LAYOUT;
 
   const getSeatPrice = (seatId) => {
     if (!seatId) return config.pricePerSeat || 200;
