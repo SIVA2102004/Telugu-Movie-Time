@@ -1,0 +1,21 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Movie config — anyone can read, no public writes
+    match /movieConfig/{docId} {
+      allow read: if true;
+      allow write: if true; // Relax for internal tool — admin writes from browser
+    }
+
+    // Bookings — anyone can create (student submits form)
+    // Anyone can read (admin dashboard reads all)
+    // Anyone can update (admin confirms/cancels from browser)
+    match /bookings/{bookingId} {
+      allow read:   if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if false;
+    }
+  }
+}

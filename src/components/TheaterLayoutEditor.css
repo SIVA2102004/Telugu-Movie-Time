@@ -1,0 +1,526 @@
+/* ===== Theater Layout Editor ===== */
+
+.tle-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Top bar ── */
+.tle-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tle-topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tle-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--gold);
+}
+
+.tle-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Help panel ── */
+.tle-help {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+.tle-help strong { color: var(--text); }
+.tle-help ul { padding-left: 20px; margin-top: 8px; }
+
+/* ── Two-column main layout ── */
+.tle-main {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .tle-main { grid-template-columns: 1fr; }
+}
+
+/* ── Left panel ── */
+.tle-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tle-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tle-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Blueprint drop zone */
+.tle-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.tle-dropzone:hover { border-color: var(--gold); }
+.tle-dropzone--uploading { opacity: 0.7; pointer-events: none; }
+
+.tle-dropzone-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 16px;
+}
+.tle-dropzone-placeholder small { font-size: 0.72rem; }
+
+.tle-blueprint-img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--radius);
+}
+
+.tle-dropzone-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+/* Templates */
+.tle-templates {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tle-template-btn {
+  text-align: left;
+  font-size: 0.82rem;
+  padding: 8px 12px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Blueprint template — gold highlight */
+.tle-template-btn--highlight {
+  background: rgba(255,215,0,0.12);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-weight: 700;
+}
+.tle-template-btn--highlight:hover {
+  background: rgba(255,215,0,0.22);
+}
+
+.tle-template-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: var(--gold);
+  color: #000;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+/* ── Tier category editor ── */
+.tle-tier-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tle-tier-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tle-tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tle-tier-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  min-width: 80px;
+  text-align: center;
+}
+
+.tle-tier-badge--platinum {
+  background: rgba(229, 228, 226, 0.15);
+  border-color: #e5e4e2;
+  color: #e5e4e2;
+}
+
+.tle-tier-badge--gold {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.tle-tier-badge--silver {
+  background: rgba(192, 192, 192, 0.15);
+  border-color: #a0a0a0;
+  color: #c0c0c0;
+}
+
+.tle-price-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2px 8px;
+  color: var(--gold);
+}
+
+.tle-price-input {
+  width: 70px;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* ── Row tier selector dropdown ── */
+.tle-tier-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+.tle-tier-select--platinum { border-color: #e5e4e2; color: #e5e4e2; }
+.tle-tier-select--gold { border-color: var(--gold); color: var(--gold); }
+.tle-tier-select--silver { border-color: #a0a0a0; color: #c0c0c0; }
+
+.tle-seat-btn--tier-platinum {
+  border-bottom: 2px solid #e5e4e2;
+}
+.tle-seat-btn--tier-gold {
+  border-bottom: 2px solid var(--gold);
+}
+.tle-seat-btn--tier-silver {
+  border-bottom: 2px solid #a0a0a0;
+}
+
+/* ── Right: Editor card ── */
+.tle-editor-card {
+  overflow-x: auto;
+  padding: 20px;
+}
+
+.tle-grid-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tle-grid-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Screen bar inside editor */
+.tle-screen-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.tle-screen-line {
+  flex: 1;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  border-radius: 2px;
+  box-shadow: 0 2px 6px rgba(255,215,0,0.3);
+}
+.tle-screen-bar span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+/* ── Row list ── */
+.tle-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.tle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Row controls (label + arrows) */
+.tle-row-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.tle-row-label-input {
+  width: 30px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 2px;
+  outline: none;
+}
+.tle-row-label-input:focus { border-color: var(--gold); }
+
+.tle-row-arrows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tle-arrow-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 18px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.tle-arrow-btn:hover:not(:disabled) { color: var(--gold); border-color: var(--gold); }
+.tle-arrow-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Seat slots area */
+.tle-seat-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  align-items: center;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.tle-slot-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+
+/* Individual seat button in editor */
+.tle-seat-btn {
+  width: 32px;
+  height: 28px;
+  border-radius: 5px 5px 3px 3px;
+  border: none;
+  font-size: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+  flex-shrink: 0;
+}
+.tle-seat-btn--seat {
+  background: var(--green);
+  color: #000;
+}
+.tle-seat-btn--gap {
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.tle-seat-btn:hover { transform: scale(1.08); }
+
+/* Insert gap button (thin divider between seats) */
+.tle-insert-gap {
+  width: 6px;
+  height: 28px;
+  background: none;
+  border: none;
+  color: transparent;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.tle-insert-gap:hover {
+  background: rgba(255,215,0,0.2);
+  color: var(--gold);
+}
+
+/* Row meta (count + clear) */
+.tle-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tle-count-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tle-count-btn {
+  width: 22px;
+  height: 22px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.tle-count-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+.tle-count-input {
+  width: 38px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: center;
+  padding: 2px 4px;
+  outline: none;
+}
+.tle-count-input:focus { border-color: var(--gold); }
+/* Hide number input spinners */
+.tle-count-input::-webkit-inner-spin-button,
+.tle-count-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.tle-clear-gaps-btn {
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.tle-clear-gaps-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* ── Row add/remove bar ── */
+.tle-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.tle-total-badge {
+  background: rgba(255,215,0,0.1);
+  border: 1px solid var(--gold-dim);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 12px;
+}
+
+/* ── Legend ── */
+.tle-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+.tle-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tle-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.tle-dot--seat { background: var(--green); }
+.tle-dot--gap  { background: var(--surface2); border: 1px dashed var(--border); }

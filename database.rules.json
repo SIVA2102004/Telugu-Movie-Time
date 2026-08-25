@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "seats": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

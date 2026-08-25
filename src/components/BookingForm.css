@@ -1,0 +1,347 @@
+.booking-form {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.booking-form__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.booking-form__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.booking-form__badge {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.section-subtitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.attendee-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attendee-seat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.seat-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seat-id-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+
+.seat-tier-subtag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.seat-tier-subtag--platinum { background: rgba(229, 228, 226, 0.2); color: #e5e4e2; }
+.seat-tier-subtag--gold { background: rgba(255, 215, 0, 0.2); color: var(--gold); }
+.seat-tier-subtag--silver { background: rgba(192, 192, 192, 0.2); color: #c0c0c0; }
+
+.seat-inputs-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.flex-grow {
+  flex: 1;
+  min-width: 180px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
+.gender-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-gender {
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-gender:hover {
+  border-color: var(--gold);
+  color: var(--text);
+}
+
+.btn-gender--active {
+  background: var(--gold);
+  color: #000 !important;
+  border-color: var(--gold);
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.booking-form__total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+.booking-form__total strong {
+  margin-left: auto;
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.booking-form__submit {
+  width: 100%;
+  justify-content: center;
+  padding: 14px;
+  font-size: 1rem;
+  border-radius: var(--radius);
+}
+
+@media (max-width: 540px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-field--full {
+    grid-column: 1;
+  }
+}
+
+.tier-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+
+.tier-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tier-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.tier-tag--platinum {
+  background: rgba(229, 228, 226, 0.2);
+  color: #e5e4e2;
+  border: 1px solid #e5e4e2;
+}
+
+.tier-tag--gold {
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.tier-tag--silver {
+  background: rgba(192, 192, 192, 0.15);
+  color: #c0c0c0;
+  border: 1px solid #a0a0a0;
+}
+
+.tier-subtotal {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* ── UPI Payment Gateway Box ── */
+.upi-payment-box {
+  background: rgba(255, 215, 0, 0.04);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.upi-payment-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upi-payment-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.upi-payment-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.upi-qr-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid var(--gold);
+}
+
+.upi-qr-img {
+  width: 170px;
+  height: 170px;
+  display: block;
+}
+
+.upi-qr-placeholder {
+  width: 170px;
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 0.8rem;
+}
+
+.upi-qr-amount {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #000;
+}
+
+.upi-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.upi-instruction {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.upi-id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 0.88rem;
+}
+
+.btn-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-copy:hover {
+  background: var(--gold);
+  color: #000;
+}
+
+.upi-direct-btn {
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

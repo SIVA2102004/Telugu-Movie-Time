@@ -1,0 +1,189 @@
+.booking-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Controls ── */
+.booking-table-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bt-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bt-pending-bubble {
+  background: var(--yellow);
+  color: #000;
+  font-size: 0.65rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 1px 6px;
+  margin-left: 4px;
+}
+
+.bt-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bt-search {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.bt-search svg {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.bt-count {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ── Table ── */
+.bt-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.bt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.bt-table th {
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 12px 14px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.bt-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.bt-table tr:last-child td {
+  border-bottom: none;
+}
+
+.bt-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.bt-name {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gender-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.gender-tag--male {
+  background: rgba(79, 195, 247, 0.15);
+  color: #4fc3f7;
+  border: 1px solid #4fc3f7;
+}
+
+.gender-tag--female {
+  background: rgba(240, 98, 146, 0.15);
+  color: #f06292;
+  border: 1px solid #f06292;
+}
+
+.bt-upi {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bt-empty {
+  text-align: center;
+  padding: 40px !important;
+  color: var(--text-muted);
+}
+
+/* ── Seat chips ── */
+.seat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.seat-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+/* ── Actions ── */
+.bt-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── Edit Modal ── */
+.bt-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 16px;
+}
+
+.bt-modal {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.bt-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

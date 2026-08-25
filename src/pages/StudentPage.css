@@ -1,0 +1,118 @@
+.student-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Info strip ── */
+.student-page__strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+}
+
+.strip-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+}
+
+.strip-item--warn {
+  color: var(--gold);
+  font-weight: 700;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Loading ── */
+.student-page__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 60px 0;
+  color: var(--text-muted);
+}
+
+/* ── Content ── */
+.student-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Seat map card ── */
+.student-page__seatmap {
+  overflow-x: auto;
+}
+
+.seatmap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.seatmap-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.selected-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: rgba(255,215,0,0.1);
+  border: 1px solid var(--gold-dim);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* ── Form section ── */
+.student-page__form {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Success ── */
+.student-page__success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 60vh;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.student-page__success h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.student-page__success p {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
