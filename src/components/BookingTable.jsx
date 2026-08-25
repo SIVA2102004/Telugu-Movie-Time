@@ -1,34 +1,30 @@
 import { useState } from "react";
 import { db, rtdb } from "../firebase";
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, User } from "lucide-react";
+import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import "./BookingTable.css";
 
 const STATUS_OPTIONS = ["All", "pending", "confirmed", "cancelled"];
-const GENDER_FILTER_OPTIONS = ["All Genders", "Male", "Female"];
 
 export default function BookingTable({ bookings, setBookings, config }) {
   const [filter, setFilter] = useState("All");
-  const [genderFilter, setGenderFilter] = useState("All Genders");
   const [search, setSearch] = useState("");
   const [editingBooking, setEditingBooking] = useState(null);
 
   // ── Filter & search ─────────────────────────────────────────────────────
   const filtered = bookings.filter((b) => {
     const matchStatus = filter === "All" || b.status === filter;
-    const matchGender = genderFilter === "All Genders" || (b.gender || "Male") === genderFilter;
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
       b.name?.toLowerCase().includes(q) ||
       b.phone?.includes(q) ||
-      b.gender?.toLowerCase().includes(q) ||
       b.upiId?.toLowerCase().includes(q) ||
       b.college?.toLowerCase().includes(q) ||
       (b.seats || []).some((s) => s.toLowerCase().includes(q));
-    return matchStatus && matchGender && matchSearch;
+    return matchStatus && matchSearch;
   });
 
   // Generates ticket WhatsApp link with detailed message
@@ -39,7 +35,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
     const msg = encodeURIComponent(
       `🎟️ *TELUGU TALKIES - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
-      `👤 *Name:* ${booking.name} (${booking.gender || "Student"})\n` +
+      `👤 *Name:* ${booking.name}\n` +
       `🍿 *Movie:* ${config.movieName || "Telugu Movie"}\n` +
       `📅 *Date:* ${config.date || "Upcoming Show"}\n` +
       `⏰ *Time:* ${config.showTime || "TBA"}\n` +
@@ -60,7 +56,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
   // ── 1. CONFIRM BOOKING (Instant 0ms Execution) ──────────────────────────
   const confirmBooking = (booking) => {
-    // 1. Instant local state update
     if (setBookings) {
       setBookings((prev) => {
         const updated = prev.map((b) => (b.id === booking.id ? { ...b, status: "confirmed" } : b));
@@ -69,7 +64,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
       });
     }
 
-    // 2. Instant seats cache update
     try {
       const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
       (booking.seats || []).forEach((s) => { seatsCache[s] = "booked"; });
@@ -79,11 +73,9 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
     toast.success(`Confirmed: ${booking.name} ✅`);
 
-    // 3. Open WhatsApp ticket in new tab
     const waUrl = getTicketWhatsAppUrl(booking);
     window.open(waUrl, "_blank");
 
-    // 4. Non-blocking background sync
     Promise.resolve().then(async () => {
       try {
         await setDoc(doc(db, "bookings", booking.id), { status: "confirmed" }, { merge: true });
@@ -98,7 +90,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
   // ── 2. CANCEL BOOKING (Instant 0ms Execution & Seat Release) ─────────────
   const cancelBooking = (booking) => {
-    // 1. Instant local state update
     if (setBookings) {
       setBookings((prev) => {
         const updated = prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b));
@@ -107,7 +98,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
       });
     }
 
-    // 2. Release seats in local cache immediately
     try {
       const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
       (booking.seats || []).forEach((s) => { seatsCache[s] = "available"; });
@@ -117,7 +107,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
     toast.success(`Cancelled: ${booking.name}. Seats released! 🟢`);
 
-    // 3. Non-blocking background sync
     Promise.resolve().then(async () => {
       try {
         await setDoc(doc(db, "bookings", booking.id), { status: "cancelled" }, { merge: true });
@@ -132,7 +121,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
   // ── 3. DELETE BOOKING (Instant 0ms Removal & Seat Release) ───────────────
   const deleteBooking = (booking) => {
-    // 1. Instant UI removal
     if (setBookings) {
       setBookings((prev) => {
         const updated = prev.filter((b) => b.id !== booking.id);
@@ -141,7 +129,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
       });
     }
 
-    // 2. Free seats immediately
     try {
       const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
       (booking.seats || []).forEach((s) => { seatsCache[s] = "available"; });
@@ -151,7 +138,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
     toast.success(`Deleted booking for ${booking.name}`);
 
-    // 3. Non-blocking background deletion
     Promise.resolve().then(async () => {
       try {
         await deleteDoc(doc(db, "bookings", booking.id));
@@ -218,7 +204,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
 
     toast.success(`Confirmed all ${pendingList.length} bookings! 🚀`);
 
-    // Background sync
     Promise.resolve().then(async () => {
       try {
         for (const booking of pendingList) {
@@ -239,11 +224,10 @@ export default function BookingTable({ bookings, setBookings, config }) {
     const confirmed = bookings.filter((b) => b.status === "confirmed");
     if (confirmed.length === 0) { toast.error("No confirmed bookings to export."); return; }
 
-    const headers = ["#", "Name", "Gender", "Phone", "College", "Year", "Seats", "Amount", "UTR / Ref", "Target UPI", "Status"];
+    const headers = ["#", "Name", "Phone", "College", "Year", "Seats", "Amount", "UTR / Ref", "Target UPI", "Status"];
     const rows = confirmed.map((b, i) => [
       i + 1,
       b.name,
-      b.gender || "Male",
       b.phone,
       b.college,
       b.year,
@@ -288,17 +272,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
               )}
             </button>
           ))}
-
-          <select
-            className="select"
-            style={{ width: "auto", padding: "6px 12px", fontSize: "0.82rem" }}
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value)}
-          >
-            {GENDER_FILTER_OPTIONS.map((g) => (
-              <option key={g} value={g}>{g}</option>
-            ))}
-          </select>
         </div>
 
         <div className="bt-search">
@@ -306,7 +279,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
           <input
             className="input"
             style={{ paddingLeft: 34 }}
-            placeholder="Search name, phone, gender, seats, UTR…"
+            placeholder="Search name, phone, seats, UTR…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -337,7 +310,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
             <tr>
               <th>#</th>
               <th>Name</th>
-              <th>Gender</th>
               <th>Phone</th>
               <th>College</th>
               <th>Year</th>
@@ -351,18 +323,13 @@ export default function BookingTable({ bookings, setBookings, config }) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className="bt-empty">No bookings found.</td>
+                <td colSpan={10} className="bt-empty">No bookings found.</td>
               </tr>
             ) : (
               filtered.map((b, i) => (
                 <tr key={b.id || i}>
                   <td>{i + 1}</td>
                   <td className="bt-name">{b.name}</td>
-                  <td>
-                    <span className={`gender-tag gender-tag--${(b.gender || "male").toLowerCase()}`}>
-                      {b.gender || "Male"}
-                    </span>
-                  </td>
                   <td>
                     <a href={`tel:${b.phone}`} style={{ color: "var(--text)" }}>
                       {b.phone}
@@ -388,7 +355,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
                   </td>
                   <td>
                     <div className="bt-actions">
-                      {/* Confirm & WhatsApp Ticket */}
                       {b.status === "pending" && (
                         <button
                           className="btn btn-green"
@@ -400,7 +366,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
                         </button>
                       )}
 
-                      {/* Cancel (Releases seats) */}
                       {b.status !== "cancelled" && (
                         <button
                           className="btn btn-red"
@@ -412,7 +377,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
                         </button>
                       )}
 
-                      {/* Edit Booking */}
                       <button
                         className="btn btn-ghost"
                         style={{ padding: "5px 8px", color: "var(--gold)" }}
@@ -422,7 +386,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
                         <Edit3 size={13} />
                       </button>
 
-                      {/* Delete Booking */}
                       <button
                         className="btn btn-ghost"
                         style={{ padding: "5px 8px", color: "var(--red)" }}
@@ -432,7 +395,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
                         <Trash2 size={13} />
                       </button>
 
-                      {/* WhatsApp manual link */}
                       <button
                         className="btn btn-wa"
                         style={{ padding: "5px 8px" }}
@@ -464,18 +426,6 @@ export default function BookingTable({ bookings, setBookings, config }) {
                   onChange={(e) => setEditingBooking({ ...editingBooking, name: e.target.value })}
                   required
                 />
-              </div>
-
-              <div className="form-field">
-                <label className="label">Gender</label>
-                <select
-                  className="select"
-                  value={editingBooking.gender || "Male"}
-                  onChange={(e) => setEditingBooking({ ...editingBooking, gender: e.target.value })}
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
               </div>
 
               <div className="form-field">

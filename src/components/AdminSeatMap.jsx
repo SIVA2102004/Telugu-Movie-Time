@@ -7,7 +7,7 @@ import "./AdminSeatMap.css";
 
 /**
  * Interactive Admin Seat Map:
- * Highlights Confirmed Male (Blue), Confirmed Female (Pink), Pending (Orange), and Blocked (Grey).
+ * Highlights Confirmed (Red), Pending (Orange), and Blocked (Grey).
  */
 export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
   const [blockedSeats, setBlockedSeats] = useState(() => {
@@ -16,7 +16,6 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
   const [saving, setSaving] = useState(false);
 
   const bookedByMap = {};
-  const seatGenderMap = {};
   const seatStatusMap = {};
 
   bookings
@@ -25,20 +24,9 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
       const isConfirmed = b.status === "confirmed";
       const isPending = b.status === "pending";
 
-      (b.attendees || []).forEach((a) => {
-        if (a.seatId) {
-          bookedByMap[a.seatId] = a.name || b.name;
-          seatGenderMap[a.seatId] = a.gender || b.gender || "Male";
-          seatStatusMap[a.seatId] = isConfirmed ? "booked" : isPending ? "pending" : "available";
-        }
-      });
-
       (b.seats || []).forEach((seatId) => {
-        if (!bookedByMap[seatId]) {
-          bookedByMap[seatId] = b.name;
-          seatGenderMap[seatId] = b.gender || "Male";
-          seatStatusMap[seatId] = isConfirmed ? "booked" : isPending ? "pending" : "available";
-        }
+        bookedByMap[seatId] = b.name;
+        seatStatusMap[seatId] = isConfirmed ? "booked" : isPending ? "pending" : "available";
       });
     });
 
@@ -192,23 +180,17 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
                   const seatId = `${rowLabel}${num}`;
                   const isBlocked = blockedSeats.has(seatId);
                   const status = isBlocked ? "blocked" : (seatStatusMap[seatId] || "available");
-                  const gender = seatGenderMap[seatId];
                   const booker = bookedByMap[seatId];
-
-                  let extraClass = "";
-                  if (status === "booked" && gender) {
-                    extraClass = ` seat--booked-${gender.toLowerCase()}`;
-                  }
 
                   return (
                     <button
                       key={seatId}
                       type="button"
-                      className={`seat seat--${status}${extraClass} seat--clickable seat--tier-${tier.toLowerCase()}`}
+                      className={`seat seat--${status} seat--clickable seat--tier-${tier.toLowerCase()}`}
                       onClick={() => toggleSeatBlock(seatId)}
                       title={
                         booker
-                          ? `Booked by: ${booker} (${gender || "Confirmed"})`
+                          ? `Booked by: ${booker} (Confirmed)`
                           : isBlocked
                           ? `Seat ${seatId} is BLOCKED (Click to make Available)`
                           : `Seat ${seatId} is AVAILABLE (${tier} - ₹${tierPrice}) - Click to Block`
@@ -238,8 +220,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
       <div className="seatmap-legend" style={{ marginTop: 16 }}>
         <div className="legend-item"><span className="legend-dot" style={{ background: "var(--green)" }} /> Available</div>
         <div className="legend-item"><span className="legend-dot" style={{ background: "#FF9800" }} /> Pending Verification</div>
-        <div className="legend-item"><span className="legend-dot" style={{ background: "#2979FF" }} /> Confirmed Boy (Blue)</div>
-        <div className="legend-item"><span className="legend-dot" style={{ background: "#FF4081" }} /> Confirmed Girl (Pink)</div>
+        <div className="legend-item"><span className="legend-dot" style={{ background: "var(--red)" }} /> Confirmed Booked</div>
         <div className="legend-item"><span className="legend-dot" style={{ background: "var(--grey)" }} /> Blocked (Admin)</div>
       </div>
     </div>

@@ -2,13 +2,12 @@ import React, { useMemo } from "react";
 import "./SeatMap.css";
 
 /**
- * Optimized individual seat button with Blue (Male), Pink (Female), Red (General Booked), Orange (Pending), and Green (Available).
+ * Optimized individual seat button.
  */
 const SeatButton = React.memo(function SeatButton({
   seatId,
   num,
   status,
-  gender,
   tier,
   tierPrice,
   clickable,
@@ -16,17 +15,12 @@ const SeatButton = React.memo(function SeatButton({
   bookedBy,
   onToggle
 }) {
-  let statusClass = `seat--${status}`;
-  if (status === "booked" && gender) {
-    statusClass += ` seat--booked-${gender.toLowerCase()}`;
-  }
-
   const tooltip = bookedBy
-    ? `Booked by: ${bookedBy} (${gender || "Confirmed"})`
+    ? `Booked by: ${bookedBy}`
     : status === "pending"
     ? `${seatId} (Pending Payment Verification)`
     : status === "booked"
-    ? `${seatId} Confirmed (${gender ? (gender === "Male" ? "Male / Boy" : "Female / Girl") : "Booked"})`
+    ? `${seatId} (Confirmed Booked)`
     : status === "locked"
     ? "Someone is selecting this seat…"
     : status === "blocked"
@@ -35,7 +29,7 @@ const SeatButton = React.memo(function SeatButton({
 
   return (
     <button
-      className={`seat ${statusClass} seat--tier-${tier.toLowerCase()}${clickable ? " seat--clickable" : ""}`}
+      className={`seat seat--${status} seat--tier-${tier.toLowerCase()}${clickable ? " seat--clickable" : ""}`}
       onClick={() => clickable && onToggle(seatId)}
       disabled={readOnly || (!clickable && status !== "selected")}
       title={tooltip}
@@ -55,7 +49,7 @@ export default function SeatMap({
   selectedSeats = [],
   bookings = [],
   onSeatToggle,
-  maxSeats = 6,
+  maxSeats = 999,
   blockedSeats = [],
   readOnly = false,
   bookedByMap = {},
@@ -75,37 +69,23 @@ export default function SeatMap({
   const blockedSet = useMemo(() => new Set(blockedSeats), [blockedSeats]);
   const selectedSet = useMemo(() => new Set(selectedSeats), [selectedSeats]);
 
-  // Compute map of confirmed seat genders and statuses from bookings
-  const { bookingSeatStatus, bookingSeatGender, bookingSeatUser } = useMemo(() => {
+  // Compute map of confirmed seat statuses and student names
+  const { bookingSeatStatus, bookingSeatUser } = useMemo(() => {
     const statusMap = {};
-    const genderMap = {};
     const userMap = {};
 
     (bookings || []).forEach((b) => {
       const isConfirmed = b.status === "confirmed";
       const isPending = b.status === "pending";
 
-      (b.attendees || []).forEach((a) => {
-        if (a.seatId) {
-          genderMap[a.seatId] = a.gender || b.gender || "Male";
-          userMap[a.seatId] = a.name || b.name;
-          if (isConfirmed) statusMap[a.seatId] = "booked";
-          else if (isPending) statusMap[a.seatId] = "pending";
-        }
-      });
-
-      // Fallback for bookings without per-seat attendees array
       (b.seats || []).forEach((seatId) => {
-        if (!genderMap[seatId]) {
-          genderMap[seatId] = b.gender || "Male";
-          userMap[seatId] = b.name;
-        }
+        userMap[seatId] = b.name;
         if (isConfirmed) statusMap[seatId] = "booked";
         else if (isPending) statusMap[seatId] = "pending";
       });
     });
 
-    return { bookingSeatStatus: statusMap, bookingSeatGender: genderMap, bookingSeatUser: userMap };
+    return { bookingSeatStatus: statusMap, bookingSeatUser: userMap };
   }, [bookings]);
 
   const getSeatStatus = (seatId) => {
@@ -180,7 +160,6 @@ export default function SeatMap({
                   const num = seatNum;
                   const seatId = `${rowLabel}${num}`;
                   const status = getSeatStatus(seatId);
-                  const gender = bookingSeatGender[seatId];
                   const clickable = !readOnly && canToggle(seatId);
 
                   return (
@@ -189,7 +168,6 @@ export default function SeatMap({
                       seatId={seatId}
                       num={num}
                       status={status}
-                      gender={gender}
                       tier={tier}
                       tierPrice={tierPrice}
                       clickable={clickable}
@@ -212,10 +190,9 @@ export default function SeatMap({
 
       {/* Legend */}
       <div className="seatmap-legend">
-        <LegendItem color="var(--green)" label="Available" />
-        <LegendItem color="#FF9800"      label="Pending Verification" />
-        <LegendItem color="#2979FF"      label="Confirmed Male (Boy)" />
-        <LegendItem color="#FF4081"      label="Confirmed Female (Girl)" />
+        <LegendItem color="var(--green)"  label="Available" />
+        <LegendItem color="#FF9800"       label="Pending Verification" />
+        <LegendItem color="var(--red)"    label="Confirmed Booked" />
         <LegendItem color="var(--yellow)" label="Your Selection" />
         <LegendItem color="var(--grey)"   label="Blocked" />
       </div>

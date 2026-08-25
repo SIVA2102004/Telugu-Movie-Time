@@ -18,38 +18,19 @@ export default function BookingForm({
   onSuccess
 }) {
   const [primaryContact, setPrimaryContact] = useState({
+    name: "",
     phone: "",
     upiRef: "",
     year: "",
     college: "",
   });
 
-  // Per-seat attendee details: { [seatId]: { name: "", gender: "Male" } }
-  const [seatDetails, setSeatDetails] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   const activeUpiId = config?.upiId || "telugutalkies@upi";
   const payeeName = config?.payeeName || "Telugu Talkies";
   const adminPhone = config?.adminPhone || "919876543210";
-
-  // Sync seatDetails when selectedSeats changes
-  useEffect(() => {
-    setSeatDetails((prev) => {
-      const updated = { ...prev };
-      // Remove unselected
-      Object.keys(updated).forEach((seatId) => {
-        if (!selectedSeats.includes(seatId)) delete updated[seatId];
-      });
-      // Add newly selected with default Male
-      selectedSeats.forEach((seatId, idx) => {
-        if (!updated[seatId]) {
-          updated[seatId] = { name: "", gender: "Male" };
-        }
-      });
-      return updated;
-    });
-  }, [selectedSeats]);
 
   const totalAmount = selectedSeats.reduce((sum, seatId) => {
     const price = getSeatPrice ? getSeatPrice(seatId) : pricePerSeat;
@@ -85,20 +66,6 @@ export default function BookingForm({
     }
   }, [upiUri, totalAmount]);
 
-  const handleSeatNameChange = (seatId, name) => {
-    setSeatDetails((prev) => ({
-      ...prev,
-      [seatId]: { ...prev[seatId], name },
-    }));
-  };
-
-  const handleSeatGenderChange = (seatId, gender) => {
-    setSeatDetails((prev) => ({
-      ...prev,
-      [seatId]: { ...prev[seatId], gender },
-    }));
-  };
-
   const handlePrimaryChange = (e) => {
     setPrimaryContact((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -110,17 +77,7 @@ export default function BookingForm({
 
   const validate = () => {
     if (selectedSeats.length === 0) return "No seats selected.";
-
-    for (const seatId of selectedSeats) {
-      const details = seatDetails[seatId];
-      if (!details?.name?.trim()) {
-        return `Please enter attendee name for Seat ${seatId}.`;
-      }
-      if (!details?.gender) {
-        return `Please select Male or Female for Seat ${seatId}.`;
-      }
-    }
-
+    if (!primaryContact.name.trim()) return "Please enter your full name.";
     if (!/^\d{10}$/.test(primaryContact.phone)) return "Enter a valid 10-digit WhatsApp phone number.";
     if (!primaryContact.upiRef.trim()) return "Please enter the 12-digit UPI Transaction / UTR reference number.";
     if (!primaryContact.year) return "Please select your year of study.";
@@ -135,25 +92,15 @@ export default function BookingForm({
 
     setSubmitting(true);
 
-    const primaryAttendee = seatDetails[selectedSeats[0]];
-    const attendeesList = selectedSeats.map((seatId) => ({
-      seatId,
-      name: seatDetails[seatId]?.name?.trim() || "",
-      gender: seatDetails[seatId]?.gender || "Male",
-      tier: getSeatTier ? getSeatTier(seatId) : "Standard",
-    }));
-
     const newBooking = {
       id: "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
-      name: primaryAttendee?.name || "Student",
-      gender: primaryAttendee?.gender || "Male",
+      name: primaryContact.name.trim(),
       phone: primaryContact.phone.trim(),
       upiId: primaryContact.upiRef.trim(),
       upiTarget: activeUpiId,
       college: primaryContact.college.trim(),
       year: primaryContact.year,
       seats: [...selectedSeats],
-      attendees: attendeesList,
       totalAmount,
       status: "pending",
       createdAt: new Date().toISOString(),
@@ -176,12 +123,8 @@ export default function BookingForm({
     }
 
     // 2. WhatsApp direct notification link
-    const attendeeSummary = attendeesList
-      .map((a) => `• *${a.seatId}*: ${a.name} (${a.gender})`)
-      .join("\n");
-
     const msg = encodeURIComponent(
-      `Hi Admin! 🎬\n\nI just paid *₹${totalAmount}* for seats:\n${attendeeSummary}\n\nPrimary Phone: *${primaryContact.phone}*\nUTR/Ref: *${primaryContact.upiRef}*\nCollege: *${primaryContact.college}*\n\nPlease confirm our booking!`
+      `Hi Admin! 🎬\n\nI just paid *₹${totalAmount}* for seats: *${selectedSeats.join(", ")}*.\nName: *${primaryContact.name}*\nPhone: *${primaryContact.phone}*\nUTR/Ref: *${primaryContact.upiRef}*\nCollege: *${primaryContact.college}*\n\nPlease confirm our booking!`
     );
     const waUrl = `https://wa.me/${adminPhone}?text=${msg}`;
 
@@ -200,14 +143,12 @@ export default function BookingForm({
       try {
         await setDoc(doc(db, "bookings", newBooking.id), {
           name: newBooking.name,
-          gender: newBooking.gender,
           phone: newBooking.phone,
           upiId: newBooking.upiId,
           upiTarget: activeUpiId,
           college: newBooking.college,
           year: newBooking.year,
           seats: newBooking.seats,
-          attendees: attendeesList,
           totalAmount: newBooking.totalAmount,
           status: "pending",
           createdAt: serverTimestamp(),
@@ -220,124 +161,88 @@ export default function BookingForm({
     <form className="booking-form card" onSubmit={handleSubmit}>
       <div className="booking-form__header">
         <h2 className="booking-form__title" style={{ borderBottom: "none", paddingBottom: 0 }}>
-          Attendee Details & Payment
+          Student Details & Payment
         </h2>
         <span className="booking-form__badge">{selectedSeats.length} Seats Selected</span>
       </div>
 
-      {/* ── STEP 1: PER-SEAT ATTENDEE NAMES & GENDER ── */}
-      <div className="attendee-seats-section">
-        <h3 className="section-subtitle">
-          <Users size={16} /> 1. Attendee Names & Gender for Selected Seats
-        </h3>
-
-        <div className="attendee-cards-list">
-          {selectedSeats.map((seatId) => {
-            const tier = getSeatTier ? getSeatTier(seatId) : "Silver";
-            const currentDetails = seatDetails[seatId] || { name: "", gender: "Male" };
-
-            return (
-              <div key={seatId} className="attendee-seat-card">
-                <div className="seat-badge-row">
-                  <span className="seat-id-tag">
-                    <Armchair size={13} /> Seat {seatId}
-                  </span>
-                  <span className={`seat-tier-subtag seat-tier-subtag--${tier.toLowerCase()}`}>
-                    {tier}
-                  </span>
-                </div>
-
-                <div className="seat-inputs-row">
-                  {/* Attendee Name */}
-                  <div className="form-field flex-grow">
-                    <label className="label" htmlFor={`name-${seatId}`}>Attendee Name *</label>
-                    <input
-                      className="input"
-                      id={`name-${seatId}`}
-                      type="text"
-                      placeholder={`Name for Seat ${seatId}`}
-                      value={currentDetails.name}
-                      onChange={(e) => handleSeatNameChange(seatId, e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  {/* Gender Toggle */}
-                  <div className="form-field">
-                    <label className="label">Gender *</label>
-                    <div className="gender-toggle-group">
-                      {["Male", "Female"].map((g) => (
-                        <button
-                          type="button"
-                          key={g}
-                          className={`btn-gender ${currentDetails.gender === g ? "btn-gender--active" : ""}`}
-                          onClick={() => handleSeatGenderChange(seatId, g)}
-                        >
-                          {g}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      <div className="form-grid">
+        {/* Full Name */}
+        <div className="form-field form-field--full">
+          <label className="label" htmlFor="name">Full Name *</label>
+          <input
+            className="input"
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Siva Reddy"
+            value={primaryContact.name}
+            onChange={handlePrimaryChange}
+            autoComplete="name"
+            required
+          />
         </div>
-      </div>
 
-      {/* ── STEP 2: PRIMARY CONTACT INFO ── */}
-      <div className="primary-contact-section">
-        <h3 className="section-subtitle">
-          <Smartphone size={16} /> 2. WhatsApp & College Details
-        </h3>
+        {/* WhatsApp Phone */}
+        <div className="form-field">
+          <label className="label" htmlFor="phone">WhatsApp Phone Number *</label>
+          <input
+            className="input"
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="9876543210"
+            maxLength={10}
+            value={primaryContact.phone}
+            onChange={handlePrimaryChange}
+            autoComplete="tel"
+            required
+          />
+        </div>
 
-        <div className="form-grid">
-          <div className="form-field">
-            <label className="label" htmlFor="phone">Primary WhatsApp Number *</label>
-            <input
-              className="input"
-              id="phone"
-              name="phone"
-              type="tel"
-              placeholder="9876543210"
-              maxLength={10}
-              value={primaryContact.phone}
-              onChange={handlePrimaryChange}
-              autoComplete="tel"
-              required
-            />
-          </div>
+        {/* Year of Study */}
+        <div className="form-field">
+          <label className="label" htmlFor="year">Year of Study *</label>
+          <select
+            className="select"
+            id="year"
+            name="year"
+            value={primaryContact.year}
+            onChange={handlePrimaryChange}
+            required
+          >
+            <option value="">Select year…</option>
+            {YEAR_OPTIONS.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
 
-          <div className="form-field">
-            <label className="label" htmlFor="year">Year of Study *</label>
-            <select
-              className="select"
-              id="year"
-              name="year"
-              value={primaryContact.year}
-              onChange={handlePrimaryChange}
-              required
-            >
-              <option value="">Select year…</option>
-              {YEAR_OPTIONS.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
+        {/* College Name */}
+        <div className="form-field form-field--full">
+          <label className="label" htmlFor="college">College Name *</label>
+          <input
+            className="input"
+            id="college"
+            name="college"
+            type="text"
+            placeholder="Marwadi University"
+            value={primaryContact.college}
+            onChange={handlePrimaryChange}
+            required
+          />
+        </div>
 
-          <div className="form-field form-field--full">
-            <label className="label" htmlFor="college">College Name *</label>
-            <input
-              className="input"
-              id="college"
-              name="college"
-              type="text"
-              placeholder="Marwadi University"
-              value={primaryContact.college}
-              onChange={handlePrimaryChange}
-              required
-            />
-          </div>
+        {/* Selected Seats */}
+        <div className="form-field form-field--full">
+          <label className="label">Selected Seats ({selectedSeats.length})</label>
+          <input
+            className="input"
+            type="text"
+            value={selectedSeats.join(", ") || "None"}
+            readOnly
+            disabled
+          />
         </div>
       </div>
 
@@ -362,11 +267,11 @@ export default function BookingForm({
         <strong>₹{totalAmount}</strong>
       </div>
 
-      {/* ── STEP 3: UPI Payment Gateway Box ── */}
+      {/* ── UPI Payment Gateway Box ── */}
       <div className="upi-payment-box">
         <div className="upi-payment-header">
           <QrCode size={20} color="var(--gold)" />
-          <h3>3. Scan & Pay via UPI App</h3>
+          <h3>Scan & Pay via UPI App</h3>
         </div>
 
         <div className="upi-payment-content">
