@@ -1,8 +1,8 @@
-import { Film, MapPin, Calendar, Clock, IndianRupee } from "lucide-react";
+import { MapPin, Calendar, Clock, Lock } from "lucide-react";
 import "./MovieHeader.css";
 
 export default function MovieHeader({ config = {}, layout = {} }) {
-  const { movieName = "Telugu Movie Time", date = "", theater = "", showTime = "", pricePerSeat = 200 } = config || {};
+  const { movieName = "Telugu Movie Time", date = "", theater = "", showTime = "" } = config || {};
 
   let formattedDate = "";
   if (date) {
@@ -17,19 +17,6 @@ export default function MovieHeader({ config = {}, layout = {} }) {
       formattedDate = date;
     }
   }
-
-  // Calculate dynamic "From ₹X" based on active config or layout prices
-  const tierPrices = config?.tierPrices || layout?.tierPrices;
-  let minPrice = pricePerSeat || 200;
-
-  if (tierPrices && Object.values(tierPrices).length > 0) {
-    const validPrices = Object.values(tierPrices).map(Number).filter((p) => !isNaN(p) && p > 0);
-    if (validPrices.length > 0) {
-      minPrice = Math.min(...validPrices);
-    }
-  }
-
-  const priceDisplay = `From ₹${minPrice}`;
 
   return (
     <header className="movie-header">
@@ -67,10 +54,11 @@ export default function MovieHeader({ config = {}, layout = {} }) {
           </div>
         </div>
 
-        {/* Price badge */}
-        <div className="movie-header__price">
-          <span>{priceDisplay}</span>
-          <small>per seat</small>
+        {/* Direct Admin Portal Login Link */}
+        <div className="movie-header__admin-link">
+          <a href="/admin" className="btn btn-outline" style={{ padding: "6px 14px", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: 6, borderColor: "var(--gold)", color: "var(--gold)" }}>
+            <Lock size={14} /> Admin Portal
+          </a>
         </div>
       </div>
     </header>
