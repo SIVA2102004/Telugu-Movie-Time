@@ -54,8 +54,10 @@ export default function AdminPage() {
         {/* Sidebar */}
         <aside className="admin-sidebar">
           <div className="admin-sidebar__brand">
-            <Film size={20} color="var(--gold)" />
-            <span>Telugu Talkies</span>
+            <span style={{ background: "linear-gradient(135deg, #FFD700 0%, #FFA500 100%)", color: "#0d0d1a", fontWeight: 900, fontSize: "0.75rem", padding: "2px 6px", borderRadius: 4, letterSpacing: 1 }}>
+              TMT
+            </span>
+            <span>Telugu Movie Time</span>
             <span style={{ fontSize: "0.68rem", background: "rgba(255,215,0,0.15)", color: "var(--gold)", padding: "2px 6px", borderRadius: 4, marginLeft: "auto", textTransform: "uppercase", fontWeight: 800 }}>
               {adminRole}
             </span>
@@ -117,7 +119,7 @@ export default function AdminPage() {
                 <TheaterLayoutEditor config={config} />
               )}
               {activeTab === "config" && (
-                <MovieConfigEditor config={config} />
+                <MovieConfigEditor config={config} layout={layout} />
               )}
             </div>
         </main>

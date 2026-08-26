@@ -34,7 +34,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
     const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
 
     const msg = encodeURIComponent(
-      `🎟️ *TELUGU TALKIES - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
+      `🎟️ *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
       `👤 *Name:* ${booking.name}\n` +
       `🍿 *Movie:* ${config.movieName || "Telugu Movie"}\n` +
       `📅 *Date:* ${config.date || "Upcoming Show"}\n` +
@@ -48,7 +48,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
       `📌 *Instructions:*\n` +
       `• Please show this ticket message at the entry gate.\n` +
       `• Please arrive 15 minutes before the show.\n\n` +
-      `Enjoy the show together! 🍿🎉\n- Telugu Talkies Admin`
+      `Enjoy the show together! 🍿🎉\n- Telugu Movie Time Admin`
     );
 
     return `https://wa.me/${formattedPhone}?text=${msg}`;

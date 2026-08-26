@@ -52,24 +52,29 @@ export function buildDefaultLayout() {
 }
 
 const DEFAULT_CONFIG = {
-  movieName: "Telugu Talkies",
+  movieName: "Telugu Movie Time",
   date: "2026-08-30",
   theater: "Rajshree Cinema (Screen 1)",
   showTime: "6:30 PM",
   pricePerSeat: 200,
+  tierPrices: {
+    Platinum: 300,
+    Gold: 250,
+    Silver: 200,
+  },
   blockedSeats: [],
   bookingDeadline: null,
   layout: BLUEPRINT_LAYOUT,
   blueprintImageUrl: null,
-  upiId: "telugutalkies@upi",
-  payeeName: "Telugu Talkies",
+  upiId: "telugumovietime@upi",
+  payeeName: "Telugu Movie Time",
   adminPhone: "919876543210",
   coAdminCode: "COADMIN2026",
   adminPassword: "admin123",
 };
 
 /**
- * Subscribes to movieConfig/current in Firestore with zero-blocking instant load.
+ * Subscribes to movieConfig/current in Firestore with cross-tab local storage synchronization.
  */
 export function useMovieConfig() {
   const [config, setConfig] = useState(() => {
@@ -90,6 +95,24 @@ export function useMovieConfig() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // 1. Cross-tab and local storage instant sync
+    const handleStorage = () => {
+      try {
+        const saved = localStorage.getItem("telugu_talkies_movie_config");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setConfig({
+            ...DEFAULT_CONFIG,
+            ...parsed,
+            layout: parsed.layout || BLUEPRINT_LAYOUT,
+          });
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    // 2. Real-time Firestore sync
     let unsubscribe = () => {};
     try {
       const docRef = doc(db, "movieConfig", "current");
@@ -116,17 +139,24 @@ export function useMovieConfig() {
     } catch (err) {
       console.warn("Firestore offline mode:", err);
     }
-    return () => unsubscribe();
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      unsubscribe();
+    };
   }, []);
 
   const layout = config.layout || BLUEPRINT_LAYOUT;
+
+  // Prefer tier prices from config or layout
+  const effectiveTierPrices = config.tierPrices || layout.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
 
   const getSeatPrice = (seatId) => {
     if (!seatId) return config.pricePerSeat || 200;
     const row = seatId.charAt(0);
     const tier = layout.rowTiers?.[row] || "Silver";
-    if (layout.tierPrices && layout.tierPrices[tier] !== undefined) {
-      return Number(layout.tierPrices[tier]);
+    if (effectiveTierPrices[tier] !== undefined) {
+      return Number(effectiveTierPrices[tier]);
     }
     return Number(config.pricePerSeat || 200);
   };

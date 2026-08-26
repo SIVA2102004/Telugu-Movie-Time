@@ -1,34 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy } from "lucide-react";
+import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag } from "lucide-react";
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
-export default function MovieConfigEditor({ config }) {
+export default function MovieConfigEditor({ config, layout }) {
   const [form, setForm] = useState({
-    movieName: "Telugu Talkies",
-    date: "",
-    theater: "",
-    showTime: "",
+    movieName: "Telugu Movie Time",
+    date: "2026-08-30",
+    theater: "Rajshree Cinema (Screen 1)",
+    showTime: "6:30 PM",
     pricePerSeat: 200,
-    upiId: "telugutalkies@upi",
-    payeeName: "Telugu Talkies",
+    tierPrices: {
+      Platinum: 300,
+      Gold: 250,
+      Silver: 200,
+      ...(config?.tierPrices || layout?.tierPrices || {}),
+    },
+    upiId: "telugumovietime@upi",
+    payeeName: "Telugu Movie Time",
     adminPhone: "919876543210",
     coAdminCode: "COADMIN2026",
     adminPassword: "admin123",
     ...config,
   });
+
   const [saving, setSaving] = useState(false);
   const [blockedInput, setBlockedInput] = useState(
-    (config.blockedSeats || []).join(", ")
+    (config?.blockedSeats || []).join(", ")
   );
+
+  // Sync state if config changes in background
+  useEffect(() => {
+    if (config) {
+      setForm((prev) => ({
+        ...prev,
+        ...config,
+        tierPrices: {
+          Platinum: 300,
+          Gold: 250,
+          Silver: 200,
+          ...(config.tierPrices || layout?.tierPrices || prev.tierPrices || {}),
+        },
+      }));
+      setBlockedInput((config.blockedSeats || []).join(", "));
+    }
+  }, [config, layout]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,
       [name]: name === "pricePerSeat" ? Number(value) : value,
+    }));
+  };
+
+  const handleTierPriceChange = (tier, val) => {
+    const num = Math.max(0, parseInt(val) || 0);
+    setForm((prev) => ({
+      ...prev,
+      tierPrices: {
+        ...(prev.tierPrices || {}),
+        [tier]: num,
+      },
     }));
   };
 
@@ -46,18 +81,23 @@ export default function MovieConfigEditor({ config }) {
         .split(",")
         .map((s) => s.trim().toUpperCase())
         .filter(Boolean),
-      pricePerSeat: Number(form.pricePerSeat),
+      pricePerSeat: Number(form.pricePerSeat || 200),
+      layout: {
+        ...(layout || {}),
+        tierPrices: form.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 },
+      },
     };
 
-    // Instant local save
+    // Instant local save and cross-tab event dispatch
     try {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     // Cloud firestore save
     try {
       await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
-      toast.success("Settings, Security & Co-Admin Code saved! 🚀");
+      toast.success("Settings, Prices & Details updated live! 🚀");
     } catch (err) {
       toast.success("Saved to local workspace cache! ✅");
     }
@@ -66,7 +106,7 @@ export default function MovieConfigEditor({ config }) {
 
   return (
     <form className="config-editor card" onSubmit={handleSave}>
-      <h2 className="config-editor__title">Movie, Security & Gateway Configuration</h2>
+      <h2 className="config-editor__title">Movie, Pricing & Gateway Configuration</h2>
 
       <div className="config-grid">
         {/* Movie Info */}
@@ -92,6 +132,64 @@ export default function MovieConfigEditor({ config }) {
           <label className="label" htmlFor="showTime">Show Time</label>
           <input className="input" id="showTime" name="showTime"
             placeholder="6:30 PM" value={form.showTime || ""} onChange={handleChange} />
+        </div>
+
+        {/* ── TIER PRICING CONTROLS (DIRECTLY EDIT FROM MOVIE CONFIG) ── */}
+        <div className="form-field form-field--full" style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
+          <h3 style={{ fontSize: "1rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 6 }}>
+            <IndianRupee size={18} /> Category Tier Pricing (Reflects in Header & Seat Map)
+          </h3>
+          <small style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+            Updating prices here will immediately update the "From ₹..." badge on the student webpage and seat calculation.
+          </small>
+        </div>
+
+        <div className="form-field">
+          <label className="label">
+            <span className="tier-tag tier-tag--platinum" style={{ display: "inline-flex", marginRight: 6 }}>Platinum</span>
+            Recliner Price (₹)
+          </label>
+          <input
+            className="input"
+            type="number"
+            min={1}
+            value={form.tierPrices?.Platinum ?? 300}
+            onChange={(e) => handleTierPriceChange("Platinum", e.target.value)}
+          />
+        </div>
+
+        <div className="form-field">
+          <label className="label">
+            <span className="tier-tag tier-tag--gold" style={{ display: "inline-flex", marginRight: 6 }}>Gold</span>
+            Gold Tier Price (₹)
+          </label>
+          <input
+            className="input"
+            type="number"
+            min={1}
+            value={form.tierPrices?.Gold ?? 250}
+            onChange={(e) => handleTierPriceChange("Gold", e.target.value)}
+          />
+        </div>
+
+        <div className="form-field">
+          <label className="label">
+            <span className="tier-tag tier-tag--silver" style={{ display: "inline-flex", marginRight: 6 }}>Silver</span>
+            Silver Tier Price (₹)
+          </label>
+          <input
+            className="input"
+            type="number"
+            min={1}
+            value={form.tierPrices?.Silver ?? 200}
+            onChange={(e) => handleTierPriceChange("Silver", e.target.value)}
+          />
+        </div>
+
+        <div className="form-field">
+          <label className="label" htmlFor="pricePerSeat">Base Default Price (₹)</label>
+          <input className="input" type="number" id="pricePerSeat" name="pricePerSeat"
+            min={1} value={form.pricePerSeat || ""} onChange={handleChange} />
         </div>
 
         {/* ── CO-ADMIN & SECURITY SECTION ── */}
@@ -175,7 +273,7 @@ export default function MovieConfigEditor({ config }) {
             className="input"
             id="payeeName"
             name="payeeName"
-            placeholder="Telugu Talkies Admin"
+            placeholder="Telugu Movie Time Admin"
             value={form.payeeName || ""}
             onChange={handleChange}
           />
@@ -194,12 +292,6 @@ export default function MovieConfigEditor({ config }) {
             value={form.adminPhone || ""}
             onChange={handleChange}
           />
-        </div>
-
-        <div className="form-field">
-          <label className="label" htmlFor="pricePerSeat">Default Price Per Seat (₹)</label>
-          <input className="input" type="number" id="pricePerSeat" name="pricePerSeat"
-            min={1} value={form.pricePerSeat || ""} onChange={handleChange} />
         </div>
 
         <div className="form-field form-field--full">

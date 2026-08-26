@@ -2,7 +2,7 @@ import { Film, MapPin, Calendar, Clock, IndianRupee } from "lucide-react";
 import "./MovieHeader.css";
 
 export default function MovieHeader({ config = {}, layout = {} }) {
-  const { movieName = "Movie TBA", date = "", theater = "", showTime = "", pricePerSeat = 200 } = config || {};
+  const { movieName = "Telugu Movie Time", date = "", theater = "", showTime = "", pricePerSeat = 200 } = config || {};
 
   let formattedDate = "";
   if (date) {
@@ -18,18 +18,28 @@ export default function MovieHeader({ config = {}, layout = {} }) {
     }
   }
 
-  const tierPrices = layout?.tierPrices;
-  const priceDisplay = tierPrices && Object.values(tierPrices).length > 0
-    ? `From ₹${Math.min(...Object.values(tierPrices))}`
-    : `₹${pricePerSeat || 200}`;
+  // Calculate dynamic "From ₹X" based on active config or layout prices
+  const tierPrices = config?.tierPrices || layout?.tierPrices;
+  let minPrice = pricePerSeat || 200;
+
+  if (tierPrices && Object.values(tierPrices).length > 0) {
+    const validPrices = Object.values(tierPrices).map(Number).filter((p) => !isNaN(p) && p > 0);
+    if (validPrices.length > 0) {
+      minPrice = Math.min(...validPrices);
+    }
+  }
+
+  const priceDisplay = `From ₹${minPrice}`;
 
   return (
     <header className="movie-header">
       <div className="movie-header__inner">
-        {/* App brand */}
+        {/* App brand with TMT logo */}
         <div className="movie-header__brand">
-          <Film size={22} color="#FFD700" />
-          <span>Telugu Talkies</span>
+          <div className="tmt-logo-badge">
+            <span>TMT</span>
+          </div>
+          <span className="tmt-brand-text">Telugu Movie Time</span>
         </div>
 
         {/* Movie info */}

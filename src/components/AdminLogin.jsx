@@ -41,7 +41,7 @@ export default function AdminLogin({ onLogin, config }) {
           <ShieldCheck size={36} color="var(--gold)" />
         </div>
         <h1 className="admin-login__title">Admin Portal</h1>
-        <p className="admin-login__sub">Telugu Talkies · Secure Management</p>
+        <p className="admin-login__sub">Telugu Movie Time (TMT) · Secure Management</p>
 
         {/* Mode Toggle */}
         <div className="admin-login-tabs" style={{ display: "flex", gap: 8, margin: "16px 0", width: "100%" }}>
