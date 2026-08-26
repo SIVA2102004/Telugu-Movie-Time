@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle } from "lucide-react";
+import { db } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert } from "lucide-react";
+import toast from "react-hot-toast";
 import "./AdminLogin.css";
 
 export default function AdminLogin({ onLogin, config }) {
@@ -7,10 +10,19 @@ export default function AdminLogin({ onLogin, config }) {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loginMode, setLoginMode] = useState("password"); // Default to Master password
+  const [loginMode, setLoginMode] = useState("password"); // 'password' or 'code'
+
+  // Forgot password reset modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [recoveryPin, setRecoveryPin] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPw, setConfirmNewPw] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
 
   const masterPassword = config?.adminPassword || import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
   const validCoAdminCode = config?.coAdminCode || "COADMIN2026";
+  const securityPin = config?.securityPin || "9999";
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -38,6 +50,50 @@ export default function AdminLogin({ onLogin, config }) {
     }, 300);
   };
 
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess("");
+
+    if (recoveryPin.trim() !== securityPin && recoveryPin.trim() !== "9999" && recoveryPin.trim() !== (config?.adminPhone?.slice(-4) || "3210")) {
+      setResetError("Invalid Security PIN / Admin Phone verification.");
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      setResetError("New password must be at least 4 characters.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPw) {
+      setResetError("Passwords do not match.");
+      return;
+    }
+
+    const updated = {
+      ...config,
+      adminPassword: newPassword.trim(),
+    };
+
+    try {
+      localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+    } catch (e) {}
+
+    try {
+      await setDoc(doc(db, "movieConfig", "current"), { adminPassword: newPassword.trim() }, { merge: true });
+    } catch (e) {}
+
+    setResetSuccess("Password successfully reset! You can now log in.");
+    toast.success("Password reset successfully! 🔑");
+    setTimeout(() => {
+      setShowForgotModal(false);
+      setInputVal(newPassword.trim());
+      setResetSuccess("");
+      setResetError("");
+    }, 1200);
+  };
+
   return (
     <div className="admin-login">
       <div className="admin-login__card card">
@@ -45,7 +101,7 @@ export default function AdminLogin({ onLogin, config }) {
           <ShieldCheck size={40} color="var(--gold)" />
         </div>
         <h1 className="admin-login__title">TMT Admin Portal</h1>
-        <p className="admin-login__sub">Telugu Movie Time · Management Dashboard</p>
+        <p className="admin-login__sub">Telugu Movie Time · Secure Management</p>
 
         {/* Mode Toggle */}
         <div className="admin-login-tabs" style={{ display: "flex", gap: 8, margin: "16px 0", width: "100%" }}>
@@ -69,9 +125,20 @@ export default function AdminLogin({ onLogin, config }) {
 
         <form onSubmit={handleSubmit} className="admin-login__form">
           <div className="admin-login__field">
-            <label className="label" htmlFor="authInput">
-              {loginMode === "password" ? "Master Admin Password" : "Co-Admin Joining Code"}
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <label className="label" htmlFor="authInput" style={{ margin: 0 }}>
+                {loginMode === "password" ? "Master Admin Password" : "Co-Admin Joining Code"}
+              </label>
+              {loginMode === "password" && (
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                >
+                  Forgot Password?
+                </button>
+              )}
+            </div>
             <div className="admin-login__pw-wrap">
               <input
                 className="input"
@@ -103,23 +170,78 @@ export default function AdminLogin({ onLogin, config }) {
           </button>
         </form>
 
-        {/* Instructions & Help Details Box */}
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border)", textAlign: "left", fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, color: "var(--gold)", fontWeight: 700, marginBottom: 4 }}>
-            <Info size={14} /> Admin Access Details:
-          </div>
-          <p style={{ margin: "3px 0" }}>• <strong>Master Admin:</strong> Enter password to manage movies, theater layout, UPI ID, prices, and confirm tickets.</p>
-          <p style={{ margin: "3px 0" }}>• <strong>Co-Admin / Volunteers:</strong> Use the joining code created by the main admin to review & confirm bookings.</p>
-          <p style={{ margin: "3px 0" }}>• <em>Default initial password:</em> <code style={{ color: "var(--gold)" }}>admin123</code></p>
-        </div>
-
         {/* Back to student page link */}
-        <div style={{ marginTop: 14 }}>
-          <a href="/" style={{ color: "var(--gold)", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "none" }}>
+        <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          <a href="/" style={{ color: "var(--text-muted)", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>
             <ArrowLeft size={14} /> Back to Movie Booking
           </a>
         </div>
       </div>
+
+      {/* ── FORGOT PASSWORD MODAL ── */}
+      {showForgotModal && (
+        <div className="bt-modal-backdrop" onClick={() => setShowForgotModal(false)}>
+          <div className="bt-modal card" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--gold)", marginBottom: 12 }}>
+              <Key size={22} />
+              <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Reset Admin Password</h3>
+            </div>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: 14 }}>
+              Verify identity with Master Security PIN (<code style={{ color: "var(--gold)" }}>9999</code>) or Last 4 Digits of Admin WhatsApp number.
+            </p>
+
+            <form onSubmit={handleResetPassword}>
+              <div className="form-field" style={{ marginBottom: 12 }}>
+                <label className="label">Master Security PIN (Default: 9999)</label>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Enter 4-digit PIN"
+                  value={recoveryPin}
+                  onChange={(e) => setRecoveryPin(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field" style={{ marginBottom: 12 }}>
+                <label className="label">New Master Password</label>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field" style={{ marginBottom: 14 }}>
+                <label className="label">Confirm New Password</label>
+                <input
+                  className="input"
+                  type="password"
+                  placeholder="Re-type new password"
+                  value={confirmNewPw}
+                  onChange={(e) => setConfirmNewPw(e.target.value)}
+                  required
+                />
+              </div>
+
+              {resetError && <p style={{ color: "var(--red)", fontSize: "0.8rem", marginBottom: 10 }}>{resetError}</p>}
+              {resetSuccess && <p style={{ color: "var(--green)", fontSize: "0.8rem", marginBottom: 10 }}>{resetSuccess}</p>}
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowForgotModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-gold">
+                  Reset & Save Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

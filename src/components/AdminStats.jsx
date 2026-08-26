@@ -1,4 +1,5 @@
-import { IndianRupee, Tag, ShieldAlert } from "lucide-react";
+import { IndianRupee, Tag, ShieldAlert, KeyRound, UserCheck, Smartphone, QrCode, ShieldCheck, Copy } from "lucide-react";
+import toast from "react-hot-toast";
 import "./AdminStats.css";
 
 export default function AdminStats({ bookings, config, layout }) {
@@ -7,9 +8,9 @@ export default function AdminStats({ bookings, config, layout }) {
     ? layout.rows.reduce((sum, r) => {
         return sum + (layout.seats[r] || []).filter((s) => s !== null).length;
       }, 0)
-    : 100;
+    : 274;
 
-  const blockedSeatsCount = (config.blockedSeats || []).length;
+  const blockedSeatsCount = (config?.blockedSeats || []).length;
 
   const confirmed = bookings.filter((b) => b.status === "confirmed");
   const pending   = bookings.filter((b) => b.status === "pending");
@@ -24,7 +25,7 @@ export default function AdminStats({ bookings, config, layout }) {
 
   // Calculate potential full-house revenue based on category tier pricing
   const rowTiers = layout?.rowTiers || {};
-  const tierPrices = layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const tierPrices = config?.tierPrices || layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
 
   const tierBreakdown = (layout?.rows || []).reduce((acc, rowLabel) => {
     const tier = rowTiers[rowLabel] || "Silver";
@@ -71,6 +72,11 @@ export default function AdminStats({ bookings, config, layout }) {
     },
   ];
 
+  const copyText = (txt, label) => {
+    navigator.clipboard.writeText(txt);
+    toast.success(`Copied ${label}: ${txt}`);
+  };
+
   return (
     <div className="admin-overview-wrapper">
       <div className="admin-stats">
@@ -81,6 +87,61 @@ export default function AdminStats({ bookings, config, layout }) {
             <div className="stat-card__sub">{c.sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* ── ADMIN & CO-ADMIN CREDENTIALS & SYSTEM DETAILS CARD ── */}
+      <div className="card admin-credentials-card" style={{ marginTop: 20, padding: "20px 24px" }}>
+        <h3 style={{ fontSize: "1.05rem", color: "var(--gold)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+          <ShieldCheck size={20} /> Admin & Co-Admin Credentials & Live Settings
+        </h3>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+          {/* Master Admin Details */}
+          <div style={{ background: "var(--surface2)", padding: 16, borderRadius: 8, border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gold)", fontWeight: 700, marginBottom: 8 }}>
+              <KeyRound size={16} /> Master Admin Access
+            </div>
+            <div style={{ fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div><strong>Role:</strong> Master Administrator</div>
+              <div><strong>Password:</strong> <code style={{ color: "var(--gold)", background: "rgba(255,215,0,0.1)", padding: "2px 6px", borderRadius: 4 }}>{config?.adminPassword || "admin123"}</code></div>
+              <div><strong>Master Recovery PIN:</strong> <code style={{ color: "#4fc3f7" }}>9999</code></div>
+              <small style={{ color: "var(--text-muted)", marginTop: 4 }}>Full control: Edit movie, pricing, layout & delete/confirm bookings.</small>
+            </div>
+          </div>
+
+          {/* Co-Admin Joining Code */}
+          <div style={{ background: "var(--surface2)", padding: 16, borderRadius: 8, border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#4fc3f7", fontWeight: 700, marginBottom: 8 }}>
+              <UserCheck size={16} /> Co-Admin Joining Code
+            </div>
+            <div style={{ fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div><strong>Joining Code:</strong> <code style={{ color: "#4fc3f7", background: "rgba(79,195,247,0.15)", padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>{config?.coAdminCode || "COADMIN2026"}</code></div>
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ padding: "4px 8px", fontSize: "0.76rem", gap: 4 }}
+                  onClick={() => copyText(config?.coAdminCode || "COADMIN2026", "Co-Admin Code")}
+                >
+                  <Copy size={13} /> Copy Joining Code for Helpers
+                </button>
+              </div>
+              <small style={{ color: "var(--text-muted)", marginTop: 4 }}>Share with volunteer teammates to log in and confirm bookings together.</small>
+            </div>
+          </div>
+
+          {/* UPI Gateway & Contact Info */}
+          <div style={{ background: "var(--surface2)", padding: 16, borderRadius: 8, border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 700, marginBottom: 8 }}>
+              <QrCode size={16} /> Payment Gateway & WhatsApp
+            </div>
+            <div style={{ fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div><strong>Active UPI ID:</strong> <span style={{ color: "var(--gold)" }}>{config?.upiId || "telugumovietime@upi"}</span></div>
+              <div><strong>Payee Name:</strong> {config?.payeeName || "Telugu Movie Time"}</div>
+              <div><strong>Admin WhatsApp:</strong> +{config?.adminPhone || "919876543210"}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tier Category Breakdown Card */}

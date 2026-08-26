@@ -1,4 +1,4 @@
-import { MapPin, Calendar, Clock, Lock } from "lucide-react";
+import { MapPin, Calendar, Clock } from "lucide-react";
 import "./MovieHeader.css";
 
 export default function MovieHeader({ config = {}, layout = {} }) {
@@ -52,13 +52,6 @@ export default function MovieHeader({ config = {}, layout = {} }) {
               </span>
             )}
           </div>
-        </div>
-
-        {/* Direct Admin Portal Login Link */}
-        <div className="movie-header__admin-link">
-          <a href="/admin" className="btn btn-outline" style={{ padding: "6px 14px", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: 6, borderColor: "var(--gold)", color: "var(--gold)" }}>
-            <Lock size={14} /> Admin Portal
-          </a>
         </div>
       </div>
     </header>
