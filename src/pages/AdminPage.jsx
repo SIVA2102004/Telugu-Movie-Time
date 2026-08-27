@@ -189,6 +189,14 @@ export default function AdminPage() {
                   <Download size={14} /> Install App
                 </button>
               )}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.06)", padding: "4px 10px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.1)" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--text)", fontWeight: 600 }}>
+                  {sessionStorage.getItem("adminName") || (isMasterAdmin ? "Master Admin" : "Co-Admin")}
+                </span>
+                <span style={{ fontSize: "0.65rem", background: isMasterAdmin ? "var(--gold)" : "#4fc3f7", color: "#0d0d1a", padding: "1px 6px", borderRadius: 10, fontWeight: 900, textTransform: "uppercase" }}>
+                  {isMasterAdmin ? "Master" : "Co-Admin"}
+                </span>
+              </div>
               <div className="admin-topbar__movie">
                 {config.movieName && (
                   <span>{config.movieName} · {config.date} · {config.theater}</span>

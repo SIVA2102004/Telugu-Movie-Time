@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert } from "lucide-react";
+import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AdminLogin.css";
 
@@ -11,6 +11,15 @@ export default function AdminLogin({ onLogin, config }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginMode, setLoginMode] = useState("password"); // 'password' or 'code'
+
+  // Co-Admin 2-Step Verification & Details State
+  const [coAdminStep, setCoAdminStep] = useState(1); // 1 = Enter code, 2 = Enter details
+  const [verifiedCode, setVerifiedCode] = useState("");
+  const [coAdminDetails, setCoAdminDetails] = useState({
+    name: "",
+    phone: "",
+    college: "",
+  });
 
   // Forgot password reset modal state
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -24,28 +33,59 @@ export default function AdminLogin({ onLogin, config }) {
   const validCoAdminCode = config?.coAdminCode || "COADMIN2026";
   const securityPin = config?.securityPin || "9999";
 
+  // Handle Master Admin Login or Co-Admin Step 1 (Code Verification)
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const entered = inputVal.trim();
+
     setTimeout(() => {
-      if (entered === masterPassword) {
-        sessionStorage.setItem("adminAuth", "true");
-        sessionStorage.setItem("adminRole", "master");
-        onLogin();
-      } else if (entered === validCoAdminCode) {
-        sessionStorage.setItem("adminAuth", "true");
-        sessionStorage.setItem("adminRole", "co-admin");
-        onLogin();
-      } else {
-        setError(
-          loginMode === "password"
-            ? "Incorrect master password. Default initial password is admin123."
-            : "Invalid joining code. Please check with the main admin."
-        );
+      if (loginMode === "password") {
+        if (entered === masterPassword) {
+          sessionStorage.setItem("adminAuth", "true");
+          sessionStorage.setItem("adminRole", "master");
+          sessionStorage.setItem("adminName", "Master Admin");
+          onLogin();
+        } else {
+          setError("Incorrect master password. Default initial password is admin123.");
+        }
+      } else if (loginMode === "code") {
+        if (entered === validCoAdminCode) {
+          setVerifiedCode(entered);
+          setCoAdminStep(2); // Proceed to step 2: Enter Volunteer/Co-Admin Details
+          toast.success("Joining Code verified! Please enter your details. ✅");
+        } else {
+          setError("Invalid joining code. Please check with the main admin.");
+        }
       }
+      setLoading(false);
+    }, 300);
+  };
+
+  // Handle Co-Admin Step 2: Finalize Details & Login
+  const handleCoAdminDetailsSubmit = (e) => {
+    e.preventDefault();
+    if (!coAdminDetails.name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!/^\d{10}$/.test(coAdminDetails.phone.trim())) {
+      setError("Please enter a valid 10-digit WhatsApp phone number.");
+      return;
+    }
+
+    setLoading(true);
+    setTimeout(() => {
+      sessionStorage.setItem("adminAuth", "true");
+      sessionStorage.setItem("adminRole", "co-admin");
+      sessionStorage.setItem("adminName", coAdminDetails.name.trim());
+      sessionStorage.setItem("adminPhone", coAdminDetails.phone.trim());
+      sessionStorage.setItem("adminCollege", coAdminDetails.college.trim());
+
+      toast.success(`Welcome, ${coAdminDetails.name.trim()}! 🎟️`);
+      onLogin();
       setLoading(false);
     }, 300);
   };
@@ -109,7 +149,12 @@ export default function AdminLogin({ onLogin, config }) {
             type="button"
             className={`btn ${loginMode === "password" ? "btn-gold" : "btn-ghost"}`}
             style={{ flex: 1, padding: "8px 10px", fontSize: "0.82rem", justifyContent: "center" }}
-            onClick={() => { setLoginMode("password"); setError(""); setInputVal(""); }}
+            onClick={() => {
+              setLoginMode("password");
+              setCoAdminStep(1);
+              setError("");
+              setInputVal("");
+            }}
           >
             <KeyRound size={14} /> Master Admin
           </button>
@@ -117,58 +162,140 @@ export default function AdminLogin({ onLogin, config }) {
             type="button"
             className={`btn ${loginMode === "code" ? "btn-gold" : "btn-ghost"}`}
             style={{ flex: 1, padding: "8px 10px", fontSize: "0.82rem", justifyContent: "center" }}
-            onClick={() => { setLoginMode("code"); setError(""); setInputVal(""); }}
+            onClick={() => {
+              setLoginMode("code");
+              setCoAdminStep(1);
+              setError("");
+              setInputVal("");
+            }}
           >
             <UserCheck size={14} /> Co-Admin Code
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="admin-login__form">
-          <div className="admin-login__field">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <label className="label" htmlFor="authInput" style={{ margin: 0 }}>
-                {loginMode === "password" ? "Master Admin Password" : "Co-Admin Joining Code"}
-              </label>
-              {loginMode === "password" && (
-                <button
-                  type="button"
-                  onClick={() => setShowForgotModal(true)}
-                  style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: 0 }}
-                >
-                  Forgot Password?
-                </button>
-              )}
+        {/* ── SCREEN A: MASTER ADMIN LOGIN OR CO-ADMIN STEP 1 ── */}
+        {coAdminStep === 1 ? (
+          <form onSubmit={handleSubmit} className="admin-login__form">
+            <div className="admin-login__field">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <label className="label" htmlFor="authInput" style={{ margin: 0 }}>
+                  {loginMode === "password" ? "Master Admin Password" : "Step 1: Enter Joining Code"}
+                </label>
+                {loginMode === "password" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(true)}
+                    style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
+              <div className="admin-login__pw-wrap">
+                <input
+                  className="input"
+                  id="authInput"
+                  type={showPw || loginMode === "code" ? "text" : "password"}
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  placeholder={loginMode === "password" ? "Enter admin password (default: admin123)" : "Enter joining code (e.g. COADMIN2026)"}
+                  autoFocus
+                  required
+                />
+                {loginMode === "password" && (
+                  <button
+                    type="button"
+                    className="admin-login__toggle"
+                    onClick={() => setShowPw((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="admin-login__pw-wrap">
+
+            {error && <p className="admin-login__error">{error}</p>}
+
+            <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
+              {loading ? (
+                <span className="spinner" style={{ width: 18, height: 18 }} />
+              ) : loginMode === "code" ? (
+                "Verify Code & Continue →"
+              ) : (
+                "Login to Dashboard"
+              )}
+            </button>
+          </form>
+        ) : (
+          /* ── SCREEN B: CO-ADMIN STEP 2: DETAILS ENTRY ── */
+          <form onSubmit={handleCoAdminDetailsSubmit} className="admin-login__form">
+            <div style={{ background: "rgba(79,195,247,0.1)", border: "1px solid #4fc3f7", borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8, fontSize: "0.8rem", color: "#4fc3f7" }}>
+              <CheckCircle2 size={16} /> Code Verified ({verifiedCode}). Enter your details to continue.
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="coName">Your Full Name *</label>
               <input
                 className="input"
-                id="authInput"
-                type={showPw || loginMode === "code" ? "text" : "password"}
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                placeholder={loginMode === "password" ? "Enter admin password (default: admin123)" : "Enter joining code (e.g. COADMIN2026)"}
+                id="coName"
+                type="text"
+                placeholder="e.g. Siva Kumar"
+                value={coAdminDetails.name}
+                onChange={(e) => setCoAdminDetails({ ...coAdminDetails, name: e.target.value })}
+                required
                 autoFocus
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="coPhone">WhatsApp Phone Number *</label>
+              <input
+                className="input"
+                id="coPhone"
+                type="tel"
+                placeholder="10-digit phone number"
+                maxLength={10}
+                value={coAdminDetails.phone}
+                onChange={(e) => setCoAdminDetails({ ...coAdminDetails, phone: e.target.value })}
                 required
               />
-              {loginMode === "password" && (
-                <button
-                  type="button"
-                  className="admin-login__toggle"
-                  onClick={() => setShowPw((v) => !v)}
-                  tabIndex={-1}
-                >
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              )}
             </div>
-          </div>
 
-          {error && <p className="admin-login__error">{error}</p>}
+            <div className="admin-login__field">
+              <label className="label" htmlFor="coCollege">College / Branch (Optional)</label>
+              <input
+                className="input"
+                id="coCollege"
+                type="text"
+                placeholder="e.g. Marwadi University"
+                value={coAdminDetails.college}
+                onChange={(e) => setCoAdminDetails({ ...coAdminDetails, college: e.target.value })}
+              />
+            </div>
 
-          <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
-            {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Login to Dashboard"}
-          </button>
-        </form>
+            {error && <p className="admin-login__error">{error}</p>}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ flex: 1 }}
+                onClick={() => { setCoAdminStep(1); setError(""); }}
+              >
+                ← Back
+              </button>
+              <button
+                type="submit"
+                className="btn btn-gold"
+                style={{ flex: 2 }}
+                disabled={loading}
+              >
+                {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Complete Login 🚀"}
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Back to student page link */}
         <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
