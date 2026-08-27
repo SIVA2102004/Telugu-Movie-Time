@@ -2,13 +2,15 @@ import { useState } from "react";
 import { db, rtdb } from "../firebase";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save } from "lucide-react";
+import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield } from "lucide-react";
 import toast from "react-hot-toast";
 import "./BookingTable.css";
 
 const STATUS_OPTIONS = ["All", "pending", "confirmed", "cancelled"];
 
-export default function BookingTable({ bookings, setBookings, config }) {
+export default function BookingTable({ bookings, setBookings, config, adminRole = "master" }) {
+  const isMasterAdmin = adminRole === "master";
+
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [editingBooking, setEditingBooking] = useState(null);
@@ -54,7 +56,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
     return `https://wa.me/${formattedPhone}?text=${msg}`;
   };
 
-  // ── 1. CONFIRM BOOKING (Instant 0ms Execution) ──────────────────────────
+  // ── 1. CONFIRM BOOKING (Instant 0ms Execution for both Master Admin & Co-Admin) ──
   const confirmBooking = (booking) => {
     if (setBookings) {
       setBookings((prev) => {
@@ -88,8 +90,13 @@ export default function BookingTable({ bookings, setBookings, config }) {
     });
   };
 
-  // ── 2. CANCEL BOOKING (Instant 0ms Execution & Seat Release) ─────────────
+  // ── 2. CANCEL BOOKING (Master Admin only) ─────────────────────────────
   const cancelBooking = (booking) => {
+    if (!isMasterAdmin) {
+      toast.error("Permission denied: Only Master Admin can cancel bookings.");
+      return;
+    }
+
     if (setBookings) {
       setBookings((prev) => {
         const updated = prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b));
@@ -119,8 +126,13 @@ export default function BookingTable({ bookings, setBookings, config }) {
     });
   };
 
-  // ── 3. DELETE BOOKING (Instant 0ms Removal & Seat Release) ───────────────
+  // ── 3. DELETE BOOKING (Master Admin only) ───────────────────────────────
   const deleteBooking = (booking) => {
+    if (!isMasterAdmin) {
+      toast.error("Permission denied: Only Master Admin can delete records.");
+      return;
+    }
+
     if (setBookings) {
       setBookings((prev) => {
         const updated = prev.filter((b) => b.id !== booking.id);
@@ -150,10 +162,14 @@ export default function BookingTable({ bookings, setBookings, config }) {
     });
   };
 
-  // ── 4. EDIT BOOKING (Instant 0ms Save) ───────────────────────────────────
+  // ── 4. EDIT BOOKING (Master Admin only) ───────────────────────────────────
   const saveEditedBooking = (e) => {
     e.preventDefault();
     if (!editingBooking) return;
+    if (!isMasterAdmin) {
+      toast.error("Permission denied: Only Master Admin can edit bookings.");
+      return;
+    }
 
     const updatedBooking = { ...editingBooking };
 
@@ -219,7 +235,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
     window.open(waUrl, "_blank");
   };
 
-  // ── Export CSV ───────────────────────────────────────────────────────────
+  // ── Export CSV (Master Admin only) ───────────────────────────────────────
   const exportCSV = () => {
     const confirmed = bookings.filter((b) => b.status === "confirmed");
     if (confirmed.length === 0) { toast.error("No confirmed bookings to export."); return; }
@@ -246,7 +262,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `telugu-talkies-bookings-${config.movieName?.replace(/\s+/g, "-") || "export"}.csv`;
+    a.download = `telugu-movie-time-bookings-${config.movieName?.replace(/\s+/g, "-") || "export"}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success(`Exported ${confirmed.length} bookings.`);
@@ -292,15 +308,22 @@ export default function BookingTable({ bookings, setBookings, config }) {
             </button>
           )}
 
-          <button className="btn btn-outline" onClick={exportCSV}>
-            <Download size={14} /> Export CSV
-          </button>
+          {isMasterAdmin && (
+            <button className="btn btn-outline" onClick={exportCSV}>
+              <Download size={14} /> Export CSV
+            </button>
+          )}
         </div>
       </div>
 
       {/* Count */}
       <p className="bt-count">
         Showing <strong>{filtered.length}</strong> of <strong>{bookings.length}</strong> bookings
+        {!isMasterAdmin && (
+          <span style={{ marginLeft: 8, color: "#4fc3f7", fontSize: "0.75rem", fontWeight: 700 }}>
+            (Co-Admin Mode: Ticket Verification & Confirmation Access)
+          </span>
+        )}
       </p>
 
       {/* Table */}
@@ -355,18 +378,20 @@ export default function BookingTable({ bookings, setBookings, config }) {
                   </td>
                   <td>
                     <div className="bt-actions">
+                      {/* Confirm & WhatsApp Ticket (Available to both Master & Co-Admin) */}
                       {b.status === "pending" && (
                         <button
                           className="btn btn-green"
-                          style={{ padding: "6px 10px", gap: 4, fontSize: "0.74rem" }}
+                          style={{ padding: "6px 12px", gap: 4, fontSize: "0.76rem", fontWeight: 700 }}
                           onClick={() => confirmBooking(b)}
                           title="Verify payment & send ticket on WhatsApp"
                         >
-                          <Check size={13} /> Confirm
+                          <Check size={14} /> Confirm
                         </button>
                       )}
 
-                      {b.status !== "cancelled" && (
+                      {/* Cancel (Master Admin Only) */}
+                      {isMasterAdmin && b.status !== "cancelled" && (
                         <button
                           className="btn btn-red"
                           style={{ padding: "5px 8px" }}
@@ -377,24 +402,31 @@ export default function BookingTable({ bookings, setBookings, config }) {
                         </button>
                       )}
 
-                      <button
-                        className="btn btn-ghost"
-                        style={{ padding: "5px 8px", color: "var(--gold)" }}
-                        onClick={() => setEditingBooking({ ...b, seatsInput: (b.seats || []).join(", ") })}
-                        title="Edit Booking Details"
-                      >
-                        <Edit3 size={13} />
-                      </button>
+                      {/* Edit Booking (Master Admin Only) */}
+                      {isMasterAdmin && (
+                        <button
+                          className="btn btn-ghost"
+                          style={{ padding: "5px 8px", color: "var(--gold)" }}
+                          onClick={() => setEditingBooking({ ...b, seatsInput: (b.seats || []).join(", ") })}
+                          title="Edit Booking Details"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                      )}
 
-                      <button
-                        className="btn btn-ghost"
-                        style={{ padding: "5px 8px", color: "var(--red)" }}
-                        onClick={() => deleteBooking(b)}
-                        title="Permanently Delete Booking"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {/* Delete Booking (Master Admin Only) */}
+                      {isMasterAdmin && (
+                        <button
+                          className="btn btn-ghost"
+                          style={{ padding: "5px 8px", color: "var(--red)" }}
+                          onClick={() => deleteBooking(b)}
+                          title="Permanently Delete Booking"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
 
+                      {/* WhatsApp manual link */}
                       <button
                         className="btn btn-wa"
                         style={{ padding: "5px 8px" }}
@@ -413,7 +445,7 @@ export default function BookingTable({ bookings, setBookings, config }) {
       </div>
 
       {/* Edit Booking Modal */}
-      {editingBooking && (
+      {isMasterAdmin && editingBooking && (
         <div className="bt-modal-backdrop" onClick={() => setEditingBooking(null)}>
           <div className="bt-modal card" onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: "var(--gold)", marginBottom: 14 }}>Edit Booking</h3>

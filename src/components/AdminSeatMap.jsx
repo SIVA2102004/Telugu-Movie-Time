@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Lock, Unlock, ShieldAlert, Check, RefreshCw } from "lucide-react";
+import { Lock, Unlock, ShieldAlert, Check, RefreshCw, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AdminSeatMap.css";
 
 /**
  * Interactive Admin Seat Map:
  * Highlights Confirmed (Red), Pending (Orange), and Blocked (Grey).
+ * Master Admin has full block/unblock controls. Co-Admin has view-only monitoring.
  */
-export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
+export default function AdminSeatMap({ seatMap, bookings, config, layout, readOnly = false }) {
   const [blockedSeats, setBlockedSeats] = useState(() => {
-    return new Set(config.blockedSeats || []);
+    return new Set(config?.blockedSeats || []);
   });
   const [saving, setSaving] = useState(false);
 
@@ -37,10 +38,12 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
     : (layout?.rows || []);
 
   const rowTiers = layout?.rowTiers || {};
-  const tierPrices = layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const tierPrices = config?.tierPrices || layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
 
   // Click seat in admin seat map to block/unblock
   const toggleSeatBlock = (seatId) => {
+    if (readOnly) return;
+
     if (bookedByMap[seatId]) {
       if (!window.confirm(`Seat ${seatId} is booked by ${bookedByMap[seatId]}. Block it anyway?`)) {
         return;
@@ -62,7 +65,9 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
 
   // Block or unblock entire row
   const toggleRowBlock = (rowLabel) => {
-    const rowSlots = layout.seats[rowLabel] || [];
+    if (readOnly) return;
+
+    const rowSlots = layout?.seats?.[rowLabel] || [];
     let seatNum = 0;
     const rowSeatIds = [];
     rowSlots.forEach((slot) => {
@@ -87,11 +92,13 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
   };
 
   const clearAllBlocks = () => {
+    if (readOnly) return;
     setBlockedSeats(new Set());
     toast.success("All seat blocks cleared! 🟢");
   };
 
   const saveAvailability = async () => {
+    if (readOnly) return;
     setSaving(true);
     const blockedList = Array.from(blockedSeats);
     const updated = {
@@ -117,23 +124,29 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
       {/* Top Toolbar */}
       <div className="admin-seatmap-toolbar">
         <div>
-          <h3 className="admin-seatmap-title">Manage Seat Availability</h3>
+          <h3 className="admin-seatmap-title">
+            {readOnly ? "Live Theater Seat Map (Monitoring Mode)" : "Manage Seat Availability"}
+          </h3>
           <p className="admin-seatmap-sub">
-            Click any seat or row button to toggle <strong>Available (Green)</strong> vs <strong>Blocked (Grey)</strong>
+            {readOnly
+              ? "View live confirmed (Red), pending verification (Orange), and available seats (Green)."
+              : "Click any seat or row button to toggle Available (Green) vs Blocked (Grey)"}
           </p>
         </div>
 
-        <div className="admin-seatmap-actions">
-          {blockedSeats.size > 0 && (
-            <button className="btn btn-ghost" onClick={clearAllBlocks} style={{ fontSize: "0.8rem" }}>
-              <Unlock size={13} /> Unblock All ({blockedSeats.size})
-            </button>
-          )}
+        {!readOnly && (
+          <div className="admin-seatmap-actions">
+            {blockedSeats.size > 0 && (
+              <button className="btn btn-ghost" onClick={clearAllBlocks} style={{ fontSize: "0.8rem" }}>
+                <Unlock size={13} /> Unblock All ({blockedSeats.size})
+              </button>
+            )}
 
-          <button className="btn btn-gold" onClick={saveAvailability} disabled={saving}>
-            {saving ? "Saving…" : <><Check size={14} /> Save Availability</>}
-          </button>
-        </div>
+            <button className="btn btn-gold" onClick={saveAvailability} disabled={saving}>
+              {saving ? "Saving…" : <><Check size={14} /> Save Availability</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Screen Bar */}
@@ -148,9 +161,9 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
       {/* Interactive Seat Grid */}
       <div className="seatmap-grid" style={{ maxWidth: 880, margin: "0 auto" }}>
         {displayRows.map((rowLabel) => {
-          const rowSlots = layout.seats[rowLabel] || [];
+          const rowSlots = layout?.seats?.[rowLabel] || [];
           const tier = rowTiers[rowLabel] || "Silver";
-          const tierPrice = tierPrices[tier];
+          const tierPrice = tierPrices[tier] || 200;
 
           let seatNum = 0;
           return (
@@ -158,9 +171,10 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
               <div className="seatmap-row-label-group">
                 <button
                   type="button"
-                  className="admin-row-toggle-btn"
+                  className={`admin-row-toggle-btn ${readOnly ? "admin-row-toggle-btn--readonly" : ""}`}
                   onClick={() => toggleRowBlock(rowLabel)}
-                  title={`Click to block/unblock entire Row ${rowLabel}`}
+                  disabled={readOnly}
+                  title={readOnly ? `Row ${rowLabel}` : `Click to block/unblock entire Row ${rowLabel}`}
                 >
                   {rowLabel}
                 </button>
@@ -186,14 +200,15 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout }) {
                     <button
                       key={seatId}
                       type="button"
-                      className={`seat seat--${status} seat--clickable seat--tier-${tier.toLowerCase()}`}
+                      className={`seat seat--${status} ${!readOnly ? "seat--clickable" : ""} seat--tier-${tier.toLowerCase()}`}
                       onClick={() => toggleSeatBlock(seatId)}
+                      disabled={readOnly}
                       title={
                         booker
                           ? `Booked by: ${booker} (Confirmed)`
                           : isBlocked
-                          ? `Seat ${seatId} is BLOCKED (Click to make Available)`
-                          : `Seat ${seatId} is AVAILABLE (${tier} - ₹${tierPrice}) - Click to Block`
+                          ? `Seat ${seatId} is BLOCKED`
+                          : `Seat ${seatId} is AVAILABLE (${tier} - ₹${tierPrice})`
                       }
                     >
                       {isBlocked ? "✕" : num}

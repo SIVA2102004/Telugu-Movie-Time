@@ -9,23 +9,39 @@ import AdminSeatMap from "../components/AdminSeatMap";
 import MovieConfigEditor from "../components/MovieConfigEditor";
 import TheaterLayoutEditor from "../components/TheaterLayoutEditor";
 import { Toaster, toast } from "react-hot-toast";
-import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check } from "lucide-react";
+import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck } from "lucide-react";
 import "../styles/globals.css";
 import "./AdminPage.css";
-
-const TABS = [
-  { id: "overview",  label: "Overview",        icon: LayoutDashboard },
-  { id: "bookings",  label: "Bookings",         icon: List },
-  { id: "seatmap",   label: "Seat Map",         icon: Map },
-  { id: "layout",    label: "Layout Editor",    icon: LayoutTemplate },
-  { id: "config",    label: "Movie Config",     icon: Settings },
-];
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(
     sessionStorage.getItem("adminAuth") === "true"
   );
-  const [activeTab, setActiveTab] = useState("overview");
+  const adminRole = sessionStorage.getItem("adminRole") || "master";
+  const isMasterAdmin = adminRole === "master";
+
+  // Tab definitions based on role
+  const allowedTabs = isMasterAdmin
+    ? [
+        { id: "overview",  label: "Overview",        icon: LayoutDashboard },
+        { id: "bookings",  label: "Bookings",         icon: List },
+        { id: "seatmap",   label: "Seat Map",         icon: Map },
+        { id: "layout",    label: "Layout Editor",    icon: LayoutTemplate },
+        { id: "config",    label: "Movie Config",     icon: Settings },
+      ]
+    : [
+        { id: "bookings",  label: "Booking & Confirm", icon: List },
+        { id: "seatmap",   label: "Seat Map",          icon: Map },
+      ];
+
+  const [activeTab, setActiveTab] = useState(isMasterAdmin ? "overview" : "bookings");
+
+  // Keep activeTab in sync with allowed tabs if role changes
+  useEffect(() => {
+    if (!isMasterAdmin && (activeTab === "overview" || activeTab === "layout" || activeTab === "config")) {
+      setActiveTab("bookings");
+    }
+  }, [isMasterAdmin, activeTab]);
 
   // PWA Install prompt listener
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -76,14 +92,13 @@ export default function AdminPage() {
 
   const logout = () => {
     sessionStorage.removeItem("adminAuth");
+    sessionStorage.removeItem("adminRole");
     setAuthed(false);
   };
 
   if (!authed) {
     return <AdminLogin onLogin={() => setAuthed(true)} config={config} />;
   }
-
-  const adminRole = sessionStorage.getItem("adminRole") || "master";
 
   return (
     <>
@@ -101,12 +116,24 @@ export default function AdminPage() {
               TMT
             </span>
             <span>Telugu Movie Time</span>
-            <span style={{ fontSize: "0.68rem", background: "rgba(255,215,0,0.15)", color: "var(--gold)", padding: "2px 6px", borderRadius: 4, marginLeft: "auto", textTransform: "uppercase", fontWeight: 800 }}>
-              {adminRole}
+            <span
+              style={{
+                fontSize: "0.68rem",
+                background: isMasterAdmin ? "rgba(255,215,0,0.15)" : "rgba(79,195,247,0.15)",
+                color: isMasterAdmin ? "var(--gold)" : "#4fc3f7",
+                padding: "2px 6px",
+                borderRadius: 4,
+                marginLeft: "auto",
+                textTransform: "uppercase",
+                fontWeight: 800,
+              }}
+            >
+              {isMasterAdmin ? "MASTER" : "CO-ADMIN"}
             </span>
           </div>
+
           <nav className="admin-sidebar__nav">
-            {TABS.map((t) => {
+            {allowedTabs.map((t) => {
               const Icon = t.icon;
               return (
                 <button
@@ -148,7 +175,7 @@ export default function AdminPage() {
         <main className="admin-main">
           <div className="admin-topbar">
             <h1 className="admin-topbar__title">
-              {TABS.find((t) => t.id === activeTab)?.label}
+              {allowedTabs.find((t) => t.id === activeTab)?.label}
             </h1>
             
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
@@ -171,11 +198,11 @@ export default function AdminPage() {
           </div>
 
           <div className="admin-content">
-            {activeTab === "overview" && (
+            {isMasterAdmin && activeTab === "overview" && (
               <AdminStats bookings={bookings} config={config} layout={layout} onInstallApp={installApp} isInstalled={isInstalled} />
             )}
             {activeTab === "bookings" && (
-              <BookingTable bookings={bookings} setBookings={setBookings} config={config} />
+              <BookingTable bookings={bookings} setBookings={setBookings} config={config} adminRole={adminRole} />
             )}
             {activeTab === "seatmap" && (
               <div className="card">
@@ -184,13 +211,14 @@ export default function AdminPage() {
                   bookings={bookings}
                   config={config}
                   layout={layout}
+                  readOnly={!isMasterAdmin}
                 />
               </div>
             )}
-            {activeTab === "layout" && (
+            {isMasterAdmin && activeTab === "layout" && (
               <TheaterLayoutEditor config={config} />
             )}
-            {activeTab === "config" && (
+            {isMasterAdmin && activeTab === "config" && (
               <MovieConfigEditor config={config} layout={layout} />
             )}
           </div>
