@@ -1,8 +1,8 @@
-import { IndianRupee, Tag, ShieldAlert, KeyRound, UserCheck, Smartphone, QrCode, ShieldCheck, Copy } from "lucide-react";
+import { IndianRupee, Tag, ShieldAlert, KeyRound, UserCheck, Smartphone, QrCode, ShieldCheck, Copy, Download, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AdminStats.css";
 
-export default function AdminStats({ bookings, config, layout }) {
+export default function AdminStats({ bookings, config, layout, onInstallApp, isInstalled }) {
   // Compute total actual seats directly from dynamic layout
   const totalSeats = layout?.rows && layout?.seats
     ? layout.rows.reduce((sum, r) => {
@@ -87,6 +87,33 @@ export default function AdminStats({ bookings, config, layout }) {
             <div className="stat-card__sub">{c.sub}</div>
           </div>
         ))}
+      </div>
+
+      {/* ── ADMIN APP INSTALL BANNER ── */}
+      <div className="card" style={{ marginTop: 20, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 14, background: "linear-gradient(135deg, rgba(255,215,0,0.12) 0%, rgba(22,33,62,0.6) 100%)", borderColor: "var(--gold)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ background: "var(--gold)", color: "#0d0d1a", padding: 10, borderRadius: 10, display: "flex" }}>
+            <Smartphone size={24} />
+          </div>
+          <div>
+            <h4 style={{ color: "var(--gold)", margin: 0, fontSize: "1rem" }}>Install TMT Admin App on Your Device</h4>
+            <p style={{ color: "var(--text-muted)", margin: "2px 0 0", fontSize: "0.82rem" }}>
+              Install this portal directly on your Android / iPhone home screen or PC desktop for instant full-screen app access.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          {isInstalled ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--green)", fontSize: "0.85rem", fontWeight: 700 }}>
+              <Check size={16} /> App Installed
+            </span>
+          ) : (
+            <button type="button" className="btn btn-gold" onClick={onInstallApp} style={{ padding: "8px 16px", fontSize: "0.85rem", gap: 6 }}>
+              <Download size={15} /> Install Admin App
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── ADMIN & CO-ADMIN CREDENTIALS & SYSTEM DETAILS CARD ── */}

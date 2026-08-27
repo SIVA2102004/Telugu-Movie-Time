@@ -1,0 +1,20 @@
+{
+  "name": "TMT Admin Portal - Telugu Movie Time",
+  "short_name": "TMT Admin",
+  "description": "Telugu Movie Time (TMT) Admin Portal for managing movie seat bookings, ticket confirmations, layout, and UPI payment gateways.",
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d1a",
+  "theme_color": "#FFD700",
+  "icons": [
+    {
+      "src": "/pwa-icon-512.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "business", "productivity"]
+}
