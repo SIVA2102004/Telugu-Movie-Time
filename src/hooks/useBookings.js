@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { db } from "../firebase";
-import { collection, onSnapshot, getDocs, orderBy, query } from "firebase/firestore";
+import { db, rtdb } from "../firebase";
+import { collection, onSnapshot, getDocs } from "firebase/firestore";
+import { ref, onValue, get } from "firebase/database";
 
 /**
- * High-performance hook for real-time bookings synchronization across Firestore, local storage, and PWA apps.
+ * Universal dual-cloud real-time synchronization hook for bookings.
+ * Syncs seamlessly across Firestore, Firebase Realtime Database (RTDB), and local storage cache.
  */
 export function useBookings() {
   const [bookings, setBookings] = useState(() => {
@@ -19,42 +21,77 @@ export function useBookings() {
   const [refreshing, setRefreshing] = useState(false);
   const throttleRef = useRef(null);
 
-  // Manual one-click cloud pull for 100% freshness across installed PWA app
-  const refreshBookings = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      // 1. Direct query with orderBy
-      let snap;
-      try {
-        const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
-        snap = await getDocs(q);
-      } catch (orderErr) {
-        // Fallback without orderBy if indexing or missing createdAt field
-        snap = await getDocs(collection(db, "bookings"));
+  // Helper to merge and clean bookings
+  const processAndSetBookings = useCallback((newList) => {
+    if (!Array.isArray(newList)) return;
+    const map = new Map();
+
+    // Deduplicate by booking ID
+    newList.forEach((b) => {
+      if (b && b.id) {
+        map.set(b.id, b);
       }
+    });
 
-      const freshData = snap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-        createdAt: d.data().createdAt?.toDate ? d.data().createdAt.toDate().toISOString() : d.data().createdAt,
-      }));
+    const combined = Array.from(map.values());
+    combined.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-      // Sort in memory by createdAt descending
-      freshData.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-      setBookings(freshData);
+    if (throttleRef.current) clearTimeout(throttleRef.current);
+    throttleRef.current = setTimeout(() => {
+      setBookings(combined);
       try {
-        localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(freshData));
+        localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(combined));
       } catch (e) {}
-    } catch (err) {
-      console.warn("Manual bookings refresh notice:", err);
-    } finally {
-      setRefreshing(false);
-    }
+    }, 20);
   }, []);
 
+  // Manual one-click cloud pull across both Firestore & RTDB
+  const refreshBookings = useCallback(async () => {
+    setRefreshing(true);
+    const collected = [];
+
+    // 1. Fetch from Firestore
+    try {
+      const snap = await getDocs(collection(db, "bookings"));
+      snap.docs.forEach((d) => {
+        const val = d.data();
+        collected.push({
+          id: d.id,
+          ...val,
+          createdAt: val.createdAt?.toDate ? val.createdAt.toDate().toISOString() : (val.createdAt || new Date().toISOString()),
+        });
+      });
+    } catch (fsErr) {
+      console.warn("Firestore fetch error:", fsErr);
+    }
+
+    // 2. Fetch from Realtime Database backup
+    try {
+      const rtdbSnap = await get(ref(rtdb, "all_bookings"));
+      if (rtdbSnap.exists()) {
+        const val = rtdbSnap.val() || {};
+        Object.keys(val).forEach((k) => {
+          collected.push({ id: k, ...val[k] });
+        });
+      }
+    } catch (rtdbErr) {
+      console.warn("RTDB fetch notice:", rtdbErr);
+    }
+
+    // 3. Include local storage cache if any
+    try {
+      const localCached = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
+      localCached.forEach((b) => collected.push(b));
+    } catch (e) {}
+
+    if (collected.length > 0) {
+      processAndSetBookings(collected);
+    }
+    setRefreshing(false);
+  }, [processAndSetBookings]);
+
   useEffect(() => {
-    // 1. Cross-tab storage listener so student submissions show in admin instantly
+    // 1. Local Cross-Tab Storage Listener
     const handleStorageChange = () => {
       try {
         const cached = localStorage.getItem("telugu_talkies_bookings_cache");
@@ -63,47 +100,61 @@ export function useBookings() {
         }
       } catch (e) {}
     };
-
     window.addEventListener("storage", handleStorageChange);
 
-    // 2. Cloud Firestore real-time listener (handles both sorted and unsorted collection)
-    let unsubscribe = () => {};
+    // 2. Real-Time Cloud Firestore Listener
+    let unsubFirestore = () => {};
     try {
-      const colRef = collection(db, "bookings");
-      unsubscribe = onSnapshot(
-        colRef,
+      unsubFirestore = onSnapshot(
+        collection(db, "bookings"),
         (snapshot) => {
-          const data = snapshot.docs.map((d) => ({
-            id: d.id,
-            ...d.data(),
-            createdAt: d.data().createdAt?.toDate ? d.data().createdAt.toDate().toISOString() : d.data().createdAt,
-          }));
-
-          // Sort in memory descending
-          data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-
-          if (throttleRef.current) clearTimeout(throttleRef.current);
-          throttleRef.current = setTimeout(() => {
-            setBookings(data);
-            try {
-              localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(data));
-            } catch (e) {}
-          }, 30);
+          if (!snapshot.empty) {
+            const list = snapshot.docs.map((d) => {
+              const val = d.data();
+              return {
+                id: d.id,
+                ...val,
+                createdAt: val.createdAt?.toDate ? val.createdAt.toDate().toISOString() : (val.createdAt || new Date().toISOString()),
+              };
+            });
+            processAndSetBookings(list);
+          }
         },
         (err) => {
-          console.warn("Firestore bookings sync notice:", err);
+          console.warn("Firestore live listener notice:", err);
         }
       );
-    } catch (err) {
-      console.warn("Firestore offline mode:", err);
-    }
+    } catch (e) {}
+
+    // 3. Real-Time Firebase Realtime Database (RTDB) Listener
+    let unsubRTDB = () => {};
+    try {
+      const bookingsRef = ref(rtdb, "all_bookings");
+      unsubRTDB = onValue(
+        bookingsRef,
+        (snap) => {
+          if (snap.exists()) {
+            const data = snap.val() || {};
+            const list = Object.keys(data).map((k) => ({ id: k, ...data[k] }));
+            processAndSetBookings(list);
+          }
+        },
+        (err) => {
+          console.warn("RTDB live listener notice:", err);
+        }
+      );
+    } catch (e) {}
+
+    // Initial fetch on mount
+    refreshBookings();
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       if (throttleRef.current) clearTimeout(throttleRef.current);
-      unsubscribe();
+      unsubFirestore();
+      unsubRTDB();
     };
-  }, []);
+  }, [processAndSetBookings, refreshBookings]);
 
   return { bookings, setBookings, loading, refreshing, refreshBookings };
 }

@@ -81,6 +81,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     Promise.resolve().then(async () => {
       try {
         await setDoc(doc(db, "bookings", booking.id), { status: "confirmed" }, { merge: true });
+        await set(ref(rtdb, `all_bookings/${booking.id}/status`), "confirmed");
         await Promise.all(
           (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "booked"))
         );
@@ -117,6 +118,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     Promise.resolve().then(async () => {
       try {
         await setDoc(doc(db, "bookings", booking.id), { status: "cancelled" }, { merge: true });
+        await set(ref(rtdb, `all_bookings/${booking.id}/status`), "cancelled");
         await Promise.all(
           (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "available"))
         );
@@ -153,6 +155,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     Promise.resolve().then(async () => {
       try {
         await deleteDoc(doc(db, "bookings", booking.id));
+        await set(ref(rtdb, `all_bookings/${booking.id}`), null);
         await Promise.all(
           (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "available"))
         );

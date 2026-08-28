@@ -132,7 +132,7 @@ export default function BookingForm({
     onSuccess({ booking: newBooking, waUrl });
     setSubmitting(false);
 
-    // 4. Background non-blocking network sync
+    // 4. Background non-blocking network sync (writes to both RTDB and Firestore for 100% cloud sync across devices)
     Promise.resolve().then(async () => {
       try {
         await Promise.all(
@@ -140,8 +140,27 @@ export default function BookingForm({
         );
       } catch (e) {}
 
+      // Write booking to Realtime Database
+      try {
+        await set(ref(rtdb, `all_bookings/${newBooking.id}`), {
+          id: newBooking.id,
+          name: newBooking.name,
+          phone: newBooking.phone,
+          upiId: newBooking.upiId,
+          upiTarget: activeUpiId,
+          college: newBooking.college,
+          year: newBooking.year,
+          seats: newBooking.seats,
+          totalAmount: newBooking.totalAmount,
+          status: "pending",
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
+
+      // Write booking to Firestore
       try {
         await setDoc(doc(db, "bookings", newBooking.id), {
+          id: newBooking.id,
           name: newBooking.name,
           phone: newBooking.phone,
           upiId: newBooking.upiId,
