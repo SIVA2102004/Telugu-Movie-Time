@@ -2,21 +2,31 @@ import { useState } from "react";
 import { db, rtdb } from "../firebase";
 import { doc, setDoc, deleteDoc } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield } from "lucide-react";
+import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import "./BookingTable.css";
 
 const STATUS_OPTIONS = ["All", "pending", "confirmed", "cancelled"];
 
-export default function BookingTable({ bookings, setBookings, config, adminRole = "master" }) {
+export default function BookingTable({
+  bookings = [],
+  setBookings,
+  config = {},
+  adminRole = "master",
+  refreshBookings,
+  refreshing = false,
+}) {
   const isMasterAdmin = adminRole === "master";
 
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [editingBooking, setEditingBooking] = useState(null);
 
+  const safeBookings = Array.isArray(bookings) ? bookings : [];
+
   // ── Filter & search ─────────────────────────────────────────────────────
-  const filtered = bookings.filter((b) => {
+  const filtered = safeBookings.filter((b) => {
+    if (!b) return false;
     const matchStatus = filter === "All" || b.status === filter;
     const q = search.toLowerCase();
     const matchSearch =
@@ -25,25 +35,26 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
       b.phone?.includes(q) ||
       b.upiId?.toLowerCase().includes(q) ||
       b.college?.toLowerCase().includes(q) ||
-      (b.seats || []).some((s) => s.toLowerCase().includes(q));
+      (Array.isArray(b.seats) && b.seats.some((s) => s?.toLowerCase().includes(q)));
     return matchStatus && matchSearch;
   });
 
   // Generates ticket WhatsApp link with detailed message
   const getTicketWhatsAppUrl = (booking) => {
-    const seats = (booking.seats || []).join(", ");
-    const cleanPhone = String(booking.phone).replace(/\D/g, "");
+    if (!booking) return "";
+    const seats = Array.isArray(booking.seats) ? booking.seats.join(", ") : (booking.seats || "");
+    const cleanPhone = String(booking.phone || "").replace(/\D/g, "");
     const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
 
     const msg = encodeURIComponent(
       `🎟️ *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
-      `👤 *Name:* ${booking.name}\n` +
-      `🍿 *Movie:* ${config.movieName || "Telugu Movie"}\n` +
-      `📅 *Date:* ${config.date || "Upcoming Show"}\n` +
-      `⏰ *Time:* ${config.showTime || "TBA"}\n` +
-      `📍 *Theater:* ${config.theater || "Theater"}\n` +
+      `👤 *Name:* ${booking.name || ""}\n` +
+      `🍿 *Movie:* ${config?.movieName || "Telugu Movie"}\n` +
+      `📅 *Date:* ${config?.date || "Upcoming Show"}\n` +
+      `⏰ *Time:* ${config?.showTime || "TBA"}\n` +
+      `📍 *Theater:* ${config?.theater || "Theater"}\n` +
       `💺 *Confirmed Seats:* *${seats}*\n` +
-      `💰 *Total Paid:* *₹${booking.totalAmount}*\n` +
+      `💰 *Total Paid:* *₹${booking.totalAmount || 0}*\n` +
       `💳 *UTR / Ref:* ${booking.upiId || "Verified"}\n` +
       `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n\n` +
       `✅ *STATUS: CONFIRMED*\n\n` +
@@ -58,9 +69,12 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
 
   // ── 1. CONFIRM BOOKING (Instant 0ms Execution for both Master Admin & Co-Admin) ──
   const confirmBooking = (booking) => {
+    if (!booking || !booking.id) return;
+
     if (setBookings) {
       setBookings((prev) => {
-        const updated = prev.map((b) => (b.id === booking.id ? { ...b, status: "confirmed" } : b));
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const updated = safePrev.map((b) => (b.id === booking.id ? { ...b, status: "confirmed" } : b));
         try { localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -76,7 +90,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     toast.success(`Confirmed: ${booking.name} ✅`);
 
     const waUrl = getTicketWhatsAppUrl(booking);
-    window.open(waUrl, "_blank");
+    if (waUrl) window.open(waUrl, "_blank");
 
     Promise.resolve().then(async () => {
       try {
@@ -97,10 +111,12 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
       toast.error("Permission denied: Only Master Admin can cancel bookings.");
       return;
     }
+    if (!booking || !booking.id) return;
 
     if (setBookings) {
       setBookings((prev) => {
-        const updated = prev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b));
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const updated = safePrev.map((b) => (b.id === booking.id ? { ...b, status: "cancelled" } : b));
         try { localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -134,10 +150,12 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
       toast.error("Permission denied: Only Master Admin can delete records.");
       return;
     }
+    if (!booking || !booking.id) return;
 
     if (setBookings) {
       setBookings((prev) => {
-        const updated = prev.filter((b) => b.id !== booking.id);
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const updated = safePrev.filter((b) => b.id !== booking.id);
         try { localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -168,7 +186,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
   // ── 4. EDIT BOOKING (Master Admin only) ───────────────────────────────────
   const saveEditedBooking = (e) => {
     e.preventDefault();
-    if (!editingBooking) return;
+    if (!editingBooking || !editingBooking.id) return;
     if (!isMasterAdmin) {
       toast.error("Permission denied: Only Master Admin can edit bookings.");
       return;
@@ -178,7 +196,8 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
 
     if (setBookings) {
       setBookings((prev) => {
-        const updated = prev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b));
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const updated = safePrev.map((b) => (b.id === updatedBooking.id ? updatedBooking : b));
         try { localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -190,6 +209,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     Promise.resolve().then(async () => {
       try {
         await setDoc(doc(db, "bookings", updatedBooking.id), updatedBooking, { merge: true });
+        await set(ref(rtdb, `all_bookings/${updatedBooking.id}`), updatedBooking);
       } catch (e) {
         console.warn("Firestore edit sync notice:", e);
       }
@@ -198,7 +218,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
 
   // ── 5. BULK CONFIRM ALL PENDING (Instant 0ms) ────────────────────────────
   const confirmAllPending = () => {
-    const pendingList = bookings.filter((b) => b.status === "pending");
+    const pendingList = safeBookings.filter((b) => b?.status === "pending");
     if (pendingList.length === 0) {
       toast("No pending bookings to confirm.", { icon: "ℹ️" });
       return;
@@ -206,7 +226,8 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
 
     if (setBookings) {
       setBookings((prev) => {
-        const updated = prev.map((b) => (b.status === "pending" ? { ...b, status: "confirmed" } : b));
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const updated = safePrev.map((b) => (b?.status === "pending" ? { ...b, status: "confirmed" } : b));
         try { localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -215,7 +236,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     try {
       const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
       pendingList.forEach((b) => {
-        (b.seats || []).forEach((s) => { seatsCache[s] = "booked"; });
+        (b?.seats || []).forEach((s) => { seatsCache[s] = "booked"; });
       });
       localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsCache));
       window.dispatchEvent(new Event("storage"));
@@ -227,7 +248,8 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
       try {
         for (const booking of pendingList) {
           await setDoc(doc(db, "bookings", booking.id), { status: "confirmed" }, { merge: true });
-          (booking.seats || []).forEach((s) => set(ref(rtdb, `seats/${s}`), "booked"));
+          await set(ref(rtdb, `all_bookings/${booking.id}/status`), "confirmed");
+          (booking?.seats || []).forEach((s) => set(ref(rtdb, `seats/${s}`), "booked"));
         }
       } catch (e) {}
     });
@@ -235,26 +257,26 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
 
   const openWhatsApp = (booking) => {
     const waUrl = getTicketWhatsAppUrl(booking);
-    window.open(waUrl, "_blank");
+    if (waUrl) window.open(waUrl, "_blank");
   };
 
   // ── Export CSV (Master Admin only) ───────────────────────────────────────
   const exportCSV = () => {
-    const confirmed = bookings.filter((b) => b.status === "confirmed");
+    const confirmed = safeBookings.filter((b) => b?.status === "confirmed");
     if (confirmed.length === 0) { toast.error("No confirmed bookings to export."); return; }
 
     const headers = ["#", "Name", "Phone", "College", "Year", "Seats", "Amount", "UTR / Ref", "Target UPI", "Status"];
     const rows = confirmed.map((b, i) => [
       i + 1,
-      b.name,
-      b.phone,
-      b.college,
-      b.year,
-      (b.seats || []).join(" "),
-      b.totalAmount,
-      b.upiId,
-      b.upiTarget || config.upiId || "",
-      b.status,
+      b?.name || "",
+      b?.phone || "",
+      b?.college || "",
+      b?.year || "",
+      Array.isArray(b?.seats) ? b.seats.join(" ") : (b?.seats || ""),
+      b?.totalAmount || 0,
+      b?.upiId || "",
+      b?.upiTarget || config?.upiId || "",
+      b?.status || "",
     ]);
 
     const csv = [headers, ...rows]
@@ -265,13 +287,13 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `telugu-movie-time-bookings-${config.movieName?.replace(/\s+/g, "-") || "export"}.csv`;
+    a.download = `telugu-movie-time-bookings-${config?.movieName?.replace(/\s+/g, "-") || "export"}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success(`Exported ${confirmed.length} bookings.`);
   };
 
-  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+  const pendingCount = safeBookings.filter((b) => b?.status === "pending").length;
 
   return (
     <div className="booking-table-wrapper">
@@ -336,7 +358,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
 
       {/* Count */}
       <p className="bt-count">
-        Showing <strong>{filtered.length}</strong> of <strong>{bookings.length}</strong> bookings
+        Showing <strong>{filtered.length}</strong> of <strong>{safeBookings.length}</strong> bookings
         {!isMasterAdmin && (
           <span style={{ marginLeft: 8, color: "#4fc3f7", fontSize: "0.75rem", fontWeight: 700 }}>
             (Co-Admin Mode: Ticket Verification & Confirmation Access)
@@ -368,36 +390,36 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
               </tr>
             ) : (
               filtered.map((b, i) => (
-                <tr key={b.id || i}>
+                <tr key={b?.id || i}>
                   <td>{i + 1}</td>
-                  <td className="bt-name">{b.name}</td>
+                  <td className="bt-name">{b?.name || "N/A"}</td>
                   <td>
-                    <a href={`tel:${b.phone}`} style={{ color: "var(--text)" }}>
-                      {b.phone}
+                    <a href={`tel:${b?.phone}`} style={{ color: "var(--text)" }}>
+                      {b?.phone || "N/A"}
                     </a>
                   </td>
-                  <td>{b.college}</td>
-                  <td>{b.year}</td>
+                  <td>{b?.college || "—"}</td>
+                  <td>{b?.year || "—"}</td>
                   <td>
                     <div className="seat-chips">
-                      {(b.seats || []).map((s) => (
+                      {(Array.isArray(b?.seats) ? b.seats : []).map((s) => (
                         <span key={s} className="seat-chip">{s}</span>
                       ))}
                     </div>
                   </td>
-                  <td><strong style={{ color: "var(--gold)" }}>₹{b.totalAmount}</strong></td>
+                  <td><strong style={{ color: "var(--gold)" }}>₹{b?.totalAmount || 0}</strong></td>
                   <td className="bt-upi">
-                    <span title={`Paid with reference: ${b.upiId}`}>
-                      {b.upiId || "N/A"}
+                    <span title={`Paid with reference: ${b?.upiId}`}>
+                      {b?.upiId || "N/A"}
                     </span>
                   </td>
                   <td>
-                    <span className={`badge badge-${b.status}`}>{b.status}</span>
+                    <span className={`badge badge-${b?.status || "pending"}`}>{b?.status || "pending"}</span>
                   </td>
                   <td>
                     <div className="bt-actions">
                       {/* Confirm & WhatsApp Ticket (Available to both Master & Co-Admin) */}
-                      {b.status === "pending" && (
+                      {b?.status === "pending" && (
                         <button
                           className="btn btn-green"
                           style={{ padding: "6px 12px", gap: 4, fontSize: "0.76rem", fontWeight: 700 }}
@@ -409,7 +431,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
                       )}
 
                       {/* Cancel (Master Admin Only) */}
-                      {isMasterAdmin && b.status !== "cancelled" && (
+                      {isMasterAdmin && b?.status !== "cancelled" && (
                         <button
                           className="btn btn-red"
                           style={{ padding: "5px 8px" }}
@@ -425,7 +447,7 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
                         <button
                           className="btn btn-ghost"
                           style={{ padding: "5px 8px", color: "var(--gold)" }}
-                          onClick={() => setEditingBooking({ ...b, seatsInput: (b.seats || []).join(", ") })}
+                          onClick={() => setEditingBooking({ ...b, seatsInput: (Array.isArray(b?.seats) ? b.seats : []).join(", ") })}
                           title="Edit Booking Details"
                         >
                           <Edit3 size={13} />
