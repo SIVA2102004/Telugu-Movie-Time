@@ -164,8 +164,19 @@ export default function MovieConfigEditor({ config, layout }) {
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        setForm((prev) => ({ ...prev, posterUrl: reader.result }));
-        toast.success("Movie poster uploaded! Will display on tickets 🎬");
+        const posterData = reader.result;
+        setForm((prev) => {
+          const updatedScreens = (prev.screens || DEFAULT_SCREENS).map((s) =>
+            s.id === (prev.activeScreenId || "screen-1") ? { ...s, posterUrl: posterData } : s
+          );
+          const nextState = { ...prev, posterUrl: posterData, screens: updatedScreens };
+          try {
+            localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextState));
+            window.dispatchEvent(new Event("storage"));
+          } catch (err) {}
+          return nextState;
+        });
+        toast.success("Movie poster uploaded & dynamic UI theme applied! 🎬🔥");
       };
       reader.readAsDataURL(file);
     }

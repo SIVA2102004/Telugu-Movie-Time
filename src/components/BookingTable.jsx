@@ -114,10 +114,12 @@ export default function BookingTable({
   const confirmBooking = (booking) => {
     if (!booking || !booking.id) return;
 
+    const currentAdminUser = sessionStorage.getItem("adminName") || (isMasterAdmin ? "Master Admin" : "Co-Admin");
+
     if (setBookings) {
       setBookings((prev) => {
         const safePrev = Array.isArray(prev) ? prev : [];
-        const updated = safePrev.map((b) => (b.id === booking.id ? { ...b, status: "confirmed" } : b));
+        const updated = safePrev.map((b) => (b.id === booking.id ? { ...b, status: "confirmed", confirmedBy: currentAdminUser, confirmedAt: new Date().toISOString() } : b));
         try { localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated)); } catch (e) {}
         return updated;
       });
@@ -130,15 +132,20 @@ export default function BookingTable({
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
-    toast.success(`Confirmed: ${booking.name} 🎟️`);
+    toast.success(`Confirmed: ${booking.name} by ${currentAdminUser} 🎟️`);
 
     const waUrl = getTicketWhatsAppUrl(booking);
     if (waUrl) window.open(waUrl, "_blank");
 
     Promise.resolve().then(async () => {
       try {
-        await setDoc(doc(db, "bookings", booking.id), { status: "confirmed" }, { merge: true });
+        await setDoc(doc(db, "bookings", booking.id), {
+          status: "confirmed",
+          confirmedBy: currentAdminUser,
+          confirmedAt: new Date().toISOString(),
+        }, { merge: true });
         await set(ref(rtdb, `all_bookings/${booking.id}/status`), "confirmed");
+        await set(ref(rtdb, `all_bookings/${booking.id}/confirmedBy`), currentAdminUser);
         await Promise.all(
           (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "booked"))
         );
@@ -536,7 +543,14 @@ export default function BookingTable({
                     </span>
                   </td>
                   <td>
-                    <span className={`badge badge-${b?.status || "pending"}`}>{b?.status || "pending"}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      <span className={`badge badge-${b?.status || "pending"}`}>{b?.status || "pending"}</span>
+                      {b?.status === "confirmed" && b?.confirmedBy && (
+                        <span style={{ fontSize: "0.68rem", color: "#4fc3f7", fontWeight: 700 }}>
+                          ✓ by {b.confirmedBy}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div className="bt-actions">

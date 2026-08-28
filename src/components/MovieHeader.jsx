@@ -29,28 +29,29 @@ export default function MovieHeader({ config = {}, layout = {} }) {
           <span className="tmt-brand-text">Telugu Movie Time</span>
         </div>
 
-        {/* Movie info */}
-        <div className="movie-header__movie">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <h1 className="movie-header__title" style={{ margin: 0 }}>{movieName}</h1>
+        {/* Movie info - Centered in Header */}
+        <div className="movie-header__movie" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+            <h1 className="movie-header__title" style={{ margin: 0, textAlign: "center" }}>{movieName}</h1>
             {config?.screens && (
               <span
                 style={{
-                  background: "var(--gold)",
-                  color: "#0d0d1a",
+                  background: "linear-gradient(135deg, #FF4444 0%, #B22222 100%)",
+                  color: "#ffffff",
                   fontWeight: 900,
                   fontSize: "0.72rem",
-                  padding: "2px 8px",
-                  borderRadius: 4,
-                  letterSpacing: 0.5,
+                  padding: "3px 10px",
+                  borderRadius: 6,
+                  letterSpacing: 0.8,
                   textTransform: "uppercase",
+                  boxShadow: "0 0 10px rgba(255, 68, 68, 0.4)",
                 }}
               >
                 {config.screens.find((s) => s.id === config.activeScreenId)?.name || "Screen 1"}
               </span>
             )}
           </div>
-          <div className="movie-header__meta">
+          <div className="movie-header__meta" style={{ justifyContent: "center" }}>
             {formattedDate && (
               <span>
                 <Calendar size={14} />

@@ -168,18 +168,28 @@ export default function StudentPage() {
         }}
       />
 
-      {/* Dynamic Movie Poster Background Blur Effect */}
-      {activePoster && (
+      {/* Dynamic Movie Poster Background Ambient Glow Effect */}
+      {activePoster ? (
         <div
           style={{
             position: "fixed",
             inset: 0,
-            backgroundImage: `url(${activePoster})`,
+            backgroundImage: `radial-gradient(circle at center, rgba(0,0,0,0.55) 0%, rgba(13,13,26,0.92) 100%), url(${activePoster})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
-            filter: "blur(60px) brightness(0.22) saturate(1.5)",
+            filter: "blur(40px) brightness(0.38) saturate(2.2)",
             zIndex: -1,
-            transform: "scale(1.1)",
+            transform: "scale(1.2)",
+            transition: "all 0.6s ease",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "radial-gradient(circle at 50% 20%, rgba(180, 20, 20, 0.25) 0%, rgba(13,13,26,0.98) 70%)",
+            zIndex: -1,
           }}
         />
       )}
