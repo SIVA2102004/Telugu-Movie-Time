@@ -86,6 +86,30 @@ export default function BookingTable({
     return `https://wa.me/${formattedPhone}?text=${msg}`;
   };
 
+  // Generates Cancellation WhatsApp message link
+  const getCancellationWhatsAppUrl = (booking, reason = "Cancelled") => {
+    if (!booking) return "";
+    const seats = Array.isArray(booking.seats) ? booking.seats.join(", ") : (booking.seats || "");
+    const cleanPhone = String(booking.phone || "").replace(/\D/g, "");
+    const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
+
+    const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
+    const msg = encodeURIComponent(
+      `❌ *TELUGU MOVIE TIME (TMT) — BOOKING CANCELLED* ⚠️\n\n` +
+      `Hello *${booking.name || "Customer"}*,\n` +
+      `Your booking request for *${config?.movieName || "Telugu Movie"}* (*${activeScreenName}*) has been *${reason.toUpperCase()}* by Admin.\n\n` +
+      `💺 *Seats Released:* ${seats}\n` +
+      `💰 *Amount:* ₹${booking.totalAmount || 0}\n` +
+      `💳 *UTR / Ref:* ${booking.upiId || "N/A"}\n\n` +
+      `📌 *Reason / Note:*\n` +
+      `• Payment verification failed, duplicate seats selected, or request cancelled.\n` +
+      `• If money was debited from your account, please contact the admin team with your bank statement.\n\n` +
+      `For queries, reply directly to this number.\n- Telugu Movie Time Team`
+    );
+
+    return `https://wa.me/${formattedPhone}?text=${msg}`;
+  };
+
   // ── 1. CONFIRM BOOKING (Instant 0ms Execution for both Master Admin & Co-Admin) ──
   const confirmBooking = (booking) => {
     if (!booking || !booking.id) return;
@@ -106,7 +130,7 @@ export default function BookingTable({
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
-    toast.success(`Confirmed: ${booking.name} ✅`);
+    toast.success(`Confirmed: ${booking.name} 🎟️`);
 
     const waUrl = getTicketWhatsAppUrl(booking);
     if (waUrl) window.open(waUrl, "_blank");
@@ -150,6 +174,10 @@ export default function BookingTable({
 
     toast.success(`Cancelled: ${booking.name}. Seats released! 🟢`);
 
+    // Automatically send Cancellation notification message on WhatsApp
+    const cancelWaUrl = getCancellationWhatsAppUrl(booking, "Cancelled");
+    if (cancelWaUrl) window.open(cancelWaUrl, "_blank");
+
     Promise.resolve().then(async () => {
       try {
         await setDoc(doc(db, "bookings", booking.id), { status: "cancelled" }, { merge: true });
@@ -188,6 +216,10 @@ export default function BookingTable({
     } catch (e) {}
 
     toast.success(`Deleted booking for ${booking.name}`);
+
+    // Automatically send Cancellation notification message on WhatsApp
+    const deleteWaUrl = getCancellationWhatsAppUrl(booking, "Deleted & Cancelled");
+    if (deleteWaUrl) window.open(deleteWaUrl, "_blank");
 
     Promise.resolve().then(async () => {
       try {
