@@ -195,26 +195,50 @@ export default function StudentPage() {
             )}
 
             {submittedData?.waUrl && (
-              <a
-                href={submittedData.waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-wa"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  padding: "14px 24px",
-                  fontSize: "1rem",
-                  width: "100%",
-                  fontWeight: 700,
-                  textDecoration: "none",
-                  marginTop: 10,
-                }}
-              >
-                <MessageCircle size={20} /> Send Screenshot to Admin on WhatsApp
-              </a>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
+                <a
+                  href={submittedData.waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-wa"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "14px 24px",
+                    fontSize: "1rem",
+                    width: "100%",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
+                  <MessageCircle size={20} /> Send Screenshot to Admin on WhatsApp
+                </a>
+
+                {submittedData?.waCustomerUrl && (
+                  <a
+                    href={submittedData.waCustomerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      padding: "10px 20px",
+                      fontSize: "0.88rem",
+                      width: "100%",
+                      textDecoration: "none",
+                      color: "var(--gold)",
+                      borderColor: "var(--gold)",
+                    }}
+                  >
+                    <MessageCircle size={16} /> Save Pending Booking Receipt on My WhatsApp
+                  </a>
+                )}
+              </div>
             )}
 
             <button

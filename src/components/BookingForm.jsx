@@ -138,11 +138,35 @@ export default function BookingForm({
       console.warn("Storage notice:", storageErr);
     }
 
-    // 2. WhatsApp direct notification link
-    const msg = encodeURIComponent(
-      `Hi Admin! 🎬\n\nI just paid *₹${computedAmount}* for seats: *${selectedSeats.join(", ")}*.\nName: *${primaryContact.name}*\nPhone: *${primaryContact.phone}*\nUTR/Ref: *${primaryContact.upiRef}*\nCollege: *${primaryContact.college}*\n\nPlease confirm our booking!`
+    const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
+
+    // 2. WhatsApp message sent to ADMIN by Student
+    const adminMsg = encodeURIComponent(
+      `Hi Admin! 🎬\n\nI just paid *₹${computedAmount}* for seats: *${selectedSeats.join(", ")}*.\n` +
+      `Screen: *${activeScreenName}*\n` +
+      `Name: *${primaryContact.name}*\n` +
+      `Phone: *${primaryContact.phone}*\n` +
+      `UTR/Ref: *${primaryContact.upiRef}*\n` +
+      `College: *${primaryContact.college}* (${primaryContact.year})\n\n` +
+      `Please verify and confirm my booking!`
     );
-    const waUrl = `https://wa.me/${adminPhone}?text=${msg}`;
+    const waAdminUrl = `https://wa.me/${adminPhone}?text=${adminMsg}`;
+
+    // 2b. WhatsApp Self-Confirmation / Receipt message for Customer
+    const cleanCustomerPhone = primaryContact.phone.replace(/\D/g, "");
+    const formattedCustomerPhone = cleanCustomerPhone.startsWith("91") ? cleanCustomerPhone : `91${cleanCustomerPhone}`;
+    const customerMsg = encodeURIComponent(
+      `🍿 *TELUGU MOVIE TIME — BOOKING ACKNOWLEDGEMENT* 🎬\n\n` +
+      `Hello *${primaryContact.name}*,\n` +
+      `Your booking request for *${config?.movieName || "the movie"}* (*${activeScreenName}*) has been recorded!\n\n` +
+      `💺 *Seats:* *${selectedSeats.join(", ")}*\n` +
+      `💰 *Amount:* *₹${computedAmount}*\n` +
+      `💳 *UTR / Ref:* ${primaryContact.upiRef}\n` +
+      `⏳ *Status:* *PENDING ADMIN VERIFICATION*\n\n` +
+      `📌 *Next Step:* Admin is verifying your payment. Your official confirmed vintage ticket will be sent to this WhatsApp number shortly after approval.\n\n` +
+      `Thank you for choosing Telugu Movie Time! 🎉`
+    );
+    const waCustomerUrl = `https://wa.me/${formattedCustomerPhone}?text=${customerMsg}`;
 
     // 3. Direct Firestore & RTDB Save with UI feedback
     try {
@@ -160,10 +184,19 @@ export default function BookingForm({
       console.warn("RTDB booking write notice:", rtdbErr);
     }
 
-    toast.success("Booking sent to Admin Portal! 🎟️");
+    toast.success("Booking request submitted! 🎟️");
+
+    // Automatically trigger WhatsApp in new tab so user sends screenshot/pending details
+    try {
+      window.open(waAdminUrl, "_blank");
+    } catch (e) {}
 
     // 4. Transition UI to Success Screen immediately
-    onSuccess({ booking: newBooking, waUrl });
+    onSuccess({
+      booking: newBooking,
+      waUrl: waAdminUrl,
+      waCustomerUrl: waCustomerUrl,
+    });
     setSubmitting(false);
   };
 
