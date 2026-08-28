@@ -413,36 +413,13 @@ export default function MovieConfigEditor({ config, layout }) {
             min={1} value={form.pricePerSeat || ""} onChange={handleChange} />
         </div>
 
-        {/* ── CO-ADMIN & SECURITY SECTION ── */}
+        {/* ── MASTER ADMIN SECURITY SECTION ── */}
         <div className="form-field form-field--full" style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
           <h3 style={{ fontSize: "1rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 6 }}>
-            <ShieldCheck size={18} /> Co-Admin Access & Security
+            <KeyRound size={18} /> Master Admin Password
           </h3>
           <small style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-            Generate joining codes for volunteer team members to manage bookings together securely.
-          </small>
-        </div>
-
-        <div className="form-field">
-          <label className="label" htmlFor="coAdminCode">
-            <UserCheck size={13} style={{ display: "inline", marginRight: 4 }} />
-            Co-Admin Joining Code (Share with helpers)
-          </label>
-          <div style={{ display: "flex", gap: 6 }}>
-            <input
-              className="input"
-              id="coAdminCode"
-              name="coAdminCode"
-              placeholder="e.g. TELUGU_VOLUNTEER_2026"
-              value={form.coAdminCode || ""}
-              onChange={handleChange}
-            />
-            <button type="button" className="btn btn-ghost" onClick={copyCoAdminCode} title="Copy Joining Code">
-              <Copy size={14} />
-            </button>
-          </div>
-          <small style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>
-            Co-admins can log in using this joining code.
+            Change your master administrator login password. (Co-admins are now managed in the dedicated "Co-Admins" tab).
           </small>
         </div>
 

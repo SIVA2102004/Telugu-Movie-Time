@@ -77,6 +77,28 @@ export default function AdminLogin({ onLogin, config }) {
     }
 
     setLoading(true);
+    const coAdminId = "ca_" + coAdminDetails.phone.trim();
+    const newCoAdminRecord = {
+      id: coAdminId,
+      name: coAdminDetails.name.trim(),
+      phone: coAdminDetails.phone.trim(),
+      college: coAdminDetails.college.trim() || "Telugu Movie Club",
+      codeUsed: verifiedCode,
+      joinedAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      role: "co-admin",
+    };
+
+    // Save to Firestore & Local Storage
+    try {
+      import("firebase/firestore").then(({ setDoc, doc }) => {
+        setDoc(doc(db, "coAdmins", coAdminId), newCoAdminRecord, { merge: true }).catch(console.error);
+      });
+      const localCoAdmins = JSON.parse(localStorage.getItem("tmt_co_admins_cache") || "[]");
+      const filtered = localCoAdmins.filter((c) => c.phone !== coAdminDetails.phone.trim());
+      localStorage.setItem("tmt_co_admins_cache", JSON.stringify([newCoAdminRecord, ...filtered]));
+    } catch (e) {}
+
     setTimeout(() => {
       sessionStorage.setItem("adminAuth", "true");
       sessionStorage.setItem("adminRole", "co-admin");

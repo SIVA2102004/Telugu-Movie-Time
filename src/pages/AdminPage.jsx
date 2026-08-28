@@ -8,8 +8,9 @@ import BookingTable from "../components/BookingTable";
 import AdminSeatMap from "../components/AdminSeatMap";
 import MovieConfigEditor from "../components/MovieConfigEditor";
 import TheaterLayoutEditor from "../components/TheaterLayoutEditor";
+import CoAdminManager from "../components/CoAdminManager";
 import { Toaster, toast } from "react-hot-toast";
-import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw } from "lucide-react";
+import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw, Users } from "lucide-react";
 import "../styles/globals.css";
 import "./AdminPage.css";
 
@@ -23,11 +24,12 @@ export default function AdminPage() {
   // Tab definitions based on role
   const allowedTabs = isMasterAdmin
     ? [
-        { id: "overview",  label: "Overview",        icon: LayoutDashboard },
-        { id: "bookings",  label: "Bookings",         icon: List },
-        { id: "seatmap",   label: "Seat Map",         icon: Map },
-        { id: "layout",    label: "Layout Editor",    icon: LayoutTemplate },
-        { id: "config",    label: "Movie Config",     icon: Settings },
+        { id: "overview",  label: "Overview",         icon: LayoutDashboard },
+        { id: "bookings",  label: "Bookings",          icon: List },
+        { id: "seatmap",   label: "Seat Map",          icon: Map },
+        { id: "coadmins",  label: "Co-Admins",         icon: Users },
+        { id: "layout",    label: "Layout Editor",     icon: LayoutTemplate },
+        { id: "config",    label: "Movie Config",      icon: Settings },
       ]
     : [
         { id: "bookings",  label: "Booking & Confirm", icon: List },
@@ -266,6 +268,9 @@ export default function AdminPage() {
                   readOnly={!isMasterAdmin}
                 />
               </div>
+            )}
+            {isMasterAdmin && activeTab === "coadmins" && (
+              <CoAdminManager config={config} bookings={bookings} />
             )}
             {isMasterAdmin && activeTab === "layout" && (
               <TheaterLayoutEditor config={config} />
