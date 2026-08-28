@@ -74,38 +74,12 @@ export default function BookingForm({
     return null;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const err = validate();
     if (err) { toast.error(err); return; }
 
     setSubmitting(true);
-
-    // 0. Pre-Submission Collision Guard: Check if any seat is already booked/pending/locked in cloud
-    try {
-      const { collection, getDocs } = await import("firebase/firestore");
-      const [bookingsSnap, locksSnap] = await Promise.all([
-        getDocs(collection(db, "bookings")),
-        getDocs(collection(db, "activeLocks")),
-      ]);
-
-      const alreadyTaken = new Set();
-      bookingsSnap.docs.forEach((d) => {
-        const b = d.data();
-        if (b && b.status !== "cancelled" && Array.isArray(b.seats)) {
-          b.seats.forEach((s) => alreadyTaken.add(s));
-        }
-      });
-
-      const conflictingSeats = selectedSeats.filter((s) => alreadyTaken.has(s));
-      if (conflictingSeats.length > 0) {
-        toast.error(`⚠️ Seat(s) ${conflictingSeats.join(", ")} were just booked by someone else! Please choose different seats.`);
-        setSubmitting(false);
-        return;
-      }
-    } catch (checkErr) {
-      console.warn("Seat availability check notice:", checkErr);
-    }
 
     const bookingId = "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
     const newBooking = {
@@ -134,9 +108,7 @@ export default function BookingForm({
       });
       localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsData));
       window.dispatchEvent(new Event("storage"));
-    } catch (storageErr) {
-      console.warn("Storage notice:", storageErr);
-    }
+    } catch (storageErr) {}
 
     const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
 
@@ -168,30 +140,21 @@ export default function BookingForm({
     );
     const waCustomerUrl = `https://wa.me/${formattedCustomerPhone}?text=${customerMsg}`;
 
-    // 3. Direct Firestore & RTDB Save with UI feedback
-    try {
-      await setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true });
-    } catch (fsErr) {
-      console.error("Firestore booking write failed:", fsErr);
-    }
-
-    try {
-      await Promise.all([
-        ...selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending")),
-        set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking),
-      ]);
-    } catch (rtdbErr) {
-      console.warn("RTDB booking write notice:", rtdbErr);
-    }
+    // 3. Parallel non-blocking Cloud sync (Firestore & RTDB)
+    setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true }).catch(console.error);
+    Promise.all([
+      ...selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending")),
+      set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking),
+    ]).catch(console.warn);
 
     toast.success("Booking request submitted! 🎟️");
 
-    // Automatically trigger WhatsApp in new tab so user sends screenshot/pending details
+    // Automatically trigger WhatsApp in new tab so user sends screenshot
     try {
       window.open(waAdminUrl, "_blank");
     } catch (e) {}
 
-    // 4. Transition UI to Success Screen immediately
+    // 4. Instant Transition to Success Screen (0ms latency)
     onSuccess({
       booking: newBooking,
       waUrl: waAdminUrl,
