@@ -85,7 +85,7 @@ export default function BookingForm({
     return null;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const err = validate();
     if (err) { toast.error(err); return; }
@@ -128,52 +128,50 @@ export default function BookingForm({
     );
     const waUrl = `https://wa.me/${adminPhone}?text=${msg}`;
 
-    // 3. Immediately transition UI to Success Screen
+    // 3. Fast Parallel Cloud Sync to Realtime Database and Firestore
+    try {
+      await Promise.race([
+        Promise.all([
+          // Realtime Database Seat Lock
+          Promise.all(selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending"))).catch(() => {}),
+          // Realtime Database Booking Record
+          set(ref(rtdb, `all_bookings/${newBooking.id}`), {
+            id: newBooking.id,
+            name: newBooking.name,
+            phone: newBooking.phone,
+            upiId: newBooking.upiId,
+            upiTarget: activeUpiId,
+            college: newBooking.college,
+            year: newBooking.year,
+            seats: newBooking.seats,
+            totalAmount: newBooking.totalAmount,
+            status: "pending",
+            createdAt: new Date().toISOString(),
+          }).catch(() => {}),
+          // Firestore Booking Record
+          setDoc(doc(db, "bookings", newBooking.id), {
+            id: newBooking.id,
+            name: newBooking.name,
+            phone: newBooking.phone,
+            upiId: newBooking.upiId,
+            upiTarget: activeUpiId,
+            college: newBooking.college,
+            year: newBooking.year,
+            seats: newBooking.seats,
+            totalAmount: newBooking.totalAmount,
+            status: "pending",
+            createdAt: new Date().toISOString(),
+          }).catch(() => {}),
+        ]),
+        new Promise((res) => setTimeout(res, 800)), // Max 800ms wait so customer experience is instant
+      ]);
+    } catch (e) {
+      console.warn("Cloud sync non-fatal notice:", e);
+    }
+
+    // 4. Transition UI to Success Screen immediately
     onSuccess({ booking: newBooking, waUrl });
     setSubmitting(false);
-
-    // 4. Background non-blocking network sync (writes to both RTDB and Firestore for 100% cloud sync across devices)
-    Promise.resolve().then(async () => {
-      try {
-        await Promise.all(
-          selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending"))
-        );
-      } catch (e) {}
-
-      // Write booking to Realtime Database
-      try {
-        await set(ref(rtdb, `all_bookings/${newBooking.id}`), {
-          id: newBooking.id,
-          name: newBooking.name,
-          phone: newBooking.phone,
-          upiId: newBooking.upiId,
-          upiTarget: activeUpiId,
-          college: newBooking.college,
-          year: newBooking.year,
-          seats: newBooking.seats,
-          totalAmount: newBooking.totalAmount,
-          status: "pending",
-          createdAt: new Date().toISOString(),
-        });
-      } catch (e) {}
-
-      // Write booking to Firestore
-      try {
-        await setDoc(doc(db, "bookings", newBooking.id), {
-          id: newBooking.id,
-          name: newBooking.name,
-          phone: newBooking.phone,
-          upiId: newBooking.upiId,
-          upiTarget: activeUpiId,
-          college: newBooking.college,
-          year: newBooking.year,
-          seats: newBooking.seats,
-          totalAmount: newBooking.totalAmount,
-          status: "pending",
-          createdAt: serverTimestamp(),
-        });
-      } catch (e) {}
-    });
   };
 
   return (
