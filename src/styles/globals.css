@@ -1,22 +1,24 @@
-/* ===== CINEMA DARK THEME ===== */
+/* ===== CINEMA DARK THEME (FIERY RED, GOLD & OBSIDIAN) ===== */
 :root {
-  --bg: #0D0D0D;
-  --surface: #1A1A2E;
-  --surface2: #16213E;
-  --gold: #FFD700;
-  --gold-dim: #B8960C;
-  --red: #FF4444;
-  --red-dim: #cc2222;
-  --green: #00C851;
-  --green-dim: #009f3f;
-  --yellow: #FFD700;
-  --grey: #555;
-  --text: #F0F0F0;
-  --text-muted: #9A9A9A;
-  --border: #2A2A4A;
+  --bg: #07070a;
+  --surface: #141018;
+  --surface2: #1c1322;
+  --gold: #FF3344;
+  --gold-glow: #ff2233;
+  --gold-dim: #cc1122;
+  --accent-gold: #FFD700;
+  --red: #FF2233;
+  --red-dim: #990011;
+  --green: #00E676;
+  --green-dim: #00A352;
+  --yellow: #FFAA00;
+  --grey: #444;
+  --text: #F5F5F7;
+  --text-muted: #A0A0B0;
+  --border: #2e1c2e;
   --locked-other: #FF8C00; /* orange — locked by someone else */
-  --radius: 8px;
-  --shadow: 0 4px 20px rgba(0,0,0,0.6);
+  --radius: 10px;
+  --shadow: 0 10px 30px rgba(0,0,0,0.8);
 }
 
 *,
@@ -71,13 +73,11 @@ a {
 }
 .btn:hover  { opacity: 0.85; }
 .btn:active { transform: scale(0.97); }
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.btn-gold    { background: var(--gold);    color: #000; }
-.btn-green   { background: var(--green);   color: #000; }
-.btn-red     { background: var(--red);     color: #fff; }
-.btn-wa      { background: #25D366;        color: #fff; }
-.btn-ghost   { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-gold    { background: linear-gradient(135deg, #FF3344 0%, #CC1122 100%); color: #ffffff; font-weight: 700; box-shadow: 0 4px 15px rgba(255, 51, 68, 0.35); }
+.btn-green   { background: linear-gradient(135deg, #00E676 0%, #00B359 100%); color: #000; font-weight: 700; }
+.btn-red     { background: linear-gradient(135deg, #FF2233 0%, #990011 100%); color: #fff; font-weight: 700; }
+.btn-wa      { background: #25D366; color: #fff; font-weight: 700; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); }
+.btn-ghost   { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text); }
 .btn-outline { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
 
 .card {
@@ -85,6 +85,7 @@ a {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.7);
 }
 
 .input {

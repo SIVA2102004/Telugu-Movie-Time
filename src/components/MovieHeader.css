@@ -1,11 +1,11 @@
 .movie-header {
-  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 60%, #0f0f1a 100%);
-  border-bottom: 2px solid var(--gold);
+  background: linear-gradient(135deg, #12090e 0%, #1a0b12 60%, #07070a 100%);
+  border-bottom: 2px solid #FF3344;
   padding: 16px 24px;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 25px rgba(255, 34, 51, 0.25);
 }
 
 .movie-header__inner {
@@ -24,20 +24,20 @@
   gap: 10px;
   font-size: 1rem;
   font-weight: 800;
-  color: var(--gold);
+  color: #FF3344;
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
 
 .tmt-logo-badge {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  color: #0d0d1a;
+  background: linear-gradient(135deg, #FF3344 0%, #B22222 100%);
+  color: #ffffff;
   font-weight: 900;
   font-size: 0.85rem;
   padding: 4px 8px;
   border-radius: 6px;
   letter-spacing: 1.5px;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 12px rgba(255, 51, 68, 0.5);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -56,7 +56,7 @@
 .movie-header__title {
   font-size: 1.6rem;
   font-weight: 900;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
+  background: linear-gradient(90deg, #FFFFFF 0%, #FF6677 50%, #FF3344 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
