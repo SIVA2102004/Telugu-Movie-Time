@@ -192,6 +192,7 @@ export default function SeatMap({
       <div className="seatmap-legend">
         <LegendItem color="var(--green)"  label="Available" />
         <LegendItem color="#FF9800"       label="Pending Verification" />
+        <LegendItem color="#FF8C00"       label="Selecting by Other Student" />
         <LegendItem color="var(--red)"    label="Confirmed Booked" />
         <LegendItem color="var(--yellow)" label="Your Selection" />
         <LegendItem color="var(--grey)"   label="Blocked" />

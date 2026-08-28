@@ -11,8 +11,16 @@ export default function BookingForm({
   config,
   onSuccess,
   totalAmount,
+  getSeatPrice,
+  getSeatTier,
   layout,
 }) {
+  const computedAmount = Number(
+    totalAmount !== undefined && !isNaN(totalAmount)
+      ? totalAmount
+      : selectedSeats.reduce((sum, s) => sum + (getSeatPrice ? getSeatPrice(s) : (config?.pricePerSeat || 200)), 0)
+  );
+
   const [primaryContact, setPrimaryContact] = useState({
     name: "",
     phone: "",
@@ -28,7 +36,7 @@ export default function BookingForm({
   const activePayee = config?.payeeName || "Telugu Movie Time";
   const adminPhone  = config?.adminPhone || "919876543210";
 
-  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${totalAmount}&cu=INR&tn=TMT-${selectedSeats.join(",")}`;
+  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount}&cu=INR&tn=TMT-${selectedSeats.join(",")}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiIntentUrl)}`;
 
   const handleCopyUpi = () => {
@@ -93,7 +101,7 @@ export default function BookingForm({
       college: primaryContact.college.trim(),
       year: primaryContact.year,
       seats: [...selectedSeats],
-      totalAmount: Number(totalAmount),
+      totalAmount: computedAmount,
       status: "pending",
       createdAt: new Date().toISOString(),
     };
@@ -116,7 +124,7 @@ export default function BookingForm({
 
     // 2. WhatsApp direct notification link
     const msg = encodeURIComponent(
-      `Hi Admin! 🎬\n\nI just paid *₹${totalAmount}* for seats: *${selectedSeats.join(", ")}*.\nName: *${primaryContact.name}*\nPhone: *${primaryContact.phone}*\nUTR/Ref: *${primaryContact.upiRef}*\nCollege: *${primaryContact.college}*\n\nPlease confirm our booking!`
+      `Hi Admin! 🎬\n\nI just paid *₹${computedAmount}* for seats: *${selectedSeats.join(", ")}*.\nName: *${primaryContact.name}*\nPhone: *${primaryContact.phone}*\nUTR/Ref: *${primaryContact.upiRef}*\nCollege: *${primaryContact.college}*\n\nPlease confirm our booking!`
     );
     const waUrl = `https://wa.me/${adminPhone}?text=${msg}`;
 
@@ -239,7 +247,7 @@ export default function BookingForm({
         {/* Payee Info */}
         <div className="payment-box__payee-info">
           <span>Payee: <strong>{activePayee}</strong></span>
-          <span>Amount: <strong className="payment-box__amount">₹{totalAmount}</strong></span>
+          <span>Amount: <strong className="payment-box__amount">₹{computedAmount}</strong></span>
         </div>
 
         {/* UPI ID Pill */}
@@ -263,7 +271,7 @@ export default function BookingForm({
           className="btn btn-outline payment-box__pay-app-btn"
           style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
         >
-          <Smartphone size={16} /> Pay ₹{totalAmount} via GPay / PhonePe / Paytm
+          <Smartphone size={16} /> Pay ₹{computedAmount} via GPay / PhonePe / Paytm
         </a>
       </div>
 
@@ -300,7 +308,7 @@ export default function BookingForm({
             Submitting Booking…
           </span>
         ) : (
-          `Submit & Confirm Booking (₹${totalAmount})`
+          `Submit & Confirm Booking (₹${computedAmount})`
         )}
       </button>
     </form>

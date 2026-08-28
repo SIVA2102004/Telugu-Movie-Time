@@ -32,7 +32,7 @@ export function useSeats() {
 
     window.addEventListener("storage", handleStorage);
 
-    // 2. Realtime Database listener
+    // 2. Realtime Database listener (Tracks other users selecting seats in real-time)
     let unsubRTDB = () => {};
     try {
       const seatsRef = ref(rtdb, "seats");
@@ -41,14 +41,10 @@ export function useSeats() {
         (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.val() || {};
-            if (throttleRef.current) clearTimeout(throttleRef.current);
-            throttleRef.current = setTimeout(() => {
-              setSeatMap((prev) => ({ ...prev, ...data }));
-              try {
-                const current = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
-                localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify({ ...current, ...data }));
-              } catch (e) {}
-            }, 30);
+            setSeatMap((prev) => {
+              const merged = { ...prev, ...data };
+              return merged;
+            });
           }
         },
         (error) => {
@@ -75,7 +71,7 @@ export function useSeats() {
             }
           });
 
-          setSeatMap(map);
+          setSeatMap((prev) => ({ ...prev, ...map }));
           try {
             localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(map));
           } catch (e) {}
