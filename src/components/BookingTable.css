@@ -139,17 +139,25 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  max-width: 260px;
 }
 
 .seat-chip {
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  display: inline-block;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 2px 6px;
   font-size: 0.72rem;
   font-weight: 700;
   color: var(--gold);
   white-space: nowrap;
+}
+
+.seat-chip--conflict {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: var(--red);
+  color: #ff4444;
 }
 
 /* ── Actions ── */

@@ -61,6 +61,28 @@ export default function BookingForm({
 
     setSubmitting(true);
 
+    // 0. Pre-Submission Collision Guard: Check if any seat is already booked/pending in cloud
+    try {
+      const { collection, getDocs } = await import("firebase/firestore");
+      const snap = await getDocs(collection(db, "bookings"));
+      const alreadyTaken = new Set();
+      snap.docs.forEach((d) => {
+        const b = d.data();
+        if (b && b.status !== "cancelled" && Array.isArray(b.seats)) {
+          b.seats.forEach((s) => alreadyTaken.add(s));
+        }
+      });
+
+      const conflictingSeats = selectedSeats.filter((s) => alreadyTaken.has(s));
+      if (conflictingSeats.length > 0) {
+        toast.error(`⚠️ Seat(s) ${conflictingSeats.join(", ")} were just booked by someone else! Please choose different seats.`);
+        setSubmitting(false);
+        return;
+      }
+    } catch (checkErr) {
+      console.warn("Seat availability check notice:", checkErr);
+    }
+
     const bookingId = "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
     const newBooking = {
       id: bookingId,

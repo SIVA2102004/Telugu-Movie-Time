@@ -26,6 +26,21 @@ export default function BookingTable({
 
   const safeBookings = Array.isArray(bookings) ? bookings : [];
 
+  // ── Detect duplicate seat conflicts between multiple bookings ────────────
+  const seatBookingMap = {};
+  safeBookings.forEach((b) => {
+    if (b && b.status !== "cancelled" && Array.isArray(b.seats)) {
+      b.seats.forEach((s) => {
+        if (!seatBookingMap[s]) seatBookingMap[s] = [];
+        seatBookingMap[s].push(b);
+      });
+    }
+  });
+
+  const conflictingSeatSet = new Set(
+    Object.keys(seatBookingMap).filter((s) => seatBookingMap[s].length > 1)
+  );
+
   // ── Filter & search ─────────────────────────────────────────────────────
   const filtered = safeBookings.filter((b) => {
     if (!b) return false;
@@ -409,6 +424,17 @@ export default function BookingTable({
         </div>
       </div>
 
+      {conflictingSeatSet.size > 0 && (
+        <div style={{ background: "rgba(255, 68, 68, 0.12)", border: "1px solid var(--red)", borderRadius: 8, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ color: "#ff4444", fontSize: "0.85rem", fontWeight: 700 }}>
+            ⚠️ SEAT CONFLICT DETECTED: Seat(s) {Array.from(conflictingSeatSet).join(", ")} were submitted by multiple students simultaneously!
+          </div>
+          <span style={{ fontSize: "0.76rem", color: "var(--text-muted)" }}>
+            Review the UTR / Payment timestamp below: Click <strong>"Confirm"</strong> for the verified student and <strong>"Edit"</strong> or <strong>"Cancel"</strong> for the duplicate.
+          </span>
+        </div>
+      )}
+
       {/* Count */}
       <p className="bt-count">
         Showing <strong>{filtered.length}</strong> of <strong>{safeBookings.length}</strong> bookings
@@ -455,9 +481,18 @@ export default function BookingTable({
                   <td>{b?.year || "—"}</td>
                   <td>
                     <div className="seat-chips">
-                      {(Array.isArray(b?.seats) ? b.seats : []).map((s) => (
-                        <span key={s} className="seat-chip">{s}</span>
-                      ))}
+                      {(Array.isArray(b?.seats) ? b.seats : []).map((s) => {
+                        const hasConflict = conflictingSeatSet.has(s);
+                        return (
+                          <span
+                            key={s}
+                            className={`seat-chip ${hasConflict ? "seat-chip--conflict" : ""}`}
+                            title={hasConflict ? `Seat ${s} is duplicated in another booking!` : `Seat ${s}`}
+                          >
+                            {s} {hasConflict && "⚠️"}
+                          </span>
+                        );
+                      })}
                     </div>
                   </td>
                   <td><strong style={{ color: "var(--gold)" }}>₹{b?.totalAmount || 0}</strong></td>
