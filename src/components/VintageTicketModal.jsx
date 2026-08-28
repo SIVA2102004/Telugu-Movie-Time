@@ -137,8 +137,11 @@ export default function VintageTicketModal({
                   <div className="info-item">
                     <div className="info-icon">🏛️</div>
                     <div className="info-text">
-                      <span className="info-label">THEATRE</span>
+                      <span className="info-label">THEATRE & SCREEN</span>
                       <span className="info-val">{theater}</span>
+                      <span style={{ fontSize: "0.62rem", color: "#5a4b3c", fontWeight: 700, marginTop: 1 }}>
+                        📍 {config?.locationAddress || "Crystal Mall, 3rd Floor, Kalawad Road, Rajkot"}
+                      </span>
                     </div>
                   </div>
 

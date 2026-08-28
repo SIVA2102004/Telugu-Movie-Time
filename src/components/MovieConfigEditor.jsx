@@ -285,21 +285,63 @@ export default function MovieConfigEditor({ config, layout }) {
         </div>
 
         <div className="form-field">
+          <label className="label" htmlFor="genre">Genre / Language / Certificate</label>
+          <input className="input" id="genre" name="genre"
+            placeholder="Action / Thriller · Telugu (U/A)"
+            value={form.genre || "Action / Drama · Telugu (U/A)"} onChange={handleChange} />
+        </div>
+
+        <div className="form-field">
           <label className="label" htmlFor="date">Show Date</label>
           <input className="input" type="date" id="date" name="date"
             value={form.date || ""} onChange={handleChange} />
         </div>
 
         <div className="form-field">
-          <label className="label" htmlFor="theater">Theater Name</label>
+          <label className="label" htmlFor="showTime">Show Time</label>
+          <input className="input" id="showTime" name="showTime"
+            placeholder="8:00 AM" value={form.showTime || ""} onChange={handleChange} />
+        </div>
+
+        <div className="form-field">
+          <label className="label" htmlFor="theater">Theater / Mall Name</label>
           <input className="input" id="theater" name="theater"
             value={form.theater || ""} onChange={handleChange} />
         </div>
 
         <div className="form-field">
-          <label className="label" htmlFor="showTime">Show Time</label>
-          <input className="input" id="showTime" name="showTime"
-            placeholder="6:30 PM" value={form.showTime || ""} onChange={handleChange} />
+          <label className="label" htmlFor="locationAddress">Venue Address & Google Maps Location *</label>
+          <input className="input" id="locationAddress" name="locationAddress"
+            placeholder="Crystal Mall, 3rd Floor, Kalawad Road, Rajkot"
+            value={form.locationAddress || "Crystal Mall, 3rd Floor, Kalawad Road, Rajkot"} onChange={handleChange} />
+        </div>
+
+        <div className="form-field">
+          <label className="label" htmlFor="mapsUrl">Google Maps Link (for Direction button)</label>
+          <input className="input" id="mapsUrl" name="mapsUrl"
+            placeholder="https://maps.google.com/?q=Crystal+Mall"
+            value={form.mapsUrl || "https://maps.google.com/?q=Crystal+Mall"} onChange={handleChange} />
+        </div>
+
+        <div className="form-field">
+          <label className="label" htmlFor="movieTagline">Movie Tagline / Highlight</label>
+          <input className="input" id="movieTagline" name="movieTagline"
+            placeholder="Experience the Grand Telugu Premiere with Student Special Treats!"
+            value={form.movieTagline || "Experience the Grand Telugu Premiere with Student Special Treats!"} onChange={handleChange} />
+        </div>
+
+        <div className="form-field form-field--full">
+          <label className="label" htmlFor="movieDescription">Movie Synopsis & Event Details</label>
+          <textarea
+            className="input"
+            id="movieDescription"
+            name="movieDescription"
+            rows={3}
+            style={{ resize: "vertical", fontFamily: "inherit" }}
+            placeholder="Write a brief overview of the movie, special food & beverage vouchers, and student community perks."
+            value={form.movieDescription || "Join fellow movie enthusiasts for an exclusive cinematic screening organized by Telugu Movie Time! Experience premium Dolby Atmos sound, crystal-clear projection, luxury seating, and exciting Telugu student community vibes."}
+            onChange={handleChange}
+          />
         </div>
 
         {/* ── TIER PRICING CONTROLS (DIRECTLY EDIT FROM MOVIE CONFIG) ── */}
