@@ -98,25 +98,23 @@ export default function BookingForm({
     );
     const waUrl = `https://wa.me/${adminPhone}?text=${msg}`;
 
-    // 3. Reliable Cloud Write to Firestore and Realtime Database
+    // 3. Direct Firestore & RTDB Save with UI feedback
+    try {
+      await setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true });
+    } catch (fsErr) {
+      console.error("Firestore booking write failed:", fsErr);
+    }
+
     try {
       await Promise.all([
-        // Realtime Database Seat Lock
-        Promise.all(selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending"))).catch((err) => {
-          console.warn("RTDB seat lock notice:", err);
-        }),
-        // Realtime Database Booking Node
-        set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking).catch((err) => {
-          console.warn("RTDB booking write notice:", err);
-        }),
-        // Firestore Booking Doc
-        setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true }).catch((err) => {
-          console.warn("Firestore booking write notice:", err);
-        }),
+        ...selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending")),
+        set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking),
       ]);
-    } catch (cloudErr) {
-      console.warn("Cloud write pipeline notice:", cloudErr);
+    } catch (rtdbErr) {
+      console.warn("RTDB booking write notice:", rtdbErr);
     }
+
+    toast.success("Booking sent to Admin Portal! 🎟️");
 
     // 4. Transition UI to Success Screen immediately
     onSuccess({ booking: newBooking, waUrl });
