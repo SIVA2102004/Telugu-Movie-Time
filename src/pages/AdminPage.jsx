@@ -9,7 +9,7 @@ import AdminSeatMap from "../components/AdminSeatMap";
 import MovieConfigEditor from "../components/MovieConfigEditor";
 import TheaterLayoutEditor from "../components/TheaterLayoutEditor";
 import { Toaster, toast } from "react-hot-toast";
-import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck } from "lucide-react";
+import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw } from "lucide-react";
 import "../styles/globals.css";
 import "./AdminPage.css";
 
@@ -86,13 +86,14 @@ export default function AdminPage() {
     }
   };
 
-  const { bookings, setBookings, loading: bLoading } = useBookings();
+  const { bookings, setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings();
   const { seatMap } = useSeats();
   const { config, layout, loading: cLoading } = useMovieConfig();
 
   const logout = () => {
     sessionStorage.removeItem("adminAuth");
     sessionStorage.removeItem("adminRole");
+    sessionStorage.removeItem("adminName");
     setAuthed(false);
   };
 
@@ -178,7 +179,22 @@ export default function AdminPage() {
               {allowedTabs.find((t) => t.id === activeTab)?.label}
             </h1>
             
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", flexWrap: "wrap" }}>
+              {/* Manual Cloud Refresh Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  refreshBookings();
+                  toast.success("Synced latest bookings with cloud database! 🔄");
+                }}
+                className="btn btn-ghost"
+                disabled={refreshing}
+                style={{ padding: "6px 10px", fontSize: "0.78rem", gap: 5, color: "var(--gold)" }}
+                title="Force refresh bookings from cloud database"
+              >
+                <RefreshCw size={14} className={refreshing ? "spin" : ""} /> {refreshing ? "Syncing…" : "Sync Cloud"}
+              </button>
+
               {!isInstalled && (
                 <button
                   type="button"
@@ -210,7 +226,14 @@ export default function AdminPage() {
               <AdminStats bookings={bookings} config={config} layout={layout} onInstallApp={installApp} isInstalled={isInstalled} />
             )}
             {activeTab === "bookings" && (
-              <BookingTable bookings={bookings} setBookings={setBookings} config={config} adminRole={adminRole} />
+              <BookingTable
+                bookings={bookings}
+                setBookings={setBookings}
+                config={config}
+                adminRole={adminRole}
+                refreshBookings={refreshBookings}
+                refreshing={refreshing}
+              />
             )}
             {activeTab === "seatmap" && (
               <div className="card">

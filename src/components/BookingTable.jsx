@@ -302,6 +302,21 @@ export default function BookingTable({ bookings, setBookings, config, adminRole 
         </div>
 
         <div className="bt-top-actions">
+          {refreshBookings && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                refreshBookings();
+                toast.success("Bookings refreshed from cloud! 🔄");
+              }}
+              disabled={refreshing}
+              title="Refresh bookings from cloud database"
+              style={{ padding: "6px 12px", gap: 5, color: "var(--gold)" }}
+            >
+              <RefreshCw size={14} className={refreshing ? "spin" : ""} /> {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+          )}
+
           {pendingCount > 0 && (
             <button className="btn btn-green" onClick={confirmAllPending} title="Confirm all pending requests">
               <CheckCircle size={14} /> Confirm All ({pendingCount})
