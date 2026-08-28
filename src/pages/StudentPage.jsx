@@ -35,13 +35,26 @@ export default function StudentPage() {
 
       if (isSelected) {
         setSelectedSeats((prev) => prev.filter((s) => s !== seatId));
+        // Remove lock from RTDB and Firestore
         try {
           await set(ref(rtdb, `seats/${seatId}`), "available");
         } catch (e) {}
+        try {
+          const { doc, deleteDoc } = await import("firebase/firestore");
+          await deleteDoc(doc(db, "activeLocks", seatId));
+        } catch (e) {}
       } else {
         setSelectedSeats((prev) => [...prev, seatId]);
+        // Set lock in RTDB and Firestore
         try {
           await set(ref(rtdb, `seats/${seatId}`), "locked");
+        } catch (e) {}
+        try {
+          const { doc, setDoc } = await import("firebase/firestore");
+          await setDoc(doc(db, "activeLocks", seatId), {
+            status: "locked",
+            timestamp: Date.now(),
+          });
         } catch (e) {}
       }
     },
@@ -63,8 +76,12 @@ export default function StudentPage() {
           clearInterval(timerRef.current);
           timerRef.current = null;
           setSelectedSeats((prev) => {
-            prev.forEach((seatId) => {
+            prev.forEach(async (seatId) => {
               try { set(ref(rtdb, `seats/${seatId}`), "available"); } catch (e) {}
+              try {
+                const { doc, deleteDoc } = await import("firebase/firestore");
+                await deleteDoc(doc(db, "activeLocks", seatId));
+              } catch (e) {}
             });
             return [];
           });

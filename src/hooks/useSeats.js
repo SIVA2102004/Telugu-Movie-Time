@@ -55,7 +55,31 @@ export function useSeats() {
       console.warn("RTDB offline mode:", err);
     }
 
-    // 3. Firestore bookings listener for seat map (guarantees seats turn Orange/Red across all devices)
+    // 3. Realtime activeLocks listener from Firestore (Works across 100% of mobile & desktop networks)
+    let unsubActiveLocks = () => {};
+    try {
+      unsubActiveLocks = onSnapshot(
+        collection(db, "activeLocks"),
+        (snapshot) => {
+          const locks = {};
+          const now = Date.now();
+          snapshot.docs.forEach((d) => {
+            const data = d.data();
+            // Discard stale locks older than 5 minutes
+            if (data && (!data.timestamp || now - data.timestamp < 5 * 60 * 1000)) {
+              locks[d.id] = "locked";
+            }
+          });
+
+          setSeatMap((prev) => ({ ...prev, ...locks }));
+        },
+        (err) => {
+          console.warn("Firestore activeLocks sync notice:", err);
+        }
+      );
+    } catch (e) {}
+
+    // 4. Firestore bookings listener for seat map (guarantees seats turn Orange/Red across all devices)
     let unsubFirestore = () => {};
     try {
       unsubFirestore = onSnapshot(
@@ -86,6 +110,7 @@ export function useSeats() {
       window.removeEventListener("storage", handleStorage);
       if (throttleRef.current) clearTimeout(throttleRef.current);
       unsubRTDB();
+      unsubActiveLocks();
       unsubFirestore();
     };
   }, []);

@@ -63,13 +63,15 @@ export default function BookingTable({
     const cleanPhone = String(booking.phone || "").replace(/\D/g, "");
     const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
 
+    const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
     const msg = encodeURIComponent(
       `🎟️ *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
       `👤 *Name:* ${booking.name || ""}\n` +
       `🍿 *Movie:* ${config?.movieName || "Telugu Movie"}\n` +
+      `🖥️ *Screen / Audi:* *${activeScreenName}*\n` +
       `📅 *Date:* ${config?.date || "Upcoming Show"}\n` +
       `⏰ *Time:* ${config?.showTime || "TBA"}\n` +
-      `📍 *Theater:* ${config?.theater || "Theater"}\n` +
+      `📍 *Theater:* ${config?.theater || "Theater"} (${activeScreenName})\n` +
       `💺 *Confirmed Seats:* *${seats}*\n` +
       `💰 *Total Paid:* *₹${booking.totalAmount || 0}*\n` +
       `💳 *UTR / Ref:* ${booking.upiId || "Verified"}\n` +

@@ -20,7 +20,8 @@ export default function VintageTicketModal({
   const seats = Array.isArray(booking.seats) ? booking.seats : (booking.seats ? [booking.seats] : []);
   const seatsString = seats.join(", ");
   const movieName = config?.movieName || "PARADISE";
-  const theater = config?.theater || "CRYSTAL MALL";
+  const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
+  const theater = `${config?.theater || "CRYSTAL MALL"} · ${activeScreenName}`;
   const date = config?.date || "26 09 2026";
   const showTime = config?.showTime || "8:00 A.M.";
   const customerName = booking?.name || "Valued Guest";
@@ -36,7 +37,7 @@ export default function VintageTicketModal({
         pixelRatio: 2,
         backgroundColor: "#0d0d1a",
       });
-      download(dataUrl, `TMT-Ticket-${movieName.replace(/\s+/g, "_")}-${booking.id || "ticket"}.png`, "image/png");
+      download(dataUrl, `TMT-Ticket-${movieName.replace(/\s+/g, "_")}-${activeScreenName.replace(/\s+/g, "_")}-${booking.id || "ticket"}.png`, "image/png");
       toast.success("Vintage Ticket Downloaded! 🎟️", { id: "ticket-dl" });
     } catch (err) {
       console.error("Error generating ticket image:", err);
@@ -66,6 +67,7 @@ export default function VintageTicketModal({
       `🎟️ *TELUGU MOVIE TIME (TMT) - VINTAGE TICKET CONFIRMATION* 🎬\n\n` +
       `👤 *Name:* ${booking.name || ""}\n` +
       `🍿 *Movie:* ${movieName}\n` +
+      `🖥️ *Screen / Audi:* *${activeScreenName}*\n` +
       `📅 *Date:* ${date}\n` +
       `⏰ *Time:* ${showTime}\n` +
       `📍 *Theatre:* ${theater}\n` +

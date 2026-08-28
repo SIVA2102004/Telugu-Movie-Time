@@ -31,7 +31,25 @@ export default function MovieHeader({ config = {}, layout = {} }) {
 
         {/* Movie info */}
         <div className="movie-header__movie">
-          <h1 className="movie-header__title">{movieName}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <h1 className="movie-header__title" style={{ margin: 0 }}>{movieName}</h1>
+            {config?.screens && (
+              <span
+                style={{
+                  background: "var(--gold)",
+                  color: "#0d0d1a",
+                  fontWeight: 900,
+                  fontSize: "0.72rem",
+                  padding: "2px 8px",
+                  borderRadius: 4,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                }}
+              >
+                {config.screens.find((s) => s.id === config.activeScreenId)?.name || "Screen 1"}
+              </span>
+            )}
+          </div>
           <div className="movie-header__meta">
             {formattedDate && (
               <span>

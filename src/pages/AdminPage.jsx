@@ -175,9 +175,30 @@ export default function AdminPage() {
         {/* Main */}
         <main className="admin-main">
           <div className="admin-topbar">
-            <h1 className="admin-topbar__title">
-              {allowedTabs.find((t) => t.id === activeTab)?.label}
-            </h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h1 className="admin-topbar__title" style={{ margin: 0 }}>
+                {allowedTabs.find((t) => t.id === activeTab)?.label}
+              </h1>
+              {config?.screens && (
+                <div
+                  style={{
+                    background: "rgba(0, 200, 81, 0.15)",
+                    border: "1px solid var(--green)",
+                    color: "var(--green)",
+                    fontSize: "0.76rem",
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+                  Live: <strong>{config.screens.find((s) => s.id === config.activeScreenId)?.name || "Screen 1"}</strong> ({config.movieName || "Movie"})
+                </div>
+              )}
+            </div>
             
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", flexWrap: "wrap" }}>
               {/* Manual Cloud Refresh Button */}

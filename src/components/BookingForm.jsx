@@ -3,6 +3,7 @@ import { db, rtdb } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref, set } from "firebase/database";
 import { IndianRupee, QrCode, Smartphone, Copy, Check, Send, Loader2 } from "lucide-react";
+import QRCode from "qrcode";
 import toast from "react-hot-toast";
 import "./BookingForm.css";
 
@@ -31,13 +32,24 @@ export default function BookingForm({
 
   const [submitting, setSubmitting] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
 
   const activeUpiId = config?.upiId || "telugumovietime@upi";
   const activePayee = config?.payeeName || "Telugu Movie Time";
   const adminPhone  = config?.adminPhone || "919876543210";
 
   const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount}&cu=INR&tn=TMT-${selectedSeats.join(",")}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiIntentUrl)}`;
+
+  // Generate crisp local vector QR code without third-party API lag
+  useEffect(() => {
+    QRCode.toDataURL(upiIntentUrl, {
+      width: 240,
+      margin: 1,
+      color: { dark: "#000000", light: "#ffffff" },
+    })
+      .then((url) => setQrCodeDataUrl(url))
+      .catch((err) => console.error("QR Code Generation error:", err));
+  }, [upiIntentUrl]);
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(activeUpiId);
@@ -235,13 +247,19 @@ export default function BookingForm({
         </h3>
 
         <div className="payment-box__qr-wrapper">
-          <img
-            src={qrCodeUrl}
-            alt="UPI QR Code"
-            className="payment-box__qr-img"
-            width={180}
-            height={180}
-          />
+          {qrCodeDataUrl ? (
+            <img
+              src={qrCodeDataUrl}
+              alt="UPI QR Code"
+              className="payment-box__qr-img"
+              width={180}
+              height={180}
+            />
+          ) : (
+            <div style={{ width: 180, height: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div className="spinner" style={{ width: 24, height: 24 }} />
+            </div>
+          )}
         </div>
 
         {/* Payee Info */}
