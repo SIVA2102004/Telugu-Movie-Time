@@ -81,12 +81,16 @@ export default function BookingForm({
 
     setSubmitting(true);
 
-    // 0. Pre-Submission Collision Guard: Check if any seat is already booked/pending in cloud
+    // 0. Pre-Submission Collision Guard: Check if any seat is already booked/pending/locked in cloud
     try {
       const { collection, getDocs } = await import("firebase/firestore");
-      const snap = await getDocs(collection(db, "bookings"));
+      const [bookingsSnap, locksSnap] = await Promise.all([
+        getDocs(collection(db, "bookings")),
+        getDocs(collection(db, "activeLocks")),
+      ]);
+
       const alreadyTaken = new Set();
-      snap.docs.forEach((d) => {
+      bookingsSnap.docs.forEach((d) => {
         const b = d.data();
         if (b && b.status !== "cancelled" && Array.isArray(b.seats)) {
           b.seats.forEach((s) => alreadyTaken.add(s));

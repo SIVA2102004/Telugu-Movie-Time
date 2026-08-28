@@ -32,6 +32,23 @@ export function useSeats() {
 
     window.addEventListener("storage", handleStorage);
 
+    // Sources
+    let currentRTDB = {};
+    let currentLocks = {};
+    let currentBookings = {};
+
+    const recomputeSeats = () => {
+      const merged = {
+        ...currentBookings,
+        ...currentRTDB,
+        ...currentLocks,
+      };
+      setSeatMap(merged);
+      try {
+        localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(merged));
+      } catch (e) {}
+    };
+
     // 2. Realtime Database listener (Tracks other users selecting seats in real-time)
     let unsubRTDB = () => {};
     try {
@@ -40,12 +57,11 @@ export function useSeats() {
         seatsRef,
         (snapshot) => {
           if (snapshot.exists()) {
-            const data = snapshot.val() || {};
-            setSeatMap((prev) => {
-              const merged = { ...prev, ...data };
-              return merged;
-            });
+            currentRTDB = snapshot.val() || {};
+          } else {
+            currentRTDB = {};
           }
+          recomputeSeats();
         },
         (error) => {
           console.warn("RTDB seats listener notice:", error);
@@ -70,8 +86,8 @@ export function useSeats() {
               locks[d.id] = "locked";
             }
           });
-
-          setSeatMap((prev) => ({ ...prev, ...locks }));
+          currentLocks = locks;
+          recomputeSeats();
         },
         (err) => {
           console.warn("Firestore activeLocks sync notice:", err);
@@ -94,11 +110,8 @@ export function useSeats() {
               });
             }
           });
-
-          setSeatMap((prev) => ({ ...prev, ...map }));
-          try {
-            localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(map));
-          } catch (e) {}
+          currentBookings = map;
+          recomputeSeats();
         },
         (err) => {
           console.warn("Firestore seat sync notice:", err);
