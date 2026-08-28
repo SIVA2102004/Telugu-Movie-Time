@@ -4,8 +4,8 @@ import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { ref, onValue, get } from "firebase/database";
 
 /**
- * Universal dual-cloud real-time synchronization hook for bookings.
- * Syncs seamlessly across Firestore, Firebase Realtime Database (RTDB), and local storage cache.
+ * Universal real-time synchronization hook for bookings.
+ * Actively syncs across Firestore, Firebase Realtime Database (RTDB), and local storage cache.
  */
 export function useBookings() {
   const [bookings, setBookings] = useState(() => {
@@ -42,7 +42,7 @@ export function useBookings() {
       try {
         localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(combined));
       } catch (e) {}
-    }, 20);
+    }, 10);
   }, []);
 
   // Manual one-click cloud pull across both Firestore & RTDB
@@ -55,11 +55,13 @@ export function useBookings() {
       const snap = await getDocs(collection(db, "bookings"));
       snap.docs.forEach((d) => {
         const val = d.data();
-        collected.push({
-          id: d.id,
-          ...val,
-          createdAt: val.createdAt?.toDate ? val.createdAt.toDate().toISOString() : (val.createdAt || new Date().toISOString()),
-        });
+        if (val) {
+          collected.push({
+            id: d.id,
+            ...val,
+            createdAt: val.createdAt?.toDate ? val.createdAt.toDate().toISOString() : (val.createdAt || new Date().toISOString()),
+          });
+        }
       });
     } catch (fsErr) {
       console.warn("Firestore fetch error:", fsErr);
@@ -71,7 +73,9 @@ export function useBookings() {
       if (rtdbSnap.exists()) {
         const val = rtdbSnap.val() || {};
         Object.keys(val).forEach((k) => {
-          collected.push({ id: k, ...val[k] });
+          if (val[k]) {
+            collected.push({ id: k, ...val[k] });
+          }
         });
       }
     } catch (rtdbErr) {
@@ -81,7 +85,9 @@ export function useBookings() {
     // 3. Include local storage cache if any
     try {
       const localCached = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
-      localCached.forEach((b) => collected.push(b));
+      if (Array.isArray(localCached)) {
+        localCached.forEach((b) => collected.push(b));
+      }
     } catch (e) {}
 
     if (collected.length > 0) {
@@ -102,21 +108,21 @@ export function useBookings() {
     };
     window.addEventListener("storage", handleStorageChange);
 
-    // 2. Real-Time Cloud Firestore Listener
+    // 2. Real-Time Cloud Firestore Listener (handles both empty and non-empty changes)
     let unsubFirestore = () => {};
     try {
       unsubFirestore = onSnapshot(
         collection(db, "bookings"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list = snapshot.docs.map((d) => {
-              const val = d.data();
-              return {
-                id: d.id,
-                ...val,
-                createdAt: val.createdAt?.toDate ? val.createdAt.toDate().toISOString() : (val.createdAt || new Date().toISOString()),
-              };
-            });
+          const list = snapshot.docs.map((d) => {
+            const val = d.data();
+            return {
+              id: d.id,
+              ...val,
+              createdAt: val.createdAt?.toDate ? val.createdAt.toDate().toISOString() : (val.createdAt || new Date().toISOString()),
+            };
+          });
+          if (list.length > 0) {
             processAndSetBookings(list);
           }
         },
@@ -145,12 +151,16 @@ export function useBookings() {
       );
     } catch (e) {}
 
-    // Initial fetch on mount
+    // 4. Initial fetch on mount & periodic 5-second polling safeguard
     refreshBookings();
+    const pollInterval = setInterval(() => {
+      refreshBookings();
+    }, 5000);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       if (throttleRef.current) clearTimeout(throttleRef.current);
+      clearInterval(pollInterval);
       unsubFirestore();
       unsubRTDB();
     };
