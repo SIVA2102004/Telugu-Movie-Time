@@ -1,87 +1,56 @@
 import { useState, useEffect } from "react";
 import { db, rtdb } from "../firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { IndianRupee, Tag, QrCode, Smartphone, Copy, CheckCircle, MessageCircle, Users, Armchair } from "lucide-react";
-import QRCode from "qrcode";
+import { IndianRupee, QrCode, Smartphone, Copy, Check, Send, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import "./BookingForm.css";
 
-const YEAR_OPTIONS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
-
 export default function BookingForm({
   selectedSeats,
-  pricePerSeat,
-  getSeatPrice,
-  getSeatTier,
   config,
-  onSuccess
+  onSuccess,
+  totalAmount,
+  layout,
 }) {
   const [primaryContact, setPrimaryContact] = useState({
     name: "",
     phone: "",
     upiRef: "",
-    year: "",
     college: "",
+    year: "1st Year",
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [copiedUpi, setCopiedUpi] = useState(false);
 
-  const activeUpiId = config?.upiId || "telugutalkies@upi";
-  const payeeName = config?.payeeName || "Telugu Talkies";
-  const adminPhone = config?.adminPhone || "919876543210";
+  const activeUpiId = config?.upiId || "telugumovietime@upi";
+  const activePayee = config?.payeeName || "Telugu Movie Time";
+  const adminPhone  = config?.adminPhone || "919876543210";
 
-  const totalAmount = selectedSeats.reduce((sum, seatId) => {
-    const price = getSeatPrice ? getSeatPrice(seatId) : pricePerSeat;
-    return sum + price;
-  }, 0);
+  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${totalAmount}&cu=INR&tn=TMT-${selectedSeats.join(",")}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiIntentUrl)}`;
 
-  const tierBreakdown = selectedSeats.reduce((acc, seatId) => {
-    const tier = getSeatTier ? getSeatTier(seatId) : "Standard";
-    const price = getSeatPrice ? getSeatPrice(seatId) : pricePerSeat;
-    if (!acc[tier]) {
-      acc[tier] = { count: 0, price, seats: [] };
-    }
-    acc[tier].count += 1;
-    acc[tier].seats.push(seatId);
-    return acc;
-  }, {});
-
-  // Generate UPI Payment QR Code
-  const upiUri = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(payeeName)}&am=${totalAmount}&tn=${encodeURIComponent(`Tickets for ${selectedSeats.join(",")}`)}&cu=INR`;
-
-  useEffect(() => {
-    if (totalAmount > 0) {
-      QRCode.toDataURL(upiUri, {
-        width: 200,
-        margin: 1,
-        color: {
-          dark: "#000000",
-          light: "#ffffff",
-        },
-      })
-        .then((url) => setQrDataUrl(url))
-        .catch((err) => console.error("QR Code Error:", err));
-    }
-  }, [upiUri, totalAmount]);
-
-  const handlePrimaryChange = (e) => {
-    setPrimaryContact((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(activeUpiId);
+    setCopiedUpi(true);
+    toast.success("UPI ID copied! Paste it in your payment app.");
+    setTimeout(() => setCopiedUpi(false), 3000);
   };
 
-  const copyUpiId = () => {
-    navigator.clipboard.writeText(activeUpiId);
-    toast.success(`Copied UPI ID: ${activeUpiId}`);
+  const handlePrimaryChange = (e) => {
+    const { name, value } = e.target;
+    setPrimaryContact((prev) => ({ ...prev, [name]: value }));
   };
 
   const validate = () => {
-    if (selectedSeats.length === 0) return "No seats selected.";
     if (!primaryContact.name.trim()) return "Please enter your full name.";
-    if (!/^\d{10}$/.test(primaryContact.phone)) return "Enter a valid 10-digit WhatsApp phone number.";
-    if (!primaryContact.upiRef.trim()) return "Please enter the 12-digit UPI Transaction / UTR reference number.";
-    if (!primaryContact.year) return "Please select your year of study.";
-    if (!primaryContact.college.trim()) return "Please enter your college name.";
+    if (!/^\d{10}$/.test(primaryContact.phone.trim()))
+      return "Please enter a valid 10-digit WhatsApp phone number.";
+    if (!primaryContact.upiRef.trim())
+      return "Please enter the UTR / UPI Transaction Reference number.";
+    if (selectedSeats.length === 0)
+      return "Please select at least one seat.";
     return null;
   };
 
@@ -92,8 +61,9 @@ export default function BookingForm({
 
     setSubmitting(true);
 
+    const bookingId = "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
     const newBooking = {
-      id: "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+      id: bookingId,
       name: primaryContact.name.trim(),
       phone: primaryContact.phone.trim(),
       upiId: primaryContact.upiRef.trim(),
@@ -101,7 +71,7 @@ export default function BookingForm({
       college: primaryContact.college.trim(),
       year: primaryContact.year,
       seats: [...selectedSeats],
-      totalAmount,
+      totalAmount: Number(totalAmount),
       status: "pending",
       createdAt: new Date().toISOString(),
     };
@@ -114,7 +84,7 @@ export default function BookingForm({
 
       const seatsData = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
       selectedSeats.forEach((seatId) => {
-        seatsData[seatId] = "pending"; // Automatically blocked
+        seatsData[seatId] = "pending";
       });
       localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsData));
       window.dispatchEvent(new Event("storage"));
@@ -128,45 +98,24 @@ export default function BookingForm({
     );
     const waUrl = `https://wa.me/${adminPhone}?text=${msg}`;
 
-    // 3. Fast Parallel Cloud Sync to Realtime Database and Firestore
+    // 3. Reliable Cloud Write to Firestore and Realtime Database
     try {
-      await Promise.race([
-        Promise.all([
-          // Realtime Database Seat Lock
-          Promise.all(selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending"))).catch(() => {}),
-          // Realtime Database Booking Record
-          set(ref(rtdb, `all_bookings/${newBooking.id}`), {
-            id: newBooking.id,
-            name: newBooking.name,
-            phone: newBooking.phone,
-            upiId: newBooking.upiId,
-            upiTarget: activeUpiId,
-            college: newBooking.college,
-            year: newBooking.year,
-            seats: newBooking.seats,
-            totalAmount: newBooking.totalAmount,
-            status: "pending",
-            createdAt: new Date().toISOString(),
-          }).catch(() => {}),
-          // Firestore Booking Record
-          setDoc(doc(db, "bookings", newBooking.id), {
-            id: newBooking.id,
-            name: newBooking.name,
-            phone: newBooking.phone,
-            upiId: newBooking.upiId,
-            upiTarget: activeUpiId,
-            college: newBooking.college,
-            year: newBooking.year,
-            seats: newBooking.seats,
-            totalAmount: newBooking.totalAmount,
-            status: "pending",
-            createdAt: new Date().toISOString(),
-          }).catch(() => {}),
-        ]),
-        new Promise((res) => setTimeout(res, 800)), // Max 800ms wait so customer experience is instant
+      await Promise.all([
+        // Realtime Database Seat Lock
+        Promise.all(selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending"))).catch((err) => {
+          console.warn("RTDB seat lock notice:", err);
+        }),
+        // Realtime Database Booking Node
+        set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking).catch((err) => {
+          console.warn("RTDB booking write notice:", err);
+        }),
+        // Firestore Booking Doc
+        setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true }).catch((err) => {
+          console.warn("Firestore booking write notice:", err);
+        }),
       ]);
-    } catch (e) {
-      console.warn("Cloud sync non-fatal notice:", e);
+    } catch (cloudErr) {
+      console.warn("Cloud write pipeline notice:", cloudErr);
     }
 
     // 4. Transition UI to Success Screen immediately
@@ -226,127 +175,112 @@ export default function BookingForm({
             name="year"
             value={primaryContact.year}
             onChange={handlePrimaryChange}
-            required
           >
-            <option value="">Select year…</option>
-            {YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
+            <option value="1st Year">1st Year</option>
+            <option value="2nd Year">2nd Year</option>
+            <option value="3rd Year">3rd Year</option>
+            <option value="4th Year">4th Year</option>
+            <option value="Faculty / Staff">Faculty / Staff</option>
+            <option value="Other">Other</option>
           </select>
         </div>
 
         {/* College Name */}
         <div className="form-field form-field--full">
-          <label className="label" htmlFor="college">College Name *</label>
+          <label className="label" htmlFor="college">College / Department</label>
           <input
             className="input"
             id="college"
             name="college"
             type="text"
-            placeholder="Marwadi University"
+            placeholder="e.g. Marwadi University - CSE"
             value={primaryContact.college}
             onChange={handlePrimaryChange}
-            required
-          />
-        </div>
-
-        {/* Selected Seats */}
-        <div className="form-field form-field--full">
-          <label className="label">Selected Seats ({selectedSeats.length})</label>
-          <input
-            className="input"
-            type="text"
-            value={selectedSeats.join(", ") || "None"}
-            readOnly
-            disabled
           />
         </div>
       </div>
 
-      {/* Tier Breakdown */}
-      {Object.keys(tierBreakdown).length > 0 && (
-        <div className="tier-breakdown">
-          {Object.entries(tierBreakdown).map(([tier, data]) => (
-            <div key={tier} className="tier-item">
-              <span className={`tier-tag tier-tag--${tier.toLowerCase()}`}>
-                <Tag size={12} /> {tier} (₹{data.price} × {data.count})
-              </span>
-              <span className="tier-subtotal">₹{data.price * data.count}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* ── PAYMENT SECTION ── */}
+      <div className="payment-box">
+        <h3 className="payment-box__title">
+          <QrCode size={18} /> Scan & Pay via Any UPI App
+        </h3>
 
-      {/* Total Amount */}
-      <div className="booking-form__total">
-        <IndianRupee size={18} />
-        <span>Total Payable</span>
-        <strong>₹{totalAmount}</strong>
-      </div>
-
-      {/* ── UPI Payment Gateway Box ── */}
-      <div className="upi-payment-box">
-        <div className="upi-payment-header">
-          <QrCode size={20} color="var(--gold)" />
-          <h3>Scan & Pay via UPI App</h3>
-        </div>
-
-        <div className="upi-payment-content">
-          {/* QR Code */}
-          <div className="upi-qr-wrapper">
-            {qrDataUrl ? (
-              <img src={qrDataUrl} alt="UPI QR Code" className="upi-qr-img" />
-            ) : (
-              <div className="upi-qr-placeholder">Generating QR…</div>
-            )}
-            <span className="upi-qr-amount">Exact Amount: ₹{totalAmount}</span>
-          </div>
-
-          {/* Direct Pay Options */}
-          <div className="upi-details">
-            <p className="upi-instruction">
-              Scan with <strong>GPay, PhonePe, Paytm</strong> or send to:
-            </p>
-
-            <div className="upi-id-badge">
-              <span>{activeUpiId}</span>
-              <button type="button" className="btn-copy" onClick={copyUpiId} title="Copy UPI ID">
-                <Copy size={13} /> Copy
-              </button>
-            </div>
-
-            <a href={upiUri} className="btn btn-outline upi-direct-btn">
-              <Smartphone size={14} /> Pay via UPI App
-            </a>
-          </div>
-        </div>
-
-        {/* Transaction Reference input */}
-        <div className="form-field form-field--full" style={{ marginTop: 14 }}>
-          <label className="label" htmlFor="upiRef" style={{ color: "var(--gold)", fontWeight: 700 }}>
-            UPI Reference / UTR Number *
-          </label>
-          <input
-            className="input"
-            id="upiRef"
-            name="upiRef"
-            type="text"
-            placeholder="e.g. 328492019482 (12-digit UTR from payment receipt)"
-            value={primaryContact.upiRef}
-            onChange={handlePrimaryChange}
-            required
+        <div className="payment-box__qr-wrapper">
+          <img
+            src={qrCodeUrl}
+            alt="UPI QR Code"
+            className="payment-box__qr-img"
+            width={180}
+            height={180}
           />
         </div>
+
+        {/* Payee Info */}
+        <div className="payment-box__payee-info">
+          <span>Payee: <strong>{activePayee}</strong></span>
+          <span>Amount: <strong className="payment-box__amount">₹{totalAmount}</strong></span>
+        </div>
+
+        {/* UPI ID Pill */}
+        <div className="payment-box__upi-row">
+          <span className="payment-box__upi-label">UPI ID:</span>
+          <span className="payment-box__upi-id">{activeUpiId}</span>
+          <button
+            type="button"
+            className="btn btn-ghost payment-box__copy-btn"
+            onClick={handleCopyUpi}
+            title="Copy UPI ID"
+          >
+            {copiedUpi ? <Check size={14} color="var(--green)" /> : <Copy size={14} />}
+            {copiedUpi ? "Copied!" : "Copy"}
+          </button>
+        </div>
+
+        {/* Mobile UPI Deep Link */}
+        <a
+          href={upiIntentUrl}
+          className="btn btn-outline payment-box__pay-app-btn"
+          style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
+        >
+          <Smartphone size={16} /> Pay ₹{totalAmount} via GPay / PhonePe / Paytm
+        </a>
       </div>
 
-      <button className="btn btn-gold booking-form__submit" disabled={submitting}>
+      {/* UTR Input */}
+      <div className="form-field" style={{ marginTop: 16 }}>
+        <label className="label" htmlFor="upiRef">
+          UTR / UPI Transaction Reference ID *
+        </label>
+        <input
+          className="input"
+          id="upiRef"
+          name="upiRef"
+          type="text"
+          placeholder="12-digit UTR (e.g. 423456789012)"
+          value={primaryContact.upiRef}
+          onChange={handlePrimaryChange}
+          required
+        />
+        <span className="field-hint">
+          Open your UPI app after payment → Copy the 12-digit UTR/Ref number and paste here.
+        </span>
+      </div>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        className="btn btn-gold btn-full"
+        style={{ marginTop: 20 }}
+        disabled={submitting || selectedSeats.length === 0}
+      >
         {submitting ? (
-          <>
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="spinner" style={{ width: 18, height: 18 }} />
             Submitting Booking…
-          </>
+          </span>
         ) : (
-          "Submit Booking & Payment"
+          `Submit & Confirm Booking (₹${totalAmount})`
         )}
       </button>
     </form>
