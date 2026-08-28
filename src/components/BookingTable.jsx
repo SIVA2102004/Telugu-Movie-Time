@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { db, rtdb } from "../firebase";
-import { doc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield, RefreshCw } from "lucide-react";
+import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield, RefreshCw, RotateCcw } from "lucide-react";
 import toast from "react-hot-toast";
 import "./BookingTable.css";
 
@@ -255,6 +255,46 @@ export default function BookingTable({
     });
   };
 
+  // ── 6. RESET ALL DATABASE & SEATS (Master Admin Only) ────────────────────
+  const resetDatabase = async () => {
+    if (!isMasterAdmin) {
+      toast.error("Permission denied: Only Master Admin can reset database.");
+      return;
+    }
+
+    if (!window.confirm("⚠️ ARE YOU SURE YOU WANT TO RESET THE ENTIRE DATABASE?\n\nThis will permanently delete all bookings, clear all pending/booked seats, and reset the hall back to 100% available.")) {
+      return;
+    }
+
+    // 1. Instantly clear local storage
+    try {
+      localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify([]));
+      localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify({}));
+      if (setBookings) setBookings([]);
+      window.dispatchEvent(new Event("storage"));
+    } catch (e) {}
+
+    toast.loading("Resetting cloud database...", { id: "reset-toast" });
+
+    try {
+      // 2. Clear all bookings from Firestore
+      const snap = await getDocs(collection(db, "bookings"));
+      await Promise.all(snap.docs.map((d) => deleteDoc(doc(db, "bookings", d.id))));
+
+      // 3. Clear RTDB bookings & seat locks
+      try {
+        await set(ref(rtdb, "seats"), null);
+        await set(ref(rtdb, "all_bookings"), null);
+      } catch (rtdbErr) {}
+
+      toast.success("Database & Seat Map reset successfully! 🟢", { id: "reset-toast" });
+      if (refreshBookings) refreshBookings();
+    } catch (err) {
+      console.error("Database reset error:", err);
+      toast.error("Error resetting database. Check internet connection.", { id: "reset-toast" });
+    }
+  };
+
   const openWhatsApp = (booking) => {
     const waUrl = getTicketWhatsAppUrl(booking);
     if (waUrl) window.open(waUrl, "_blank");
@@ -351,6 +391,17 @@ export default function BookingTable({
           {isMasterAdmin && (
             <button className="btn btn-outline" onClick={exportCSV}>
               <Download size={14} /> Export CSV
+            </button>
+          )}
+
+          {isMasterAdmin && (
+            <button
+              className="btn btn-red"
+              onClick={resetDatabase}
+              title="Reset all bookings & seat map"
+              style={{ padding: "6px 12px", gap: 5 }}
+            >
+              <RotateCcw size={14} /> Reset Database
             </button>
           )}
         </div>

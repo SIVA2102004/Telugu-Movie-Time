@@ -75,15 +75,10 @@ export function useSeats() {
             }
           });
 
-          if (Object.keys(map).length > 0) {
-            setSeatMap((prev) => {
-              const updated = { ...prev, ...map };
-              try {
-                localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(updated));
-              } catch (e) {}
-              return updated;
-            });
-          }
+          setSeatMap(map);
+          try {
+            localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(map));
+          } catch (e) {}
         },
         (err) => {
           console.warn("Firestore seat sync notice:", err);
