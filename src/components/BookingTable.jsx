@@ -2,8 +2,9 @@ import { useState } from "react";
 import { db, rtdb } from "../firebase";
 import { doc, setDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield, RefreshCw, RotateCcw } from "lucide-react";
+import { MessageCircle, Check, X, Search, Download, CheckCircle, Edit3, Trash2, Save, UserCheck, Shield, RefreshCw, RotateCcw, Ticket } from "lucide-react";
 import toast from "react-hot-toast";
+import VintageTicketModal from "./VintageTicketModal";
 import "./BookingTable.css";
 
 const STATUS_OPTIONS = ["All", "pending", "confirmed", "cancelled"];
@@ -21,6 +22,7 @@ export default function BookingTable({
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [editingBooking, setEditingBooking] = useState(null);
+  const [selectedTicketBooking, setSelectedTicketBooking] = useState(null);
 
   const safeBookings = Array.isArray(bookings) ? bookings : [];
 
@@ -517,6 +519,16 @@ export default function BookingTable({
                         </button>
                       )}
 
+                      {/* Vintage Ticket Preview & WhatsApp Send */}
+                      <button
+                        className="btn btn-gold"
+                        style={{ padding: "5px 8px", gap: 4, fontSize: "0.72rem" }}
+                        onClick={() => setSelectedTicketBooking(b)}
+                        title="View & Download Official Vintage Ticket"
+                      >
+                        <Ticket size={13} /> Ticket
+                      </button>
+
                       {/* WhatsApp manual link */}
                       <button
                         className="btn btn-wa"
@@ -534,6 +546,15 @@ export default function BookingTable({
           </tbody>
         </table>
       </div>
+
+      {/* Vintage Ticket Modal for Official Ticket Image Generation */}
+      {selectedTicketBooking && (
+        <VintageTicketModal
+          booking={selectedTicketBooking}
+          config={config}
+          onClose={() => setSelectedTicketBooking(null)}
+        />
+      )}
 
       {/* Edit Booking Modal */}
       {isMasterAdmin && editingBooking && (

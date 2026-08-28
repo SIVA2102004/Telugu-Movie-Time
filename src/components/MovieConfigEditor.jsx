@@ -104,11 +104,179 @@ export default function MovieConfigEditor({ config, layout }) {
     setSaving(false);
   };
 
+  const screens = form.screens || DEFAULT_SCREENS;
+  const activeScreenId = form.activeScreenId || "screen-1";
+
+  const handleSelectScreen = (screenId) => {
+    const selectedScreen = screens.find((s) => s.id === screenId);
+    if (!selectedScreen) return;
+
+    setForm((prev) => ({
+      ...prev,
+      activeScreenId: screenId,
+      movieName: selectedScreen.movieName || prev.movieName,
+      theater: selectedScreen.theater || prev.theater,
+      date: selectedScreen.date || prev.date,
+      showTime: selectedScreen.showTime || prev.showTime,
+      pricePerSeat: selectedScreen.pricePerSeat || prev.pricePerSeat,
+      posterUrl: selectedScreen.posterUrl || prev.posterUrl,
+      tierPrices: selectedScreen.tierPrices || prev.tierPrices,
+    }));
+    toast.success(`Switched editor to ${selectedScreen.name}`);
+  };
+
+  const handlePublishScreen = async (screenId) => {
+    const updatedScreens = screens.map((s) => ({
+      ...s,
+      isPublished: s.id === screenId,
+    }));
+
+    const publishedScreen = screens.find((s) => s.id === screenId);
+    if (!publishedScreen) return;
+
+    const updated = {
+      ...form,
+      activeScreenId: screenId,
+      screens: updatedScreens,
+      movieName: publishedScreen.movieName,
+      theater: publishedScreen.theater,
+      date: publishedScreen.date,
+      showTime: publishedScreen.showTime,
+      pricePerSeat: publishedScreen.pricePerSeat,
+      posterUrl: publishedScreen.posterUrl,
+      tierPrices: publishedScreen.tierPrices,
+    };
+
+    setForm(updated);
+
+    try {
+      localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+      toast.success(`🎉 ${publishedScreen.name} is now LIVE on Student Booking Portal!`);
+    } catch (e) {
+      toast.success(`Published ${publishedScreen.name} locally!`);
+    }
+  };
+
+  const handlePosterUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setForm((prev) => ({ ...prev, posterUrl: reader.result }));
+        toast.success("Movie poster uploaded! Will display on tickets 🎬");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <form className="config-editor card" onSubmit={handleSave}>
-      <h2 className="config-editor__title">Movie, Pricing & Gateway Configuration</h2>
+      <h2 className="config-editor__title">Movie, Pricing & Multi-Screen Manager</h2>
+
+      {/* ── MULTI-SCREEN SELECTOR & PUBLISHER ── */}
+      <div style={{ background: "rgba(255,215,0,0.06)", border: "1px solid var(--gold)", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          <div>
+            <h3 style={{ margin: 0, color: "var(--gold)", fontSize: "1.05rem", display: "flex", alignItems: "center", gap: 6 }}>
+              🎬 Multi-Screen & Audi Manager (Admin Decides Which Screen is Live)
+            </h3>
+            <p style={{ margin: "4px 0 0", color: "var(--text-muted)", fontSize: "0.8rem" }}>
+              Configure up to 4 different screens / movie showtimes and click <strong>"Publish Live"</strong> to make that screen live for student bookings.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          {screens.map((screen) => {
+            const isLive = form.activeScreenId === screen.id;
+            return (
+              <div
+                key={screen.id}
+                style={{
+                  background: isLive ? "rgba(0, 200, 81, 0.12)" : "var(--surface)",
+                  border: isLive ? "2px solid var(--green)" : "1px solid var(--border)",
+                  borderRadius: 8,
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <strong style={{ color: isLive ? "var(--green)" : "var(--gold)", fontSize: "0.88rem" }}>
+                      {screen.name}
+                    </strong>
+                    {isLive && (
+                      <span style={{ background: "var(--green)", color: "#0d0d1a", fontSize: "0.65rem", padding: "1px 6px", borderRadius: 4, fontWeight: 900 }}>
+                        ACTIVE LIVE
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text)", marginTop: 4 }}>
+                    🎬 {screen.movieName}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    ⏰ {screen.showTime} · {screen.theater}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ flex: 1, padding: "5px 8px", fontSize: "0.75rem" }}
+                    onClick={() => handleSelectScreen(screen.id)}
+                  >
+                    Edit Details
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${isLive ? "btn-outline" : "btn-green"}`}
+                    style={{ flex: 1.2, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
+                    onClick={() => handlePublishScreen(screen.id)}
+                  >
+                    {isLive ? "✓ Live" : "Publish Live 🚀"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="config-grid">
+        {/* Movie Poster Uploader */}
+        <div className="form-field form-field--full" style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, padding: 14 }}>
+          <label className="label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span>Movie Poster / Image (Automatically converts into WhatsApp Vintage Ticket)</span>
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginTop: 8 }}>
+            {form.posterUrl ? (
+              <img
+                src={form.posterUrl}
+                alt="Movie Poster"
+                style={{ width: 70, height: 95, objectFit: "cover", borderRadius: 6, border: "2px solid var(--gold)" }}
+              />
+            ) : (
+              <div style={{ width: 70, height: 95, background: "#1a1a2e", borderRadius: 6, border: "1px dashed var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.8rem" }}>
+                🎬
+              </div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label className="btn btn-outline" style={{ cursor: "pointer", padding: "8px 14px", fontSize: "0.82rem", gap: 6 }}>
+                📁 Upload Poster Image
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePosterUpload} />
+              </label>
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                Upload PNG/JPG. This image is directly embedded on the WhatsApp Vintage Ticket!
+              </span>
+            </div>
+          </div>
+        </div>
         {/* Movie Info */}
         <div className="form-field">
           <label className="label" htmlFor="movieName">Movie Name</label>

@@ -7,7 +7,8 @@ import { useMovieConfig } from "../hooks/useMovieConfig";
 import SeatMap from "../components/SeatMap";
 import BookingForm from "../components/BookingForm";
 import MovieHeader from "../components/MovieHeader";
-import { CheckCircle, Share2, Timer, Ticket, MessageCircle, ArrowLeft } from "lucide-react";
+import VintageTicketModal from "../components/VintageTicketModal";
+import { CheckCircle, Share2, Timer, Ticket, MessageCircle, ArrowLeft, Download } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import "../styles/globals.css";
 import "./StudentPage.css";
@@ -22,6 +23,7 @@ export default function StudentPage() {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
+  const [showTicketModal, setShowTicketModal] = useState(false);
   const [lockTimer, setLockTimer] = useState(null);
   const timerRef = useRef(null);
   const lockStartRef = useRef(null);
@@ -175,6 +177,28 @@ export default function StudentPage() {
               </div>
             )}
 
+            {submittedData?.booking && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-gold"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "12px 24px",
+                    fontSize: "1rem",
+                    width: "100%",
+                    fontWeight: 700,
+                  }}
+                  onClick={() => setShowTicketModal(true)}
+                >
+                  <Ticket size={20} /> View & Download Vintage Movie Ticket 🎟️
+                </button>
+              </div>
+            )}
+
             {submittedData?.waUrl && (
               <a
                 href={submittedData.waUrl}
@@ -191,6 +215,7 @@ export default function StudentPage() {
                   width: "100%",
                   fontWeight: 700,
                   textDecoration: "none",
+                  marginTop: 10,
                 }}
               >
                 <MessageCircle size={20} /> Send Screenshot to Admin on WhatsApp
@@ -207,6 +232,16 @@ export default function StudentPage() {
             >
               <ArrowLeft size={16} /> Back to Seating Layout
             </button>
+
+            {/* Vintage Ticket Modal */}
+            {showTicketModal && submittedData?.booking && (
+              <VintageTicketModal
+                booking={submittedData.booking}
+                config={config}
+                isStudent={true}
+                onClose={() => setShowTicketModal(false)}
+              />
+            )}
           </div>
         </main>
       ) : (

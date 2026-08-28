@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
-// The exact blueprint hall layout (15 Rows, 274 Seats, Recliner / Gold / Silver with Aisle gaps)
+// Screen 1 Layout (Default Hall - 274 Seats)
 export const BLUEPRINT_LAYOUT = {
   rows: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"],
   screenPosition: "top",
@@ -47,16 +47,74 @@ export const BLUEPRINT_LAYOUT = {
   },
 };
 
+export const DEFAULT_SCREENS = [
+  {
+    id: "screen-1",
+    name: "Screen 1 (Main Hall)",
+    movieName: "PARADISE",
+    theater: "Crystal Mall (Screen 1)",
+    date: "2026-09-26",
+    showTime: "8:00 AM",
+    pricePerSeat: 200,
+    posterUrl: null,
+    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    layout: BLUEPRINT_LAYOUT,
+    isPublished: true,
+  },
+  {
+    id: "screen-2",
+    name: "Screen 2 (Audi 2 - Telugu Special)",
+    movieName: "TELUGU SPECIAL SHOW",
+    theater: "Crystal Mall (Screen 2)",
+    date: "2026-09-26",
+    showTime: "11:30 AM",
+    pricePerSeat: 200,
+    posterUrl: null,
+    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    layout: BLUEPRINT_LAYOUT,
+    isPublished: false,
+  },
+  {
+    id: "screen-3",
+    name: "Screen 3 (Audi 3 - Matinee Show)",
+    movieName: "TELUGU MOVIE TIME",
+    theater: "Crystal Mall (Screen 3)",
+    date: "2026-09-26",
+    showTime: "3:00 PM",
+    pricePerSeat: 200,
+    posterUrl: null,
+    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    layout: BLUEPRINT_LAYOUT,
+    isPublished: false,
+  },
+  {
+    id: "screen-4",
+    name: "Screen 4 (Audi 4 - Prime Night)",
+    movieName: "BLOCKBUSTER PREMIERE",
+    theater: "Crystal Mall (Screen 4)",
+    date: "2026-09-26",
+    showTime: "7:00 PM",
+    pricePerSeat: 250,
+    posterUrl: null,
+    tierPrices: { Platinum: 350, Gold: 300, Silver: 250 },
+    layout: BLUEPRINT_LAYOUT,
+    isPublished: false,
+  }
+];
+
 export function buildDefaultLayout() {
   return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
 }
 
 const DEFAULT_CONFIG = {
-  movieName: "Telugu Movie Time",
-  date: "2026-08-30",
-  theater: "Rajshree Cinema (Screen 1)",
-  showTime: "6:30 PM",
+  activeScreenId: "screen-1",
+  screens: DEFAULT_SCREENS,
+  movieName: "PARADISE",
+  date: "2026-09-26",
+  theater: "Crystal Mall",
+  showTime: "8:00 AM",
   pricePerSeat: 200,
+  posterUrl: null,
   tierPrices: {
     Platinum: 300,
     Gold: 250,
