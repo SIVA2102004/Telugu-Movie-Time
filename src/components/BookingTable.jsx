@@ -390,9 +390,10 @@ export default function BookingTable({
     const confirmed = safeBookings.filter((b) => b?.status === "confirmed");
     if (confirmed.length === 0) { toast.error("No confirmed bookings to export."); return; }
 
-    const headers = ["#", "Name", "Phone", "College", "Year", "Seats", "Amount", "UTR / Ref", "Target UPI", "Status"];
+    const headers = ["#", "Screen", "Name", "Phone", "College", "Year", "Seats", "Amount", "UTR / Ref", "Target UPI", "Status"];
     const rows = confirmed.map((b, i) => [
       i + 1,
+      b?.screenName || (config?.screens?.find((s) => s.id === b?.screenId)?.name) || "Screen 1",
       b?.name || "",
       b?.phone || "",
       b?.college || "",
@@ -543,6 +544,7 @@ export default function BookingTable({
           <thead>
             <tr>
               <th>#</th>
+              <th>Screen</th>
               <th>Name</th>
               <th>Phone</th>
               <th>College</th>
@@ -557,12 +559,33 @@ export default function BookingTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="bt-empty">No bookings found.</td>
+                <td colSpan={11} className="bt-empty">No bookings found.</td>
               </tr>
             ) : (
-              filtered.map((b, i) => (
+              filtered.map((b, i) => {
+                const screenBadgeText = b?.screenName || (config?.screens?.find((s) => s.id === b?.screenId)?.name) || (b?.screenId ? b.screenId.toUpperCase().replace("-", " ") : "Screen 1");
+                return (
                 <tr key={b?.id || i}>
                   <td>{i + 1}</td>
+                  <td>
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        background: "rgba(255, 215, 0, 0.12)",
+                        border: "1px solid rgba(255, 215, 0, 0.35)",
+                        color: "var(--gold)",
+                        fontSize: "0.74rem",
+                        fontWeight: 800,
+                        padding: "3px 8px",
+                        borderRadius: 6,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      🖥️ {screenBadgeText}
+                    </span>
+                  </td>
                   <td className="bt-name">{b?.name || "N/A"}</td>
                   <td>
                     <a href={`tel:${b?.phone}`} style={{ color: "var(--text)" }}>
@@ -580,18 +603,13 @@ export default function BookingTable({
                           <span
                             key={s}
                             className={`seat-chip ${hasConflict ? "seat-chip--conflict" : ""}`}
-                            title={hasConflict ? `Seat ${s} is duplicated in another booking on ${b.screenName || "this screen"}!` : `Seat ${s}`}
+                            title={hasConflict ? `Seat ${s} is duplicated in another booking on ${screenBadgeText}!` : `Seat ${s}`}
                           >
                             {s} {hasConflict && "⚠️"}
                           </span>
                         );
                       })}
                     </div>
-                    {b?.screenName && (
-                      <span style={{ fontSize: "0.68rem", color: "var(--gold)", display: "block", marginTop: 3 }}>
-                        🖥️ {b.screenName}
-                      </span>
-                    )}
                   </td>
                   <td><strong style={{ color: "var(--gold)" }}>₹{b?.totalAmount || 0}</strong></td>
                   <td className="bt-upi">
@@ -681,7 +699,7 @@ export default function BookingTable({
                     </div>
                   </td>
                 </tr>
-              ))
+              );})
             )}
           </tbody>
         </table>
