@@ -67,7 +67,23 @@ export default function SeatMap({
   const rowTiers = layout?.rowTiers || {};
   const tierPrices = layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
 
-  const blockedSet = useMemo(() => new Set(blockedSeats), [blockedSeats]);
+  // Filter blocked seats by screen or global list
+  const blockedSet = useMemo(() => {
+    if (!blockedSeats || !Array.isArray(blockedSeats)) return new Set();
+    // Support screen-specific blocked seats e.g. "screen-1_A1" or plain "A1"
+    const set = new Set();
+    blockedSeats.forEach((b) => {
+      if (typeof b === "string") {
+        if (b.includes("_")) {
+          const [bScr, bSeat] = b.split("_");
+          if (bScr === (screenId || "screen-1")) set.add(bSeat);
+        } else {
+          set.add(b);
+        }
+      }
+    });
+    return set;
+  }, [blockedSeats, screenId]);
   const selectedSet = useMemo(() => new Set(selectedSeats), [selectedSeats]);
 
   // Compute map of confirmed seat statuses and student names strictly filtered by screenId

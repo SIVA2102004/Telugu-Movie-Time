@@ -104,8 +104,17 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
   const clearAllBlocks = () => {
     if (readOnly) return;
-    setBlockedSeats(new Set());
-    toast.success("All seat blocks cleared! 🟢");
+    setBlockedSeats((prev) => {
+      const next = new Set();
+      // keep other screens' blocked seats if prefixed
+      prev.forEach((s) => {
+        if (s.includes("_") && !s.startsWith(`${selectedScreenId}_`)) {
+          next.add(s);
+        }
+      });
+      return next;
+    });
+    toast.success(`Cleared all seat blocks for ${currentScreen?.name}! 🟢`);
   };
 
   const saveAvailability = async () => {
@@ -119,13 +128,14 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
     try {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {
       await setDoc(doc(db, "movieConfig", "current"), { blockedSeats: blockedList }, { merge: true });
-      toast.success("Seat availability saved successfully! 🚀");
+      toast.success("Seat availability saved to cloud successfully! 🚀");
     } catch (err) {
-      toast.success("Saved to local workspace cache! ✅");
+      toast.success("Saved locally! ✅");
     }
     setSaving(false);
   };
