@@ -68,32 +68,43 @@ export default function VintageTicketModal({
     return p;
   };
 
-  const formattedPhone = formatWhatsAppPhone(booking.phone);
+  const handleShareTicketImage = async () => {
+    if (!ticketRef.current) return;
+    setDownloading(true);
+    toast.loading("Preparing Ticket Image for WhatsApp...", { id: "ticket-share" });
+    try {
+      const dataUrl = await toPng(ticketRef.current, {
+        quality: 0.98,
+        pixelRatio: 2,
+        backgroundColor: "#0d0d1a",
+      });
 
-  const sendWhatsAppWithTicketLink = () => {
-    if (!formattedPhone) {
-      toast.error("Customer phone number is missing or invalid.");
-      return;
+      // Convert base64 dataUrl to blob and file
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `TMT-Vintage-Ticket-${customerName.replace(/\s+/g, "_")}.png`, { type: "image/png" });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Telugu Movie Time Ticket — ${movieName}`,
+          text: `🎟️ *TELUGU MOVIE TIME TICKET*\nMovie: ${movieName}\nScreen: ${activeScreenName}\nSeats: ${seatsString}\nName: ${customerName}`,
+        });
+        toast.success("Ticket shared to WhatsApp! 🎉", { id: "ticket-share" });
+      } else {
+        // Fallback: download the image and open WhatsApp with pre-filled message
+        download(dataUrl, `TMT-Ticket-${movieName.replace(/\s+/g, "_")}-${activeScreenName.replace(/\s+/g, "_")}-${booking.id || "ticket"}.png`, "image/png");
+        toast.success("Ticket Image saved! Opening WhatsApp...", { id: "ticket-share" });
+        sendWhatsAppWithTicketLink();
+      }
+    } catch (err) {
+      console.warn("Share notice:", err);
+      // Fallback
+      handleDownload();
+      sendWhatsAppWithTicketLink();
+    } finally {
+      setDownloading(false);
     }
-    const msg = encodeURIComponent(
-      `🎟️ *TELUGU MOVIE TIME (TMT) - VINTAGE TICKET CONFIRMATION* 🎬\n\n` +
-      `👤 *Name:* ${booking.name || ""}\n` +
-      `🍿 *Movie:* ${movieName}\n` +
-      `🖥️ *Screen / Audi:* *${activeScreenName}*\n` +
-      `📅 *Date:* ${date}\n` +
-      `⏰ *Time:* ${showTime}\n` +
-      `📍 *Theatre:* ${theater}\n` +
-      `💺 *Confirmed Seats:* *${seatsString}* (${ticketCount} Ticket${ticketCount > 1 ? "s" : ""})\n` +
-      `💰 *Total Paid:* *₹${booking.totalAmount || 0}*\n` +
-      `💳 *UTR / Ref:* ${booking.upiId || "Verified"}\n` +
-      `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n\n` +
-      `✅ *STATUS: CONFIRMED*\n\n` +
-      `📌 *Instructions:*\n` +
-      `• Please show your ticket at the entrance gate.\n` +
-      `• Please arrive 15 minutes before show time.\n\n` +
-      `Enjoy the movie! 🍿🎉\n- Telugu Movie Time Team`
-    );
-    window.open(`https://wa.me/${formattedPhone}?text=${msg}`, "_blank");
   };
 
   return (
@@ -254,10 +265,11 @@ export default function VintageTicketModal({
           {!isStudent && (
             <button
               className="btn btn-wa"
-              onClick={sendWhatsAppWithTicketLink}
-              style={{ flex: 1, padding: "12px", justifyContent: "center", gap: 8, fontSize: "0.95rem" }}
+              onClick={handleShareTicketImage}
+              disabled={downloading}
+              style={{ flex: 1.2, padding: "12px", justifyContent: "center", gap: 8, fontSize: "0.95rem" }}
             >
-              <MessageCircle size={18} /> Send Ticket to WhatsApp ({booking.phone})
+              <MessageCircle size={18} /> Send Ticket Image on WhatsApp 📲
             </button>
           )}
         </div>

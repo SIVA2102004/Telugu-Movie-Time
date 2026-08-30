@@ -144,6 +144,9 @@ export default function BookingTable({
 
     toast.success(`Confirmed: ${booking.name} by ${currentAdminUser} 🎟️`);
 
+    // Automatically open Vintage Ticket Modal for this booking
+    setSelectedTicketBooking({ ...booking, status: "confirmed" });
+
     const waUrl = getTicketWhatsAppUrl(booking);
     if (waUrl) window.open(waUrl, "_blank");
 
