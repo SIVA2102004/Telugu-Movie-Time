@@ -18,6 +18,7 @@ export default function BookingForm({
   layout,
   screenId = "screen-1",
   screenName = "Screen 1",
+  existingBookings = [],
 }) {
   const computedAmount = Number(
     totalAmount !== undefined && !isNaN(totalAmount)
@@ -72,6 +73,29 @@ export default function BookingForm({
     if (!/^\d{10}$/.test(primaryContact.phone.replace(/\D/g, ""))) return "Please enter a valid 10-digit phone number.";
     if (!primaryContact.upiRef.trim()) return "Please enter the UPI 12-digit UTR / Reference ID.";
     if (primaryContact.upiRef.trim().length < 6) return "Please enter a valid UPI Reference / UTR Number.";
+
+    // ── CHECK DUPLICATE UTR ──
+    const enteredUtr = primaryContact.upiRef.trim().toLowerCase();
+    
+    // Check against existingBookings prop
+    const duplicateInCloud = (existingBookings || []).some(
+      (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
+    );
+    if (duplicateInCloud) {
+      return "⚠️ This UTR / Reference ID has already been submitted for another booking! Please check your payment receipt.";
+    }
+
+    // Check against local bookings cache
+    try {
+      const localCache = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
+      const duplicateInLocal = localCache.some(
+        (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
+      );
+      if (duplicateInLocal) {
+        return "⚠️ This UTR / Reference ID is already in use! Each transaction must have a unique UTR.";
+      }
+    } catch (e) {}
+
     return null;
   };
 

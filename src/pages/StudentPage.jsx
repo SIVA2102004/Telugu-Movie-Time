@@ -576,6 +576,7 @@ export default function StudentPage() {
                       getSeatPrice={getSeatPrice}
                       getSeatTier={getSeatTier}
                       config={config}
+                      existingBookings={bookings}
                       screenId={currentScreenId}
                       screenName={activeScreenName}
                       onSuccess={handleSuccess}
