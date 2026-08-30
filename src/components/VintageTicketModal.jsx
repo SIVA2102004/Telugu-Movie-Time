@@ -59,10 +59,22 @@ export default function VintageTicketModal({
     }
   };
 
-  const cleanPhone = String(booking.phone || "").replace(/\D/g, "");
-  const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
+  const formatWhatsAppPhone = (rawPhone) => {
+    let p = String(rawPhone || "").replace(/\D/g, "");
+    if (!p) return "";
+    if (p.length === 10) return `91${p}`;
+    if (p.length === 12 && p.startsWith("91")) return p;
+    if (p.startsWith("0")) return `91${p.slice(1)}`;
+    return p;
+  };
+
+  const formattedPhone = formatWhatsAppPhone(booking.phone);
 
   const sendWhatsAppWithTicketLink = () => {
+    if (!formattedPhone) {
+      toast.error("Customer phone number is missing or invalid.");
+      return;
+    }
     const msg = encodeURIComponent(
       `🎟️ *TELUGU MOVIE TIME (TMT) - VINTAGE TICKET CONFIRMATION* 🎬\n\n` +
       `👤 *Name:* ${booking.name || ""}\n` +

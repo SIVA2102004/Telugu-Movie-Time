@@ -56,12 +56,22 @@ export default function BookingTable({
     return matchStatus && matchSearch;
   });
 
+  // Helper to format 10-digit phone to international format (91XXXXXXXXXX)
+  const formatWhatsAppPhone = (rawPhone) => {
+    let p = String(rawPhone || "").replace(/\D/g, "");
+    if (!p) return "";
+    if (p.length === 10) return `91${p}`;
+    if (p.length === 12 && p.startsWith("91")) return p;
+    if (p.startsWith("0")) return `91${p.slice(1)}`;
+    return p;
+  };
+
   // Generates ticket WhatsApp link with detailed message
   const getTicketWhatsAppUrl = (booking) => {
     if (!booking) return "";
     const seats = Array.isArray(booking.seats) ? booking.seats.join(", ") : (booking.seats || "");
-    const cleanPhone = String(booking.phone || "").replace(/\D/g, "");
-    const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
+    const formattedPhone = formatWhatsAppPhone(booking.phone);
+    if (!formattedPhone) return "";
 
     const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
     const msg = encodeURIComponent(
@@ -90,8 +100,8 @@ export default function BookingTable({
   const getCancellationWhatsAppUrl = (booking, reason = "Cancelled") => {
     if (!booking) return "";
     const seats = Array.isArray(booking.seats) ? booking.seats.join(", ") : (booking.seats || "");
-    const cleanPhone = String(booking.phone || "").replace(/\D/g, "");
-    const formattedPhone = cleanPhone.startsWith("91") ? cleanPhone : `91${cleanPhone}`;
+    const formattedPhone = formatWhatsAppPhone(booking.phone);
+    if (!formattedPhone) return "";
 
     const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
     const msg = encodeURIComponent(
