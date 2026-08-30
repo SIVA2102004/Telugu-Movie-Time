@@ -80,25 +80,30 @@ export default function BookingTable({
     if (!formattedPhone) return "";
     const ticketDownloadUrl = `https://tmt-wheat.vercel.app/ticket/${booking.id}`;
 
-    const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
+    const activeScreenName = config?.screens?.find((s) => s.id === (booking.screenId || config?.activeScreenId))?.name || "Screen 1 (Main Hall)";
     const msg = encodeURIComponent(
-      `🎟️ *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
-      `👤 *Name:* ${booking.name || "Movie Lover"}\n` +
-      `🍿 *Movie:* ${config?.movieName || "PARADISE"}\n` +
+      `🎬 *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🍿\n` +
+      `✨ *॥ THE PARADISE GRAND PREMIERE ॥* ✨\n\n` +
+      `Dear *${booking.name || "Movie Lover"}*, your movie ticket booking has been successfully confirmed!\n\n` +
+      `🧾 *Ticket Booking ID:* ${booking.id || "TMT-2026"}\n` +
+      `👤 *Name:* ${booking.name || "Valued Guest"}\n` +
+      `🍿 *Movie:* PARADISE\n` +
       `🖥️ *Screen / Audi:* *${activeScreenName}*\n` +
-      `📅 *Date:* 24-09-2026\n` +
-      `⏰ *Time:* ${config?.showTime || "8:00 AM"}\n` +
-      `📍 *Theater:* ${config?.theater || "Crystal Mall"} (${activeScreenName})\n` +
       `💺 *Confirmed Seats:* *${seats}*\n` +
-      `💰 *Total Paid:* *₹${booking.totalAmount || 0}*\n` +
-      `💳 *UTR / Ref:* ${booking.upiId || "Verified"}\n` +
-      `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n\n` +
-      `✅ *STATUS: CONFIRMED*\n\n` +
-      `🎟️ *Download Official Ticket Card:* \n${ticketDownloadUrl}\n\n` +
+      `💰 *Total Amount Paid:* ₹${booking.totalAmount || 0}\n` +
+      `💳 *Payment Method:* UPI\n` +
+      `📝 *UTR / Ref ID:* ${booking.upiId || "Verified"}\n` +
+      `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n` +
+      `📅 *Date:* 24-09-2026\n` +
+      `⏰ *Time:* 8:00 AM\n` +
+      `📍 *Venue / Theater:* Crystal Mall (${activeScreenName})\n` +
+      `✅ *Status:* Confirmed\n\n` +
+      `👉 *View & Download Official Digital Ticket Card:*\n` +
+      `${ticketDownloadUrl}\n\n` +
       `📌 *Instructions:*\n` +
-      `• Please show this ticket / ticket image at the entry gate.\n` +
+      `• Please show your digital ticket card at the entry gate.\n` +
       `• Please arrive 15 minutes before the show.\n\n` +
-      `Enjoy the show together! 🍿🎉\n- Telugu Movie Time Admin`
+      `🍿 *Enjoy the show together with Telugu Movie Time!* 🎉🎬`
     );
 
     return `https://wa.me/${formattedPhone}?text=${msg}`;
