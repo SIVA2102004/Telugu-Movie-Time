@@ -444,26 +444,50 @@ export default function TheaterLayoutEditor({ config }) {
           <div className="tle-section card tle-tier-editor">
             <h3 className="tle-section-title"><IndianRupee size={15} /> Category Rates (₹)</h3>
             <p style={{ margin: "0 0 10px 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-              Set prices for each tier. (Tip: You can set Gold and Silver to the same price like ₹200 if needed!)
+              Toggle <strong>Keep</strong> or <strong>Remove</strong> for each category individually to decide whether to display it:
             </p>
             <div className="tle-tier-inputs">
-              {DEFAULT_TIERS.map((tier) => (
-                <div key={tier} className="tle-tier-row">
-                  <span className={`tle-tier-badge tle-tier-badge--${tier.toLowerCase()}`}>
-                    {tier}
-                  </span>
-                  <div className="tle-price-input-wrap">
-                    <span>₹</span>
-                    <input
-                      type="number"
-                      className="input tle-price-input"
-                      value={tierPrices[tier] ?? ""}
-                      placeholder="e.g. 200"
-                      onChange={(e) => setTierPrice(tier, e.target.value)}
-                    />
+              {DEFAULT_TIERS.map((tier) => {
+                const isEnabled = layout.visibleTiers ? layout.visibleTiers[tier] !== false : true;
+                return (
+                  <div key={tier} className="tle-tier-row" style={{ opacity: isEnabled ? 1 : 0.6, background: isEnabled ? "transparent" : "rgba(255,255,255,0.02)", padding: "4px 6px", borderRadius: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span className={`tle-tier-badge tle-tier-badge--${tier.toLowerCase()}`}>
+                        {tier}
+                      </span>
+                      <button
+                        type="button"
+                        className={`btn ${isEnabled ? "btn-green" : "btn-red"}`}
+                        style={{ padding: "2px 6px", fontSize: "0.68rem", fontWeight: 800, borderRadius: 4 }}
+                        onClick={() => {
+                          setLayout((prev) => ({
+                            ...prev,
+                            visibleTiers: {
+                              ...(prev.visibleTiers || { Platinum: true, Gold: true, Silver: true }),
+                              [tier]: !isEnabled,
+                            },
+                          }));
+                        }}
+                        title={isEnabled ? `Click to remove/hide ${tier} category` : `Click to keep/show ${tier} category`}
+                      >
+                        {isEnabled ? "✓ Keep" : "✕ Removed"}
+                      </button>
+                    </div>
+
+                    <div className="tle-price-input-wrap">
+                      <span>₹</span>
+                      <input
+                        type="number"
+                        className="input tle-price-input"
+                        value={tierPrices[tier] ?? ""}
+                        placeholder="e.g. 200"
+                        disabled={!isEnabled}
+                        onChange={(e) => setTierPrice(tier, e.target.value)}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
