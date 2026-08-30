@@ -9,12 +9,15 @@ import "./BookingForm.css";
 
 export default function BookingForm({
   selectedSeats,
-  config,
+  pricePerSeat = 200,
   onSuccess,
+  config = {},
   totalAmount,
   getSeatPrice,
   getSeatTier,
   layout,
+  screenId = "screen-1",
+  screenName = "Screen 1",
 }) {
   const computedAmount = Number(
     totalAmount !== undefined && !isNaN(totalAmount)
@@ -64,13 +67,11 @@ export default function BookingForm({
   };
 
   const validate = () => {
-    if (!primaryContact.name.trim()) return "Please enter your full name.";
-    if (!/^\d{10}$/.test(primaryContact.phone.trim()))
-      return "Please enter a valid 10-digit WhatsApp phone number.";
-    if (!primaryContact.upiRef.trim())
-      return "Please enter the UTR / UPI Transaction Reference number.";
-    if (selectedSeats.length === 0)
-      return "Please select at least one seat.";
+    if (!primaryContact.name.trim()) return "Please enter student name.";
+    if (!primaryContact.phone.trim()) return "Please enter WhatsApp phone number.";
+    if (!/^\d{10}$/.test(primaryContact.phone.replace(/\D/g, ""))) return "Please enter a valid 10-digit phone number.";
+    if (!primaryContact.upiRef.trim()) return "Please enter the UPI 12-digit UTR / Reference ID.";
+    if (primaryContact.upiRef.trim().length < 6) return "Please enter a valid UPI Reference / UTR Number.";
     return null;
   };
 
@@ -84,6 +85,8 @@ export default function BookingForm({
     const bookingId = "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
     const newBooking = {
       id: bookingId,
+      screenId: screenId,
+      screenName: screenName,
       name: primaryContact.name.trim(),
       phone: primaryContact.phone.trim(),
       upiId: primaryContact.upiRef.trim(),
@@ -102,11 +105,11 @@ export default function BookingForm({
       const updated = [newBooking, ...existing];
       localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(updated));
 
-      const seatsData = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
+      const seatsData = JSON.parse(localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`) || "{}");
       selectedSeats.forEach((seatId) => {
         seatsData[seatId] = "pending";
       });
-      localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsData));
+      localStorage.setItem(`telugu_talkies_seats_cache_${screenId}`, JSON.stringify(seatsData));
       window.dispatchEvent(new Event("storage"));
     } catch (storageErr) {}
 
@@ -143,7 +146,7 @@ export default function BookingForm({
     // 3. Parallel non-blocking Cloud sync (Firestore & RTDB)
     setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true }).catch(console.error);
     Promise.all([
-      ...selectedSeats.map((seatId) => set(ref(rtdb, `seats/${seatId}`), "pending")),
+      ...selectedSeats.map((seatId) => set(ref(rtdb, `seats_${screenId}/${seatId}`), "pending")),
       set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking),
     ]).catch(console.warn);
 

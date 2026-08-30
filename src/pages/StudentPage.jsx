@@ -16,8 +16,6 @@ import "./StudentPage.css";
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function StudentPage() {
-  const { seatMap } = useSeats();
-  const { bookings } = useBookings();
   const { config, layout, getSeatPrice, getSeatTier } = useMovieConfig();
 
   const [activeView, setActiveView] = useState("movie"); // "movie" (Overview) or "booking" (Seat Selection)
@@ -31,10 +29,14 @@ export default function StudentPage() {
 
   const publishedScreens = (config?.screens || []).filter((s) => s.isPublished);
   const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : (config?.screens || []).slice(0, 1);
-  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id;
+  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
   const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
   const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
   const activeScreenName = activeScreen.name || "Screen 1";
+
+  // Use isolated seatMap and bookings for this specific screen
+  const { seatMap } = useSeats(currentScreenId);
+  const { bookings } = useBookings();
 
   // ── Seat toggle ──────────────────────────────────────────────────────────
   const handleSeatToggle = useCallback(
@@ -45,28 +47,30 @@ export default function StudentPage() {
         setSelectedSeats((prev) => prev.filter((s) => s !== seatId));
         // Remove lock from RTDB and Firestore
         try {
-          await set(ref(rtdb, `seats/${seatId}`), "available");
+          await set(ref(rtdb, `seats_${currentScreenId}/${seatId}`), "available");
         } catch (e) {}
         try {
           const { doc, deleteDoc } = await import("firebase/firestore");
-          await deleteDoc(doc(db, "activeLocks", seatId));
+          await deleteDoc(doc(db, "activeLocks", `${currentScreenId}_${seatId}`));
         } catch (e) {}
       } else {
         setSelectedSeats((prev) => [...prev, seatId]);
         // Set lock in RTDB and Firestore
         try {
-          await set(ref(rtdb, `seats/${seatId}`), "locked");
+          await set(ref(rtdb, `seats_${currentScreenId}/${seatId}`), "locked");
         } catch (e) {}
         try {
           const { doc, setDoc } = await import("firebase/firestore");
-          await setDoc(doc(db, "activeLocks", seatId), {
+          await setDoc(doc(db, "activeLocks", `${currentScreenId}_${seatId}`), {
+            screenId: currentScreenId,
+            seatId: seatId,
             status: "locked",
             timestamp: Date.now(),
           });
         } catch (e) {}
       }
     },
-    [selectedSeats]
+    [selectedSeats, currentScreenId]
   );
 
   // ── 5-minute holding timer ───────────────────────────────────────────────
@@ -571,6 +575,8 @@ export default function StudentPage() {
                       getSeatPrice={getSeatPrice}
                       getSeatTier={getSeatTier}
                       config={config}
+                      screenId={currentScreenId}
+                      screenName={activeScreenName}
                       onSuccess={handleSuccess}
                     />
                   </section>

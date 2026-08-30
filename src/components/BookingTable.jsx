@@ -124,6 +124,7 @@ export default function BookingTable({
   const confirmBooking = (booking) => {
     if (!booking || !booking.id) return;
 
+    const bScreen = booking.screenId || "screen-1";
     const currentAdminUser = sessionStorage.getItem("adminName") || (isMasterAdmin ? "Master Admin" : "Co-Admin");
 
     if (setBookings) {
@@ -136,9 +137,9 @@ export default function BookingTable({
     }
 
     try {
-      const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
+      const seatsCache = JSON.parse(localStorage.getItem(`telugu_talkies_seats_cache_${bScreen}`) || "{}");
       (booking.seats || []).forEach((s) => { seatsCache[s] = "booked"; });
-      localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsCache));
+      localStorage.setItem(`telugu_talkies_seats_cache_${bScreen}`, JSON.stringify(seatsCache));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
@@ -159,9 +160,10 @@ export default function BookingTable({
         }, { merge: true });
         await set(ref(rtdb, `all_bookings/${booking.id}/status`), "confirmed");
         await set(ref(rtdb, `all_bookings/${booking.id}/confirmedBy`), currentAdminUser);
-        await Promise.all(
-          (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "booked"))
-        );
+        await Promise.all([
+          ...(booking.seats || []).map((s) => set(ref(rtdb, `seats_${bScreen}/${s}`), "booked")),
+          ...(booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "booked")),
+        ]);
       } catch (e) {
         console.warn("Firestore confirm sync notice:", e);
       }
@@ -176,6 +178,8 @@ export default function BookingTable({
     }
     if (!booking || !booking.id) return;
 
+    const bScreen = booking.screenId || "screen-1";
+
     if (setBookings) {
       setBookings((prev) => {
         const safePrev = Array.isArray(prev) ? prev : [];
@@ -186,9 +190,9 @@ export default function BookingTable({
     }
 
     try {
-      const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
+      const seatsCache = JSON.parse(localStorage.getItem(`telugu_talkies_seats_cache_${bScreen}`) || "{}");
       (booking.seats || []).forEach((s) => { seatsCache[s] = "available"; });
-      localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsCache));
+      localStorage.setItem(`telugu_talkies_seats_cache_${bScreen}`, JSON.stringify(seatsCache));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
@@ -202,9 +206,10 @@ export default function BookingTable({
       try {
         await setDoc(doc(db, "bookings", booking.id), { status: "cancelled" }, { merge: true });
         await set(ref(rtdb, `all_bookings/${booking.id}/status`), "cancelled");
-        await Promise.all(
-          (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "available"))
-        );
+        await Promise.all([
+          ...(booking.seats || []).map((s) => set(ref(rtdb, `seats_${bScreen}/${s}`), "available")),
+          ...(booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "available")),
+        ]);
       } catch (e) {
         console.warn("Firestore cancel sync notice:", e);
       }
@@ -219,6 +224,8 @@ export default function BookingTable({
     }
     if (!booking || !booking.id) return;
 
+    const bScreen = booking.screenId || "screen-1";
+
     if (setBookings) {
       setBookings((prev) => {
         const safePrev = Array.isArray(prev) ? prev : [];
@@ -229,9 +236,9 @@ export default function BookingTable({
     }
 
     try {
-      const seatsCache = JSON.parse(localStorage.getItem("telugu_talkies_seats_cache") || "{}");
+      const seatsCache = JSON.parse(localStorage.getItem(`telugu_talkies_seats_cache_${bScreen}`) || "{}");
       (booking.seats || []).forEach((s) => { seatsCache[s] = "available"; });
-      localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(seatsCache));
+      localStorage.setItem(`telugu_talkies_seats_cache_${bScreen}`, JSON.stringify(seatsCache));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
@@ -245,9 +252,10 @@ export default function BookingTable({
       try {
         await deleteDoc(doc(db, "bookings", booking.id));
         await set(ref(rtdb, `all_bookings/${booking.id}`), null);
-        await Promise.all(
-          (booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "available"))
-        );
+        await Promise.all([
+          ...(booking.seats || []).map((s) => set(ref(rtdb, `seats_${bScreen}/${s}`), "available")),
+          ...(booking.seats || []).map((s) => set(ref(rtdb, `seats/${s}`), "available")),
+        ]);
       } catch (e) {
         console.warn("Firestore delete sync notice:", e);
       }

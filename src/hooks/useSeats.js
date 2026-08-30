@@ -7,10 +7,10 @@ import { ref, onValue } from "firebase/database";
  * High-performance hook for real-time seat tracking.
  * Reacts to Firestore bookings, RTDB seats node, and local storage cache.
  */
-export function useSeats() {
+export function useSeats(screenId = "screen-1") {
   const [seatMap, setSeatMap] = useState(() => {
     try {
-      const cached = localStorage.getItem("telugu_talkies_seats_cache");
+      const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`) || localStorage.getItem("telugu_talkies_seats_cache");
       return cached ? JSON.parse(cached) : {};
     } catch (e) {
       return {};
@@ -23,7 +23,7 @@ export function useSeats() {
     // 1. Cross-tab and local storage listener for instant 0ms seat map refresh
     const handleStorage = () => {
       try {
-        const cached = localStorage.getItem("telugu_talkies_seats_cache");
+        const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`);
         if (cached) {
           setSeatMap(JSON.parse(cached));
         }
@@ -45,14 +45,14 @@ export function useSeats() {
       };
       setSeatMap(merged);
       try {
-        localStorage.setItem("telugu_talkies_seats_cache", JSON.stringify(merged));
+        localStorage.setItem(`telugu_talkies_seats_cache_${screenId}`, JSON.stringify(merged));
       } catch (e) {}
     };
 
-    // 2. Realtime Database listener (Tracks other users selecting seats in real-time)
+    // 2. Realtime Database listener per screen
     let unsubRTDB = () => {};
     try {
-      const seatsRef = ref(rtdb, "seats");
+      const seatsRef = ref(rtdb, `seats_${screenId}`);
       unsubRTDB = onValue(
         seatsRef,
         (snapshot) => {
@@ -71,7 +71,7 @@ export function useSeats() {
       console.warn("RTDB offline mode:", err);
     }
 
-    // 3. Realtime activeLocks listener from Firestore (Works across 100% of mobile & desktop networks)
+    // 3. Realtime activeLocks listener from Firestore per screen
     let unsubActiveLocks = () => {};
     try {
       unsubActiveLocks = onSnapshot(
@@ -81,9 +81,12 @@ export function useSeats() {
           const now = Date.now();
           snapshot.docs.forEach((d) => {
             const data = d.data();
-            // Discard stale locks older than 5 minutes
+            // Discard stale locks older than 5 minutes and match screen
             if (data && (!data.timestamp || now - data.timestamp < 5 * 60 * 1000)) {
-              locks[d.id] = "locked";
+              if (!data.screenId || data.screenId === screenId) {
+                const cleanSeatId = d.id.startsWith(`${screenId}_`) ? d.id.replace(`${screenId}_`, "") : d.id;
+                locks[cleanSeatId] = "locked";
+              }
             }
           });
           currentLocks = locks;
@@ -95,7 +98,7 @@ export function useSeats() {
       );
     } catch (e) {}
 
-    // 4. Firestore bookings listener for seat map (guarantees seats turn Orange/Red across all devices)
+    // 4. Firestore bookings listener for seat map filtered by screenId
     let unsubFirestore = () => {};
     try {
       unsubFirestore = onSnapshot(
@@ -104,7 +107,8 @@ export function useSeats() {
           const map = {};
           snapshot.docs.forEach((d) => {
             const b = d.data();
-            if (b && b.status !== "cancelled" && Array.isArray(b.seats)) {
+            const bScreen = b.screenId || "screen-1";
+            if (b && b.status !== "cancelled" && Array.isArray(b.seats) && bScreen === screenId) {
               b.seats.forEach((seatId) => {
                 map[seatId] = b.status === "confirmed" ? "booked" : "pending";
               });
