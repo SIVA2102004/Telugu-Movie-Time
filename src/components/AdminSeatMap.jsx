@@ -11,17 +11,28 @@ import "./AdminSeatMap.css";
  * Master Admin has full block/unblock controls. Co-Admin has view-only monitoring.
  */
 export default function AdminSeatMap({ seatMap, bookings, config, layout, readOnly = false }) {
+  const [selectedScreenId, setSelectedScreenId] = useState(() => config?.activeScreenId || "screen-1");
   const [blockedSeats, setBlockedSeats] = useState(() => {
     return new Set(config?.blockedSeats || []);
   });
   const [saving, setSaving] = useState(false);
 
+  const screens = config?.screens || [
+    { id: "screen-1", name: "Screen 1 (Main Hall)" },
+    { id: "screen-2", name: "Screen 2 (Audi 2)" }
+  ];
+
+  const currentScreen = screens.find((s) => s.id === selectedScreenId) || screens[0];
+
   const bookedByMap = {};
   const seatStatusMap = {};
 
-  bookings
-    .filter((b) => b.status !== "cancelled")
+  (bookings || [])
+    .filter((b) => b && b.status !== "cancelled")
     .forEach((b) => {
+      const bScreen = b.screenId || "screen-1";
+      if (bScreen !== selectedScreenId) return; // STRICTLY ISOLATE BY SCREEN
+
       const isConfirmed = b.status === "confirmed";
       const isPending = b.status === "pending";
 
@@ -121,11 +132,32 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
   return (
     <div className="admin-seatmap-wrapper">
+      {/* Screen Switcher */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 16, background: "rgba(255, 215, 0, 0.06)", border: "1px solid rgba(255, 215, 0, 0.2)", borderRadius: 10, padding: "10px 16px" }}>
+        <span style={{ fontSize: "0.85rem", color: "var(--gold)", fontWeight: 800 }}>
+          🖥️ View Screen Layout:
+        </span>
+        {screens.map((scr) => {
+          const isCurrent = scr.id === selectedScreenId;
+          return (
+            <button
+              key={scr.id}
+              type="button"
+              className={`btn ${isCurrent ? "btn-gold" : "btn-ghost"}`}
+              style={{ padding: "6px 14px", fontSize: "0.82rem", fontWeight: 700 }}
+              onClick={() => setSelectedScreenId(scr.id)}
+            >
+              {scr.name} {scr.isPublished ? "✓ LIVE" : ""}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Top Toolbar */}
       <div className="admin-seatmap-toolbar">
         <div>
           <h3 className="admin-seatmap-title">
-            {readOnly ? "Live Theater Seat Map (Monitoring Mode)" : "Manage Seat Availability"}
+            {readOnly ? `Live Theater Seat Map — ${currentScreen?.name || "Screen"}` : `Manage Seat Availability — ${currentScreen?.name || "Screen"}`}
           </h3>
           <p className="admin-seatmap-sub">
             {readOnly
