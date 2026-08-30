@@ -135,118 +135,66 @@ export default function VintageTicketModal({
           </span>
         </div>
 
-        {/* Scrollable Container for the Vintage Ticket */}
+        {/* Scrollable Container for the Ticket */}
         <div className="ticket-preview-viewport">
-          <div className="vintage-ticket" ref={ticketRef}>
-            {/* LEFT MAIN TICKET BODY */}
-            <div className="vintage-ticket__main">
-              <div className="vintage-ticket__top-stars">
-                <span>★ ★ ★</span>
-                <span className="admit-one-text">ADMIT {ticketCount > 1 ? ticketCount : "ONE"}</span>
-                <span>★ ★ ★</span>
-              </div>
+          {/* THE PARADISE OFFICIAL TICKET CARD WITH OVERLAY SEAT NUMBERS */}
+          <div
+            className="paradise-ticket-card"
+            ref={ticketRef}
+            style={{
+              position: "relative",
+              width: 800,
+              minWidth: 800,
+              height: 520,
+              borderRadius: 12,
+              overflow: "hidden",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.8)",
+              background: "#000",
+            }}
+          >
+            {/* Base Official Ticket Graphic */}
+            <img
+              src="/paradise_ticket_card.jpg"
+              alt="The Paradise Official Movie Ticket"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
 
-              {/* Movie Title in Vintage Horror / Cinematic Style */}
-              <div className="vintage-ticket__movie-title">
-                {movieName}
-              </div>
-              <div className="vintage-ticket__in-cinemas">
-                — IN CINEMAS —
-              </div>
-
-              {/* Details & Popcorn Split */}
-              <div className="vintage-ticket__details-row">
-                <div className="vintage-ticket__info-group">
-                  <div className="info-item">
-                    <div className="info-icon">🏛️</div>
-                    <div className="info-text">
-                      <span className="info-label">THEATRE & SCREEN</span>
-                      <span className="info-val">{theater}</span>
-                      <span style={{ fontSize: "0.62rem", color: "#5a4b3c", fontWeight: 700, marginTop: 1 }}>
-                        📍 {config?.locationAddress || "Crystal Mall, 3rd Floor, Kalawad Road, Rajkot"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <div className="info-icon">📅</div>
-                    <div className="info-text">
-                      <span className="info-label">DATE</span>
-                      <span className="info-val">{date}</span>
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <div className="info-icon">⏰</div>
-                    <div className="info-text">
-                      <span className="info-label">SHOW TIME</span>
-                      <span className="info-val">{showTime}</span>
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <div className="info-icon">💺</div>
-                    <div className="info-text">
-                      <span className="info-label">SEATS</span>
-                      <span className="info-val seat-highlight">{seatsString}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Divider Line */}
-                <div className="vintage-ticket__vertical-sep" />
-
-                {/* Center Popcorn / Ticket Count */}
-                <div className="vintage-ticket__center-badge">
-                  <div className="popcorn-badge-icon">🍿</div>
-                  <div className="ticket-count-num">{ticketCount}</div>
-                  <div className="ticket-count-label">TICKET{ticketCount > 1 ? "S" : ""}</div>
-                  <div className="ticket-guest-name">{customerName}</div>
-                  <div className="ticket-thankyou">
-                    THANK YOU<br />FOR CHOOSING US!
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Footer */}
-              <div className="vintage-ticket__bottom-bar">
-                <span className="enjoy-text">🎬 ENJOY THE MOVIE!</span>
-                <span className="rating-stars">★★★★★</span>
-                <span className="tmt-branding-tag">TMT · TELUGU MOVIE TIME</span>
-              </div>
-            </div>
-
-            {/* PERFORATION STUB LINE */}
-            <div className="vintage-ticket__perforation">
-              <div className="notch-top" />
-              <div className="perf-dots" />
-              <div className="notch-bottom" />
-            </div>
-
-            {/* RIGHT STUB WITH POSTER */}
-            <div className="vintage-ticket__stub">
-              <div className="stub-poster-wrapper">
-                {customPoster ? (
-                  <img src={customPoster} alt="Poster" className="stub-poster-img" />
-                ) : (
-                  <div className="stub-poster-placeholder">
-                    <div className="stub-title-art">{movieName}</div>
-                    <div className="stub-silhouette">👤</div>
-                  </div>
-                )}
-                <div className="stub-poster-overlay">
-                  <div className="stub-overlay-title">{movieName}</div>
-                  <div className="stub-overlay-sub">— IN CINEMAS —</div>
-                </div>
-              </div>
-
-              <div className="stub-footer-box">
-                <div className="stub-theater">{theater}</div>
-                <div className="stub-stars">★ ★ ★</div>
-                <div className="stub-date">{date}</div>
-                <div className="stub-time">{showTime}</div>
-                <div className="stub-seat-tag">SEAT: {seatsString}</div>
-              </div>
+            {/* DYNAMIC SEAT NUMBERS OVERLAY ON WHITE BOX */}
+            <div
+              style={{
+                position: "absolute",
+                right: "3.2%",
+                bottom: "19.5%",
+                width: "25.2%",
+                height: "14.2%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: "2px 6px",
+                background: "#ffffff",
+                borderRadius: 4,
+                boxShadow: "inset 0 0 4px rgba(0,0,0,0.3)",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "'Arial Black', 'Impact', sans-serif",
+                  fontWeight: 900,
+                  fontSize: seatsString.length > 12 ? "1.1rem" : seatsString.length > 6 ? "1.4rem" : "1.8rem",
+                  color: "#111111",
+                  letterSpacing: "1px",
+                  lineHeight: 1.1,
+                  wordBreak: "break-word",
+                }}
+              >
+                {seatsString || "N/A"}
+              </span>
             </div>
           </div>
         </div>
