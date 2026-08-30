@@ -511,13 +511,33 @@ export default function MovieConfigEditor({ config, layout }) {
           />
         </div>
 
-        <div className="form-field form-field--full">
-          <label className="label" htmlFor="blockedSeats">
-            Blocked Seats (comma-separated, e.g. A1, J10)
+        {/* ── BLOCKED SEATS CONFIGURATION PER SCREEN ── */}
+        <div className="form-field form-field--full" style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
+          <label className="label" htmlFor="blockedSeats" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+            <span>
+              🔒 Blocked Seats for <strong>{screens.find((s) => s.id === form.activeScreenId)?.name || "Screen 1"}</strong> (comma-separated, e.g. A1, J10)
+            </span>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "2px 8px", fontSize: "0.72rem", color: "var(--green)" }}
+                onClick={() => setBlockedInput("")}
+              >
+                Clear / Unblock All
+              </button>
+            </div>
           </label>
-          <input className="input" id="blockedSeats"
-            value={blockedInput} onChange={(e) => setBlockedInput(e.target.value)}
-            placeholder="A1, A10, J1, J10" />
+          <input
+            className="input"
+            id="blockedSeats"
+            value={blockedInput}
+            onChange={(e) => setBlockedInput(e.target.value)}
+            placeholder="Leave empty for 100% available, or type: A1, A2, A3"
+          />
+          <small style={{ color: "var(--text-muted)", fontSize: "0.76rem" }}>
+            💡 Tip: Leave this input empty to keep all seats available for booking. You can also block/unblock visually with 1 click in the <strong>"Seat Map"</strong> tab.
+          </small>
         </div>
       </div>
 
