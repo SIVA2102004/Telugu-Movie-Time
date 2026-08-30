@@ -20,31 +20,36 @@ export default function BookingTable({
   const isMasterAdmin = adminRole === "master";
 
   const [filter, setFilter] = useState("All");
+  const [screenFilter, setScreenFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [editingBooking, setEditingBooking] = useState(null);
   const [selectedTicketBooking, setSelectedTicketBooking] = useState(null);
 
   const safeBookings = Array.isArray(bookings) ? bookings : [];
 
-  // ── Detect duplicate seat conflicts between multiple bookings ────────────
+  // ── Detect duplicate seat conflicts between multiple bookings per screen ──
   const seatBookingMap = {};
   safeBookings.forEach((b) => {
     if (b && b.status !== "cancelled" && Array.isArray(b.seats)) {
+      const bScreen = b.screenId || "screen-1";
       b.seats.forEach((s) => {
-        if (!seatBookingMap[s]) seatBookingMap[s] = [];
-        seatBookingMap[s].push(b);
+        const key = `${bScreen}_${s}`;
+        if (!seatBookingMap[key]) seatBookingMap[key] = [];
+        seatBookingMap[key].push(b);
       });
     }
   });
 
   const conflictingSeatSet = new Set(
-    Object.keys(seatBookingMap).filter((s) => seatBookingMap[s].length > 1)
+    Object.keys(seatBookingMap).filter((k) => seatBookingMap[k].length > 1)
   );
 
   // ── Filter & search ─────────────────────────────────────────────────────
   const filtered = safeBookings.filter((b) => {
     if (!b) return false;
     const matchStatus = filter === "All" || b.status === filter;
+    const bScreen = b.screenId || "screen-1";
+    const matchScreen = screenFilter === "all" || bScreen === screenFilter;
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
@@ -52,8 +57,9 @@ export default function BookingTable({
       b.phone?.includes(q) ||
       b.upiId?.toLowerCase().includes(q) ||
       b.college?.toLowerCase().includes(q) ||
+      b.screenName?.toLowerCase().includes(q) ||
       (Array.isArray(b.seats) && b.seats.some((s) => s?.toLowerCase().includes(q)));
-    return matchStatus && matchSearch;
+    return matchStatus && matchScreen && matchSearch;
   });
 
   // Helper to format 10-digit phone to international format (91XXXXXXXXXX)
@@ -434,6 +440,30 @@ export default function BookingTable({
           ))}
         </div>
 
+        {/* Screen Filter Selector */}
+        {(config?.screens || []).length > 1 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", padding: "4px 8px", borderRadius: 8, border: "1px solid var(--border)" }}>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700 }}>Screen:</span>
+            <button
+              className={`btn ${screenFilter === "all" ? "btn-gold" : "btn-ghost"}`}
+              style={{ padding: "3px 10px", fontSize: "0.74rem" }}
+              onClick={() => setScreenFilter("all")}
+            >
+              All Screens
+            </button>
+            {(config?.screens || []).map((scr) => (
+              <button
+                key={scr.id}
+                className={`btn ${screenFilter === scr.id ? "btn-gold" : "btn-ghost"}`}
+                style={{ padding: "3px 10px", fontSize: "0.74rem" }}
+                onClick={() => setScreenFilter(scr.id)}
+              >
+                {scr.name}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="bt-search">
           <Search size={15} color="var(--text-muted)" />
           <input
@@ -544,18 +574,24 @@ export default function BookingTable({
                   <td>
                     <div className="seat-chips">
                       {(Array.isArray(b?.seats) ? b.seats : []).map((s) => {
-                        const hasConflict = conflictingSeatSet.has(s);
+                        const bScreen = b.screenId || "screen-1";
+                        const hasConflict = conflictingSeatSet.has(`${bScreen}_${s}`);
                         return (
                           <span
                             key={s}
                             className={`seat-chip ${hasConflict ? "seat-chip--conflict" : ""}`}
-                            title={hasConflict ? `Seat ${s} is duplicated in another booking!` : `Seat ${s}`}
+                            title={hasConflict ? `Seat ${s} is duplicated in another booking on ${b.screenName || "this screen"}!` : `Seat ${s}`}
                           >
                             {s} {hasConflict && "⚠️"}
                           </span>
                         );
                       })}
                     </div>
+                    {b?.screenName && (
+                      <span style={{ fontSize: "0.68rem", color: "var(--gold)", display: "block", marginTop: 3 }}>
+                        🖥️ {b.screenName}
+                      </span>
+                    )}
                   </td>
                   <td><strong style={{ color: "var(--gold)" }}>₹{b?.totalAmount || 0}</strong></td>
                   <td className="bt-upi">

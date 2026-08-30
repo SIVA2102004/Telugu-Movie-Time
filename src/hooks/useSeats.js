@@ -10,7 +10,7 @@ import { ref, onValue } from "firebase/database";
 export function useSeats(screenId = "screen-1") {
   const [seatMap, setSeatMap] = useState(() => {
     try {
-      const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`) || localStorage.getItem("telugu_talkies_seats_cache");
+      const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`);
       return cached ? JSON.parse(cached) : {};
     } catch (e) {
       return {};
@@ -20,6 +20,14 @@ export function useSeats(screenId = "screen-1") {
   const throttleRef = useRef(null);
 
   useEffect(() => {
+    // 0. Immediately re-initialize state when screenId switches
+    try {
+      const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`);
+      setSeatMap(cached ? JSON.parse(cached) : {});
+    } catch (e) {
+      setSeatMap({});
+    }
+
     // 1. Cross-tab and local storage listener for instant 0ms seat map refresh
     const handleStorage = () => {
       try {
@@ -83,7 +91,7 @@ export function useSeats(screenId = "screen-1") {
             const data = d.data();
             // Discard stale locks older than 5 minutes and match screen
             if (data && (!data.timestamp || now - data.timestamp < 5 * 60 * 1000)) {
-              if (!data.screenId || data.screenId === screenId) {
+              if (data.screenId === screenId) {
                 const cleanSeatId = d.id.startsWith(`${screenId}_`) ? d.id.replace(`${screenId}_`, "") : d.id;
                 locks[cleanSeatId] = "locked";
               }
@@ -98,7 +106,7 @@ export function useSeats(screenId = "screen-1") {
       );
     } catch (e) {}
 
-    // 4. Firestore bookings listener for seat map filtered by screenId
+    // 4. Firestore bookings listener for seat map filtered strictly by screenId
     let unsubFirestore = () => {};
     try {
       unsubFirestore = onSnapshot(
@@ -130,7 +138,7 @@ export function useSeats(screenId = "screen-1") {
       unsubActiveLocks();
       unsubFirestore();
     };
-  }, []);
+  }, [screenId]);
 
   return { seatMap, setSeatMap };
 }
