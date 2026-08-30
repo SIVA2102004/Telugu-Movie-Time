@@ -27,11 +27,10 @@ export default function MovieConfigEditor({ config, layout }) {
   });
 
   const [saving, setSaving] = useState(false);
-  const [blockedInput, setBlockedInput] = useState(
-    (config?.blockedSeats || []).join(", ")
-  );
+  const [blockedInput, setBlockedInput] = useState(() => (config?.blockedSeats || []).join(", "));
+  const [isEditingBlocked, setIsEditingBlocked] = useState(false);
 
-  // Sync state if config changes in background
+  // Sync state if config changes in background (only if user is not actively editing)
   useEffect(() => {
     if (config) {
       setForm((prev) => ({
@@ -44,9 +43,11 @@ export default function MovieConfigEditor({ config, layout }) {
           ...(config.tierPrices || layout?.tierPrices || prev.tierPrices || {}),
         },
       }));
-      setBlockedInput((config.blockedSeats || []).join(", "));
+      if (!isEditingBlocked) {
+        setBlockedInput((config.blockedSeats || []).join(", "));
+      }
     }
-  }, [config, layout]);
+  }, [config, layout, isEditingBlocked]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,21 +73,45 @@ export default function MovieConfigEditor({ config, layout }) {
     toast.success(`Copied Co-Admin Joining Code: ${form.coAdminCode || "COADMIN2026"}`);
   };
 
+  const handleClearBlockedSeats = async () => {
+    setBlockedInput("");
+    setIsEditingBlocked(false);
+    const updated = {
+      ...form,
+      blockedSeats: [],
+    };
+    setForm(updated);
+    try {
+      localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+      await setDoc(doc(db, "movieConfig", "current"), { blockedSeats: [] }, { merge: true });
+      toast.success("All blocked seats cleared and saved to database! 🟢");
+    } catch (e) {
+      toast.success("Blocked seats cleared locally! 🟢");
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setIsEditingBlocked(false);
+
+    const parsedBlocked = blockedInput
+      .split(",")
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
     const updated = {
       ...form,
-      blockedSeats: blockedInput
-        .split(",")
-        .map((s) => s.trim().toUpperCase())
-        .filter(Boolean),
+      blockedSeats: parsedBlocked,
       pricePerSeat: Number(form.pricePerSeat || 200),
       layout: {
         ...(layout || {}),
         tierPrices: form.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 },
       },
     };
+
+    setForm(updated);
 
     // Instant local save and cross-tab event dispatch
     try {
@@ -521,10 +546,10 @@ export default function MovieConfigEditor({ config, layout }) {
               <button
                 type="button"
                 className="btn btn-ghost"
-                style={{ padding: "2px 8px", fontSize: "0.72rem", color: "var(--green)" }}
-                onClick={() => setBlockedInput("")}
+                style={{ padding: "3px 10px", fontSize: "0.75rem", color: "var(--green)", fontWeight: 700, border: "1px solid var(--green)", borderRadius: 6 }}
+                onClick={handleClearBlockedSeats}
               >
-                Clear / Unblock All
+                🔓 Clear / Unblock All Now
               </button>
             </div>
           </label>
@@ -532,7 +557,12 @@ export default function MovieConfigEditor({ config, layout }) {
             className="input"
             id="blockedSeats"
             value={blockedInput}
-            onChange={(e) => setBlockedInput(e.target.value)}
+            onFocus={() => setIsEditingBlocked(true)}
+            onBlur={() => setIsEditingBlocked(false)}
+            onChange={(e) => {
+              setIsEditingBlocked(true);
+              setBlockedInput(e.target.value);
+            }}
             placeholder="Leave empty for 100% available, or type: A1, A2, A3"
           />
           <small style={{ color: "var(--text-muted)", fontSize: "0.76rem" }}>
