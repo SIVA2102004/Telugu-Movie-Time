@@ -78,23 +78,25 @@ export default function BookingTable({
     const seats = Array.isArray(booking.seats) ? booking.seats.join(", ") : (booking.seats || "");
     const formattedPhone = formatWhatsAppPhone(booking.phone);
     if (!formattedPhone) return "";
+    const ticketDownloadUrl = `https://tmt-wheat.vercel.app/ticket/${booking.id}`;
 
     const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
     const msg = encodeURIComponent(
       `🎟️ *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
-      `👤 *Name:* ${booking.name || ""}\n` +
-      `🍿 *Movie:* ${config?.movieName || "Telugu Movie"}\n` +
+      `👤 *Name:* ${booking.name || "Movie Lover"}\n` +
+      `🍿 *Movie:* ${config?.movieName || "PARADISE"}\n` +
       `🖥️ *Screen / Audi:* *${activeScreenName}*\n` +
-      `📅 *Date:* ${config?.date || "Upcoming Show"}\n` +
-      `⏰ *Time:* ${config?.showTime || "TBA"}\n` +
-      `📍 *Theater:* ${config?.theater || "Theater"} (${activeScreenName})\n` +
+      `📅 *Date:* 24-09-2026\n` +
+      `⏰ *Time:* ${config?.showTime || "8:00 AM"}\n` +
+      `📍 *Theater:* ${config?.theater || "Crystal Mall"} (${activeScreenName})\n` +
       `💺 *Confirmed Seats:* *${seats}*\n` +
       `💰 *Total Paid:* *₹${booking.totalAmount || 0}*\n` +
       `💳 *UTR / Ref:* ${booking.upiId || "Verified"}\n` +
       `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n\n` +
       `✅ *STATUS: CONFIRMED*\n\n` +
+      `🎟️ *Download Official Ticket Card:* \n${ticketDownloadUrl}\n\n` +
       `📌 *Instructions:*\n` +
-      `• Please show this ticket message at the entry gate.\n` +
+      `• Please show this ticket / ticket image at the entry gate.\n` +
       `• Please arrive 15 minutes before the show.\n\n` +
       `Enjoy the show together! 🍿🎉\n- Telugu Movie Time Admin`
     );
