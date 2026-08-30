@@ -21,6 +21,7 @@ export default function StudentPage() {
   const { config, layout, getSeatPrice, getSeatTier } = useMovieConfig();
 
   const [activeView, setActiveView] = useState("movie"); // "movie" (Overview) or "booking" (Seat Selection)
+  const [selectedScreenId, setSelectedScreenId] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
@@ -28,8 +29,11 @@ export default function StudentPage() {
   const timerRef = useRef(null);
   const lockStartRef = useRef(null);
 
-  const activeScreen = config?.screens?.find((s) => s.id === config?.activeScreenId) || config?.screens?.[0] || {};
-  const activePoster = config?.posterUrl || activeScreen.posterUrl || null;
+  const publishedScreens = (config?.screens || []).filter((s) => s.isPublished);
+  const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : (config?.screens || []).slice(0, 1);
+  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id;
+  const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
+  const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
   const activeScreenName = activeScreen.name || "Screen 1";
 
   // ── Seat toggle ──────────────────────────────────────────────────────────
@@ -298,8 +302,34 @@ export default function StudentPage() {
       ) : (
         /* ── Standard Booking & Movie Overview Page ── */
         <main className="student-page">
+          {/* Multiple Published Screens Switcher */}
+          {effectiveScreenList.length > 1 && (
+            <div style={{ background: "rgba(255,255,255,0.04)", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", margin: "0 auto 16px", maxWidth: 700 }}>
+              <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 700 }}>
+                🖥️ Choose Screen:
+              </span>
+              {effectiveScreenList.map((scr) => {
+                const isCurrent = (scr.id === activeScreen.id);
+                return (
+                  <button
+                    key={scr.id}
+                    type="button"
+                    className={`btn ${isCurrent ? "btn-gold" : "btn-ghost"}`}
+                    style={{ padding: "6px 14px", fontSize: "0.82rem", borderRadius: 20 }}
+                    onClick={() => {
+                      setSelectedScreenId(scr.id);
+                      setSelectedSeats([]);
+                    }}
+                  >
+                    {scr.name} · {scr.showTime}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Navigation Pill Switcher */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 12, margin: "10px 0 20px" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 12, margin: "0 0 20px" }}>
             <button
               type="button"
               className={`btn ${activeView === "movie" ? "btn-gold" : "btn-ghost"}`}

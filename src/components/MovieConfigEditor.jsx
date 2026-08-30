@@ -125,26 +125,39 @@ export default function MovieConfigEditor({ config, layout }) {
     toast.success(`Switched editor to ${selectedScreen.name}`);
   };
 
-  const handlePublishScreen = async (screenId) => {
-    const updatedScreens = screens.map((s) => ({
-      ...s,
-      isPublished: s.id === screenId,
-    }));
+  const handleTogglePublishScreen = async (screenId) => {
+    const updatedScreens = screens.map((s) => {
+      if (s.id === screenId) {
+        return { ...s, isPublished: !s.isPublished };
+      }
+      return s;
+    });
 
-    const publishedScreen = screens.find((s) => s.id === screenId);
-    if (!publishedScreen) return;
+    // Ensure at least one published screen is active
+    const anyPublished = updatedScreens.some((s) => s.isPublished);
+    if (!anyPublished) {
+      toast.error("At least one screen must remain published!");
+      return;
+    }
+
+    const currentScreenStillPublished = updatedScreens.find((s) => s.id === form.activeScreenId)?.isPublished;
+    const nextActiveId = currentScreenStillPublished
+      ? form.activeScreenId
+      : updatedScreens.find((s) => s.isPublished)?.id || screenId;
+
+    const activeScr = updatedScreens.find((s) => s.id === nextActiveId) || updatedScreens[0];
 
     const updated = {
       ...form,
-      activeScreenId: screenId,
+      activeScreenId: nextActiveId,
       screens: updatedScreens,
-      movieName: publishedScreen.movieName,
-      theater: publishedScreen.theater,
-      date: publishedScreen.date,
-      showTime: publishedScreen.showTime,
-      pricePerSeat: publishedScreen.pricePerSeat,
-      posterUrl: publishedScreen.posterUrl,
-      tierPrices: publishedScreen.tierPrices,
+      movieName: activeScr.movieName || form.movieName,
+      theater: activeScr.theater || form.theater,
+      date: activeScr.date || form.date,
+      showTime: activeScr.showTime || form.showTime,
+      pricePerSeat: activeScr.pricePerSeat || form.pricePerSeat,
+      posterUrl: activeScr.posterUrl || form.posterUrl,
+      tierPrices: activeScr.tierPrices || form.tierPrices,
     };
 
     setForm(updated);
@@ -153,9 +166,10 @@ export default function MovieConfigEditor({ config, layout }) {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
       await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
-      toast.success(`🎉 ${publishedScreen.name} is now LIVE on Student Booking Portal!`);
+      const pubCount = updatedScreens.filter((s) => s.isPublished).length;
+      toast.success(`🎉 Updated! ${pubCount} Screen${pubCount > 1 ? "s are" : " is"} now LIVE on Student Portal!`);
     } catch (e) {
-      toast.success(`Published ${publishedScreen.name} locally!`);
+      toast.success(`Published screens updated locally!`);
     }
   };
 
@@ -201,12 +215,13 @@ export default function MovieConfigEditor({ config, layout }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
           {screens.map((screen) => {
-            const isLive = form.activeScreenId === screen.id;
+            const isEditing = form.activeScreenId === screen.id;
+            const isLive = !!screen.isPublished;
             return (
               <div
                 key={screen.id}
                 style={{
-                  background: isLive ? "rgba(0, 200, 81, 0.12)" : "var(--surface)",
+                  background: isLive ? "rgba(0, 230, 118, 0.12)" : "var(--surface)",
                   border: isLive ? "2px solid var(--green)" : "1px solid var(--border)",
                   borderRadius: 8,
                   padding: 12,
@@ -221,9 +236,13 @@ export default function MovieConfigEditor({ config, layout }) {
                     <strong style={{ color: isLive ? "var(--green)" : "var(--gold)", fontSize: "0.88rem" }}>
                       {screen.name}
                     </strong>
-                    {isLive && (
+                    {isLive ? (
                       <span style={{ background: "var(--green)", color: "#0d0d1a", fontSize: "0.65rem", padding: "1px 6px", borderRadius: 4, fontWeight: 900 }}>
-                        ACTIVE LIVE
+                        ✓ LIVE
+                      </span>
+                    ) : (
+                      <span style={{ background: "rgba(255,255,255,0.1)", color: "var(--text-muted)", fontSize: "0.65rem", padding: "1px 6px", borderRadius: 4 }}>
+                        OFFLINE
                       </span>
                     )}
                   </div>
@@ -238,19 +257,19 @@ export default function MovieConfigEditor({ config, layout }) {
                 <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
                   <button
                     type="button"
-                    className="btn btn-ghost"
+                    className={`btn ${isEditing ? "btn-outline" : "btn-ghost"}`}
                     style={{ flex: 1, padding: "5px 8px", fontSize: "0.75rem" }}
                     onClick={() => handleSelectScreen(screen.id)}
                   >
-                    Edit Details
+                    {isEditing ? "✏️ Editing" : "Edit"}
                   </button>
                   <button
                     type="button"
                     className={`btn ${isLive ? "btn-outline" : "btn-green"}`}
-                    style={{ flex: 1.2, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
-                    onClick={() => handlePublishScreen(screen.id)}
+                    style={{ flex: 1.3, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
+                    onClick={() => handleTogglePublishScreen(screen.id)}
                   >
-                    {isLive ? "✓ Live" : "Publish Live 🚀"}
+                    {isLive ? "🔴 Unpublish" : "🟢 Publish Live"}
                   </button>
                 </div>
               </div>

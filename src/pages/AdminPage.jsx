@@ -10,7 +10,7 @@ import MovieConfigEditor from "../components/MovieConfigEditor";
 import TheaterLayoutEditor from "../components/TheaterLayoutEditor";
 import CoAdminManager from "../components/CoAdminManager";
 import { Toaster, toast } from "react-hot-toast";
-import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw, Users } from "lucide-react";
+import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw, Users, Share2 } from "lucide-react";
 import "../styles/globals.css";
 import "./AdminPage.css";
 
@@ -203,6 +203,40 @@ export default function AdminPage() {
             </div>
             
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", flexWrap: "wrap" }}>
+              {/* Direct Student Portal Share Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const studentUrl = window.location.origin;
+                  if (navigator.share) {
+                    navigator.share({
+                      title: `Book Tickets — ${config?.movieName || "Telugu Movie Time"}`,
+                      url: studentUrl,
+                    });
+                  } else {
+                    navigator.clipboard.writeText(studentUrl);
+                    toast.success("Student Portal link copied to clipboard! 📋");
+                  }
+                }}
+                className="btn btn-gold"
+                style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 5, fontWeight: 700 }}
+                title="Copy / Share Student Booking Portal link"
+              >
+                <Share2 size={14} /> Share Student Portal
+              </button>
+
+              {/* Open Student Portal in new tab */}
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost"
+                style={{ padding: "6px 10px", fontSize: "0.78rem", gap: 5, color: "#4fc3f7" }}
+                title="Open live student booking portal"
+              >
+                <Film size={14} /> Open Portal ↗
+              </a>
+
               {/* Manual Cloud Refresh Button */}
               <button
                 type="button"
