@@ -48,6 +48,7 @@ export default function SeatMap({
   seatMap = {},
   selectedSeats = [],
   bookings = [],
+  screenId,
   onSeatToggle,
   maxSeats = 999,
   blockedSeats = [],
@@ -69,12 +70,16 @@ export default function SeatMap({
   const blockedSet = useMemo(() => new Set(blockedSeats), [blockedSeats]);
   const selectedSet = useMemo(() => new Set(selectedSeats), [selectedSeats]);
 
-  // Compute map of confirmed seat statuses and student names
+  // Compute map of confirmed seat statuses and student names strictly filtered by screenId
   const { bookingSeatStatus, bookingSeatUser } = useMemo(() => {
     const statusMap = {};
     const userMap = {};
 
     (bookings || []).forEach((b) => {
+      // If screenId is provided, ONLY include bookings that match this screen
+      const bScreen = b.screenId || "screen-1";
+      if (screenId && bScreen !== screenId) return;
+
       const isConfirmed = b.status === "confirmed";
       const isPending = b.status === "pending";
 
@@ -86,7 +91,7 @@ export default function SeatMap({
     });
 
     return { bookingSeatStatus: statusMap, bookingSeatUser: userMap };
-  }, [bookings]);
+  }, [bookings, screenId]);
 
   const getSeatStatus = (seatId) => {
     if (blockedSet.has(seatId)) return "blocked";

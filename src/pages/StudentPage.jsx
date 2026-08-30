@@ -560,6 +560,7 @@ export default function StudentPage() {
                     seatMap={seatMap}
                     selectedSeats={selectedSeats}
                     bookings={bookings}
+                    screenId={currentScreenId}
                     onSeatToggle={handleSeatToggle}
                     maxSeats={999}
                     blockedSeats={config?.blockedSeats || []}
