@@ -442,60 +442,29 @@ export default function TheaterLayoutEditor({ config }) {
 
           {/* Tier Prices Card */}
           <div className="tle-section card tle-tier-editor">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
-              <h3 className="tle-section-title" style={{ margin: 0 }}><IndianRupee size={15} /> Category Rates (₹)</h3>
-            </div>
-
-            {/* Toggle Keep or Remove Category Rates */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 12, width: "100%" }}>
-              <button
-                type="button"
-                className={`btn ${layout.enableCategoryPricing !== false ? "btn-gold" : "btn-ghost"}`}
-                style={{ flex: 1, padding: "5px 4px", fontSize: "0.72rem", fontWeight: 700 }}
-                onClick={() => {
-                  setLayout((prev) => ({ ...prev, enableCategoryPricing: true }));
-                  toast.success("Category Rates ENABLED! Multi-tier pricing active.");
-                }}
-              >
-                ✓ Keep
-              </button>
-              <button
-                type="button"
-                className={`btn ${layout.enableCategoryPricing === false ? "btn-red" : "btn-ghost"}`}
-                style={{ flex: 1, padding: "5px 4px", fontSize: "0.72rem", fontWeight: 700 }}
-                onClick={() => {
-                  setLayout((prev) => ({ ...prev, enableCategoryPricing: false }));
-                  toast.success("Category Rates REMOVED! Single flat rate active.");
-                }}
-              >
-                ✕ Remove
-              </button>
-            </div>
-
-            {layout.enableCategoryPricing !== false ? (
-              <div className="tle-tier-inputs">
-                {DEFAULT_TIERS.map((tier) => (
-                  <div key={tier} className="tle-tier-row">
-                    <span className={`tle-tier-badge tle-tier-badge--${tier.toLowerCase()}`}>
-                      {tier}
-                    </span>
-                    <div className="tle-price-input-wrap">
-                      <span>₹</span>
-                      <input
-                        type="number"
-                        className="input tle-price-input"
-                        value={tierPrices[tier] || 0}
-                        onChange={(e) => setTierPrice(tier, e.target.value)}
-                      />
-                    </div>
+            <h3 className="tle-section-title"><IndianRupee size={15} /> Category Rates (₹)</h3>
+            <p style={{ margin: "0 0 10px 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              Set prices for each tier. (Tip: You can set Gold and Silver to the same price like ₹200 if needed!)
+            </p>
+            <div className="tle-tier-inputs">
+              {DEFAULT_TIERS.map((tier) => (
+                <div key={tier} className="tle-tier-row">
+                  <span className={`tle-tier-badge tle-tier-badge--${tier.toLowerCase()}`}>
+                    {tier}
+                  </span>
+                  <div className="tle-price-input-wrap">
+                    <span>₹</span>
+                    <input
+                      type="number"
+                      className="input tle-price-input"
+                      value={tierPrices[tier] ?? ""}
+                      placeholder="e.g. 200"
+                      onChange={(e) => setTierPrice(tier, e.target.value)}
+                    />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ background: "rgba(255, 68, 68, 0.1)", border: "1px dashed var(--red)", borderRadius: 6, padding: "8px 10px", fontSize: "0.75rem", color: "#ff4444", fontWeight: 700, textAlign: "center" }}>
-                🚫 Categories Removed. All seats will use the Base Price.
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Blueprint upload */}
