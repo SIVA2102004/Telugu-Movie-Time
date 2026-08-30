@@ -71,37 +71,67 @@ export default function VintageTicketModal({
   const handleShareTicketImage = async () => {
     if (!ticketRef.current) return;
     setDownloading(true);
-    toast.loading("Preparing Ticket Image for WhatsApp...", { id: "ticket-share" });
+    toast.loading("Generating Ticket & preparing WhatsApp...", { id: "ticket-share" });
     try {
       const dataUrl = await toPng(ticketRef.current, {
         quality: 0.98,
         pixelRatio: 2,
-        backgroundColor: "#0d0d1a",
+        backgroundColor: "#000000",
       });
 
       // Convert base64 dataUrl to blob and file
       const res = await fetch(dataUrl);
       const blob = await res.blob();
-      const file = new File([blob], `TMT-Vintage-Ticket-${customerName.replace(/\s+/g, "_")}.png`, { type: "image/png" });
+      const file = new File([blob], `PARADISE-Ticket-${customerName.replace(/\s+/g, "_")}.png`, { type: "image/png" });
 
+      const activeScreen = config?.screens?.find((s) => s.id === (booking.screenId || config?.activeScreenId))?.name || "Screen 1";
+      const fullText = 
+        `🎟️ *TELUGU MOVIE TIME (TMT) - MOVIE TICKET CONFIRMATION* 🎬\n\n` +
+        `👤 *Name:* ${booking.name || "Movie Lover"}\n` +
+        `🍿 *Movie:* PARADISE\n` +
+        `🖥️ *Screen:* ${activeScreen}\n` +
+        `📅 *Date:* 24-09-2026\n` +
+        `⏰ *Time:* 8:00 AM\n` +
+        `📍 *Theater:* Crystal Mall (${activeScreen})\n` +
+        `💺 *Confirmed Seats:* *${seatsString}*\n` +
+        `💰 *Total Paid:* *₹${booking.totalAmount || 0}*\n` +
+        `💳 *UTR / Ref:* ${booking.upiId || "Verified"}\n` +
+        `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n\n` +
+        `✅ *STATUS: CONFIRMED*\n\n` +
+        `📌 *Instructions:*\n` +
+        `• Please show this ticket image at the entry gate.\n` +
+        `• Please arrive 15 minutes before the show.\n\n` +
+        `Enjoy the show together! 🍿🎉\n- Telugu Movie Time Admin`;
+
+      // 1. If mobile device supports native file share
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `Telugu Movie Time Ticket — ${movieName}`,
-          text: `🎟️ *TELUGU MOVIE TIME TICKET*\nMovie: ${movieName}\nScreen: ${activeScreenName}\nSeats: ${seatsString}\nName: ${customerName}`,
+          title: `Telugu Movie Time Ticket — PARADISE`,
+          text: fullText,
         });
-        toast.success("Ticket shared to WhatsApp! 🎉", { id: "ticket-share" });
+        toast.success("Ticket & message sent to WhatsApp! 🎉", { id: "ticket-share" });
       } else {
-        // Fallback: download the image and open WhatsApp with pre-filled message
-        download(dataUrl, `TMT-Ticket-${movieName.replace(/\s+/g, "_")}-${activeScreenName.replace(/\s+/g, "_")}-${booking.id || "ticket"}.png`, "image/png");
-        toast.success("Ticket Image saved! Opening WhatsApp...", { id: "ticket-share" });
-        sendWhatsAppWithTicketLink();
+        // 2. On PC / Desktop: Copy image directly to Clipboard + Download + Open WhatsApp Chat
+        try {
+          if (navigator.clipboard && window.ClipboardItem) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ "image/png": blob }),
+            ]);
+            toast.success("📋 Ticket Image copied to Clipboard! Press Ctrl + V in WhatsApp chat to send!", { id: "ticket-share", duration: 6000 });
+          }
+        } catch (clipErr) {
+          download(dataUrl, `PARADISE-Ticket-${customerName.replace(/\s+/g, "_")}.png`, "image/png");
+          toast.success("Ticket downloaded! Drag & drop or attach in WhatsApp.", { id: "ticket-share", duration: 5000 });
+        }
+
+        const phone = formatWhatsAppPhone(booking.phone);
+        const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(fullText)}`;
+        window.open(waUrl, "_blank");
       }
     } catch (err) {
       console.warn("Share notice:", err);
-      // Fallback
       handleDownload();
-      sendWhatsAppWithTicketLink();
     } finally {
       setDownloading(false);
     }
