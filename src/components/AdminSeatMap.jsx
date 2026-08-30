@@ -167,15 +167,46 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
         </div>
 
         {!readOnly && (
-          <div className="admin-seatmap-actions">
+          <div className="admin-seatmap-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                const rowSlots = layout?.seats?.["A"] || [];
+                let seatNum = 0;
+                const rowASeats = [];
+                rowSlots.forEach((slot) => {
+                  if (slot !== null) {
+                    seatNum++;
+                    rowASeats.push(`A${seatNum}`);
+                  }
+                });
+                setBlockedSeats((prev) => {
+                  const next = new Set(prev);
+                  rowASeats.forEach((id) => next.delete(id));
+                  return next;
+                });
+                toast.success("Row A unblocked and made 100% Available! 🟢");
+              }}
+              style={{ fontSize: "0.8rem", padding: "6px 12px", color: "var(--green)", borderColor: "var(--green)" }}
+              title="Instantly unblock all seats in Row A"
+            >
+              🔓 Unblock Row A
+            </button>
+
             {blockedSeats.size > 0 && (
               <button className="btn btn-ghost" onClick={clearAllBlocks} style={{ fontSize: "0.8rem" }}>
-                <Unlock size={13} /> Unblock All ({blockedSeats.size})
+                <Unlock size={14} /> Clear All ({blockedSeats.size}) Blocks
               </button>
             )}
 
-            <button className="btn btn-gold" onClick={saveAvailability} disabled={saving}>
-              {saving ? "Saving…" : <><Check size={14} /> Save Availability</>}
+            <button
+              className="btn btn-gold"
+              onClick={saveAvailability}
+              disabled={saving}
+              style={{ fontSize: "0.85rem", padding: "8px 18px", gap: 6, fontWeight: 700 }}
+            >
+              <Check size={16} /> {saving ? "Saving…" : "Save Seat Availability"}
             </button>
           </div>
         )}
