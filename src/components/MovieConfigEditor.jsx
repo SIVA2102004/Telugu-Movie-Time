@@ -401,60 +401,94 @@ export default function MovieConfigEditor({ config, layout }) {
 
         {/* ── TIER PRICING CONTROLS (DIRECTLY EDIT FROM MOVIE CONFIG) ── */}
         <div className="form-field form-field--full" style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
-          <h3 style={{ fontSize: "1rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 6 }}>
-            <IndianRupee size={18} /> Category Tier Pricing (Reflects in Header & Seat Map)
-          </h3>
-          <small style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-            Updating prices here will immediately update the "From ₹..." badge on the student webpage and seat calculation.
-          </small>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <h3 style={{ fontSize: "1rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+                <IndianRupee size={18} /> Category Rates (₹) Option
+              </h3>
+              <small style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+                Choose whether you want multi-tier category pricing (Platinum / Gold / Silver) or a single flat rate for all seats.
+              </small>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className={`btn ${form.enableCategoryPricing !== false ? "btn-gold" : "btn-ghost"}`}
+                style={{ padding: "5px 12px", fontSize: "0.78rem", fontWeight: 700 }}
+                onClick={() => setForm((prev) => ({ ...prev, enableCategoryPricing: true }))}
+              >
+                ✓ Keep Category Rates
+              </button>
+              <button
+                type="button"
+                className={`btn ${form.enableCategoryPricing === false ? "btn-red" : "btn-ghost"}`}
+                style={{ padding: "5px 12px", fontSize: "0.78rem", fontWeight: 700 }}
+                onClick={() => setForm((prev) => ({ ...prev, enableCategoryPricing: false }))}
+              >
+                ✕ Remove Category Rates
+              </button>
+            </div>
+          </div>
         </div>
 
+        {form.enableCategoryPricing !== false ? (
+          <>
+            <div className="form-field">
+              <label className="label">
+                <span className="tier-tag tier-tag--platinum" style={{ display: "inline-flex", marginRight: 6 }}>Platinum</span>
+                Recliner Price (₹)
+              </label>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={form.tierPrices?.Platinum ?? 300}
+                onChange={(e) => handleTierPriceChange("Platinum", e.target.value)}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="label">
+                <span className="tier-tag tier-tag--gold" style={{ display: "inline-flex", marginRight: 6 }}>Gold</span>
+                Gold Tier Price (₹)
+              </label>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={form.tierPrices?.Gold ?? 250}
+                onChange={(e) => handleTierPriceChange("Gold", e.target.value)}
+              />
+            </div>
+
+            <div className="form-field">
+              <label className="label">
+                <span className="tier-tag tier-tag--silver" style={{ display: "inline-flex", marginRight: 6 }}>Silver</span>
+                Silver Tier Price (₹)
+              </label>
+              <input
+                className="input"
+                type="number"
+                min={1}
+                value={form.tierPrices?.Silver ?? 200}
+                onChange={(e) => handleTierPriceChange("Silver", e.target.value)}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="form-field form-field--full" style={{ background: "rgba(255, 68, 68, 0.08)", border: "1px dashed var(--red)", borderRadius: 8, padding: 12 }}>
+            <p style={{ margin: 0, color: "#ff4444", fontSize: "0.82rem", fontWeight: 700 }}>
+              🚫 Category Rates are REMOVED. All seats will use the Flat Single Price configured below.
+            </p>
+          </div>
+        )}
+
         <div className="form-field">
-          <label className="label">
-            <span className="tier-tag tier-tag--platinum" style={{ display: "inline-flex", marginRight: 6 }}>Platinum</span>
-            Recliner Price (₹)
+          <label className="label" htmlFor="pricePerSeat">
+            {form.enableCategoryPricing === false ? "Flat Single Ticket Price (₹) for All Seats *" : "Base Fallback Price (₹)"}
           </label>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            value={form.tierPrices?.Platinum ?? 300}
-            onChange={(e) => handleTierPriceChange("Platinum", e.target.value)}
-          />
-        </div>
-
-        <div className="form-field">
-          <label className="label">
-            <span className="tier-tag tier-tag--gold" style={{ display: "inline-flex", marginRight: 6 }}>Gold</span>
-            Gold Tier Price (₹)
-          </label>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            value={form.tierPrices?.Gold ?? 250}
-            onChange={(e) => handleTierPriceChange("Gold", e.target.value)}
-          />
-        </div>
-
-        <div className="form-field">
-          <label className="label">
-            <span className="tier-tag tier-tag--silver" style={{ display: "inline-flex", marginRight: 6 }}>Silver</span>
-            Silver Tier Price (₹)
-          </label>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            value={form.tierPrices?.Silver ?? 200}
-            onChange={(e) => handleTierPriceChange("Silver", e.target.value)}
-          />
-        </div>
-
-        <div className="form-field">
-          <label className="label" htmlFor="pricePerSeat">Base Default Price (₹)</label>
           <input className="input" type="number" id="pricePerSeat" name="pricePerSeat"
-            min={1} value={form.pricePerSeat || ""} onChange={handleChange} />
+            min={1} value={form.pricePerSeat || ""} onChange={handleChange} required />
         </div>
 
         {/* ── MASTER ADMIN SECURITY SECTION ── */}

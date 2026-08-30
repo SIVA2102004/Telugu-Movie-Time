@@ -139,17 +139,21 @@ export default function SeatMap({
     </div>
   );
 
+  const showCategoryRates = layout?.enableCategoryPricing !== false && Object.keys(tierPrices).length > 0;
+
   return (
     <div className="seatmap-wrapper">
-      {/* Tier Price Summary Bar */}
-      <div className="seatmap-tier-summary">
-        {Object.entries(tierPrices).map(([tier, price]) => (
-          <div key={tier} className={`seatmap-tier-pill seatmap-tier-pill--${tier.toLowerCase()}`}>
-            <span className="pill-name">{tier}</span>
-            <span className="pill-price">₹{price}</span>
-          </div>
-        ))}
-      </div>
+      {/* Tier Price Summary Bar (Only shown if Category Rates is enabled) */}
+      {showCategoryRates && (
+        <div className="seatmap-tier-summary">
+          {Object.entries(tierPrices).map(([tier, price]) => (
+            <div key={tier} className={`seatmap-tier-pill seatmap-tier-pill--${tier.toLowerCase()}`}>
+              <span className="pill-name">{tier}</span>
+              <span className="pill-price">₹{price}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Screen at TOP */}
       {!screenAtBottom && <ScreenBar />}

@@ -114,6 +114,7 @@ const DEFAULT_CONFIG = {
   theater: "Crystal Mall",
   showTime: "8:00 AM",
   pricePerSeat: 200,
+  enableCategoryPricing: true, // Master Admin can enable/disable Category Rates
   posterUrl: null,
   tierPrices: {
     Platinum: 300,
@@ -208,8 +209,12 @@ export function useMovieConfig() {
 
   // Prefer tier prices from config or layout
   const effectiveTierPrices = config.tierPrices || layout.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const isCategoryEnabled = config.enableCategoryPricing !== false;
 
   const getSeatPrice = (seatId) => {
+    if (!isCategoryEnabled) {
+      return Number(config.pricePerSeat || 200);
+    }
     if (!seatId) return config.pricePerSeat || 200;
     const row = seatId.charAt(0);
     const tier = layout.rowTiers?.[row] || "Silver";
@@ -220,6 +225,7 @@ export function useMovieConfig() {
   };
 
   const getSeatTier = (seatId) => {
+    if (!isCategoryEnabled) return "Standard";
     if (!seatId) return "Silver";
     const row = seatId.charAt(0);
     return layout.rowTiers?.[row] || "Silver";
