@@ -34,6 +34,31 @@ export default function StudentPage() {
   const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
   const activeScreenName = activeScreen.name || "Screen 1";
 
+  // Dynamic layout & tier prices specifically for active screen
+  const screenLayout = activeScreen.layout || config?.layout || layout;
+  const screenTierPrices = activeScreen.tierPrices || screenLayout?.tierPrices || config?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const isCategoryPricingEnabled = activeScreen.enableCategoryPricing !== false && config?.enableCategoryPricing !== false;
+
+  const getScreenSeatPrice = (seatId) => {
+    if (!isCategoryPricingEnabled) {
+      return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
+    }
+    if (!seatId) return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
+    const row = seatId.charAt(0);
+    const tier = screenLayout?.rowTiers?.[row] || "Silver";
+    if (screenTierPrices[tier] !== undefined) {
+      return Number(screenTierPrices[tier]);
+    }
+    return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
+  };
+
+  const getScreenSeatTier = (seatId) => {
+    if (!isCategoryPricingEnabled) return "Standard";
+    if (!seatId) return "Silver";
+    const row = seatId.charAt(0);
+    return screenLayout?.rowTiers?.[row] || "Silver";
+  };
+
   // Use isolated seatMap and bookings for this specific screen
   const { seatMap } = useSeats(currentScreenId);
   const { bookings } = useBookings();
@@ -556,7 +581,7 @@ export default function StudentPage() {
                     )}
                   </div>
                   <SeatMap
-                    layout={layout}
+                    layout={screenLayout}
                     seatMap={seatMap}
                     selectedSeats={selectedSeats}
                     bookings={bookings}
@@ -572,9 +597,9 @@ export default function StudentPage() {
                   <section className="student-page__form">
                     <BookingForm
                       selectedSeats={selectedSeats}
-                      pricePerSeat={config?.pricePerSeat}
-                      getSeatPrice={getSeatPrice}
-                      getSeatTier={getSeatTier}
+                      pricePerSeat={activeScreen.pricePerSeat || config?.pricePerSeat}
+                      getSeatPrice={getScreenSeatPrice}
+                      getSeatTier={getScreenSeatTier}
                       config={config}
                       existingBookings={bookings}
                       screenId={currentScreenId}
