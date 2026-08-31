@@ -102,8 +102,26 @@ export const DEFAULT_SCREENS = [
   }
 ];
 
-export function buildDefaultLayout() {
-  return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+export function buildDefaultLayout(numRows = 15, numCols = 18) {
+  if (numRows === 15 && numCols === 18) {
+    return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+  }
+  const rows = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, Math.min(26, numRows)).split("");
+  const seats = {};
+  const rowTiers = {};
+  rows.forEach((r, idx) => {
+    seats[r] = Array.from({ length: numCols }, (_, i) => i + 1);
+    if (idx === 0) rowTiers[r] = "Platinum";
+    else if (idx <= 4) rowTiers[r] = "Gold";
+    else rowTiers[r] = "Silver";
+  });
+  return {
+    rows,
+    screenPosition: "top",
+    rowTiers,
+    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    seats,
+  };
 }
 
 const DEFAULT_CONFIG = {
