@@ -56,8 +56,8 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   };
 
   // ── Blueprint image state ─────────────────────────────────────────────────
-  const [blueprintUrl, setBlueprintUrl]         = useState(config.blueprintImageUrl || null);
-  const [blueprintPreview, setBlueprintPreview] = useState(config.blueprintImageUrl || null);
+  const [blueprintUrl, setBlueprintUrl]         = useState(config?.blueprintImageUrl || null);
+  const [blueprintPreview, setBlueprintPreview] = useState(config?.blueprintImageUrl || null);
   const [uploading, setUploading]               = useState(false);
   const fileInputRef = useRef(null);
 
@@ -148,8 +148,8 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   };
 
   const moveRowDown = (idx) => {
-    if (idx >= prev.rows.length - 1) return prev;
     setLayout((prev) => {
+      if (idx >= prev.rows.length - 1) return prev;
       const rows = [...prev.rows];
       [rows[idx], rows[idx + 1]] = [rows[idx + 1], rows[idx]];
       return { ...prev, rows };
