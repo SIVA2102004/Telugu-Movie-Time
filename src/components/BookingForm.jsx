@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { db, rtdb } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref, set } from "firebase/database";
-import { IndianRupee, QrCode, Smartphone, Copy, Check, Send, Loader2 } from "lucide-react";
+import { IndianRupee, QrCode, Smartphone, Copy, Check, Send, Loader2, Zap, ShieldCheck, Sparkles, Clock, CheckCircle2 } from "lucide-react";
 import QRCode from "qrcode";
 import toast from "react-hot-toast";
+import { playSuccessChime } from "../utils/soundEffects";
 import "./BookingForm.css";
 
 export default function BookingForm({
@@ -37,12 +38,29 @@ export default function BookingForm({
   const [submitting, setSubmitting] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
+  const [txnRef] = useState(() => "TMT" + Math.random().toString(36).substring(2, 7).toUpperCase());
+  const [radarTimer, setRadarTimer] = useState(300); // 5 min radar timer
 
   const activeUpiId = config?.upiId || "telugumovietime@upi";
   const activePayee = config?.payeeName || "Telugu Movie Time";
   const adminPhone  = config?.adminPhone || "919876543210";
 
-  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount}&cu=INR&tn=TMT-${selectedSeats.join(",")}`;
+  // Dynamic NPCI Standard Locked-Amount Deep Link
+  const baseNote = `TMT-${screenId}-${selectedSeats.join(",")}`;
+  const upiIntentUrl = `upi://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(baseNote)}&tr=${encodeURIComponent(txnRef)}`;
+
+  // Multi-app dedicated deep links
+  const gpayUrl = `gpay://upi/pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(baseNote)}&tr=${encodeURIComponent(txnRef)}`;
+  const phonepeUrl = `phonepe://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(baseNote)}&tr=${encodeURIComponent(txnRef)}`;
+  const paytmUrl = `paytmmp://pay?pa=${encodeURIComponent(activeUpiId)}&pn=${encodeURIComponent(activePayee)}&am=${computedAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(baseNote)}&tr=${encodeURIComponent(txnRef)}`;
+
+  // Radar timer countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setRadarTimer((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Generate crisp local vector QR code without third-party API lag
   useEffect(() => {
@@ -106,9 +124,13 @@ export default function BookingForm({
 
     setSubmitting(true);
 
+    // 1. Play Instant Celebration Chime (Web Audio API)
+    playSuccessChime();
+
     const bookingId = "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
     const newBooking = {
       id: bookingId,
+      txnRef: txnRef,
       screenId: screenId,
       screenName: screenName,
       name: primaryContact.name.trim(),
@@ -121,6 +143,7 @@ export default function BookingForm({
       totalAmount: computedAmount,
       status: "pending",
       createdAt: new Date().toISOString(),
+      source: "student_portal_smart_autopay",
     };
 
     // 1. Instantly write to local shared cache & lock seats in 0ms
@@ -267,36 +290,96 @@ export default function BookingForm({
         </div>
       </div>
 
-      {/* ── PAYMENT SECTION ── */}
-      <div className="payment-box">
-        <h3 className="payment-box__title">
-          <QrCode size={18} /> Scan & Pay via Any UPI App
-        </h3>
+      {/* ── ⚡ SMART AUTO-PAY SECTION ── */}
+      <div className="payment-box" style={{ border: "2px solid var(--gold)", background: "linear-gradient(180deg, rgba(255, 215, 0, 0.06) 0%, rgba(20, 16, 24, 0.95) 100%)", borderRadius: 14, padding: "18px 16px" }}>
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6, borderBottom: "1px solid rgba(255, 215, 0, 0.2)", paddingBottom: 10, marginBottom: 14 }}>
+          <h3 className="payment-box__title" style={{ margin: 0, display: "flex", alignItems: "center", gap: 6, color: "var(--gold)", fontSize: "1.05rem" }}>
+            <Zap size={18} color="#FFD700" /> ⚡ Smart Auto-Pay (NPCI Locked)
+          </h3>
+          <span style={{ fontSize: "0.75rem", background: "rgba(0, 230, 118, 0.15)", border: "1px solid var(--green)", color: "var(--green)", padding: "2px 8px", borderRadius: 20, fontWeight: 800 }}>
+            🔒 Amount Locked: ₹{computedAmount}
+          </span>
+        </div>
 
-        <div className="payment-box__qr-wrapper">
+        {/* Dynamic Amount-Locked QR Code */}
+        <div className="payment-box__qr-wrapper" style={{ border: "2px solid var(--gold)", padding: 12, borderRadius: 12, background: "#fff", maxWidth: 200, margin: "0 auto 12px" }}>
           {qrCodeDataUrl ? (
             <img
               src={qrCodeDataUrl}
-              alt="UPI QR Code"
+              alt="Locked UPI QR"
               className="payment-box__qr-img"
-              width={180}
-              height={180}
+              width={175}
+              height={175}
             />
           ) : (
-            <div style={{ width: 180, height: 180, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 175, height: 175, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <div className="spinner" style={{ width: 24, height: 24 }} />
             </div>
           )}
+          <span style={{ fontSize: "0.72rem", color: "#000", fontWeight: 800, textAlign: "center", marginTop: 4 }}>
+            Scan with GPay / PhonePe / Paytm
+          </span>
         </div>
 
-        {/* Payee Info */}
-        <div className="payment-box__payee-info">
-          <span>Payee: <strong>{activePayee}</strong></span>
-          <span>Amount: <strong className="payment-box__amount">₹{computedAmount}</strong></span>
+        {/* Radar Timer & Transaction Trace */}
+        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", background: "rgba(255, 255, 255, 0.04)", padding: "8px 12px", borderRadius: 8, fontSize: "0.78rem", color: "var(--text-muted)", margin: "8px 0 14px", border: "1px dashed rgba(255, 255, 255, 0.1)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <Clock size={13} color="var(--yellow)" />
+            Expires in: <strong style={{ color: "var(--yellow)" }}>{Math.floor(radarTimer / 60)}:{String(radarTimer % 60).padStart(2, "0")}</strong>
+          </span>
+          <span>
+            Ref Code: <code style={{ color: "var(--gold)", fontWeight: 800 }}>{txnRef}</code>
+          </span>
         </div>
 
-        {/* UPI ID Pill */}
-        <div className="payment-box__upi-row">
+        {/* 1-Click Mobile UPI App Launchers */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center", fontWeight: 600 }}>
+            📲 Or Tap to Open Your Payment App (Amount Auto-Filled):
+          </span>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            <a
+              href={phonepeUrl}
+              className="btn btn-outline"
+              style={{ fontSize: "0.75rem", padding: "8px 4px", justifyContent: "center", borderColor: "#5f259f", color: "#b388ff", background: "rgba(95,37,159,0.15)", fontWeight: 700 }}
+              onClick={() => toast.success("Opening PhonePe with exact ₹" + computedAmount + " locked!")}
+            >
+              🟣 PhonePe
+            </a>
+
+            <a
+              href={gpayUrl}
+              className="btn btn-outline"
+              style={{ fontSize: "0.75rem", padding: "8px 4px", justifyContent: "center", borderColor: "#4285F4", color: "#82b1ff", background: "rgba(66,133,244,0.15)", fontWeight: 700 }}
+              onClick={() => toast.success("Opening Google Pay with exact ₹" + computedAmount + " locked!")}
+            >
+              🔵 Google Pay
+            </a>
+
+            <a
+              href={paytmUrl}
+              className="btn btn-outline"
+              style={{ fontSize: "0.75rem", padding: "8px 4px", justifyContent: "center", borderColor: "#00BAF2", color: "#80d8ff", background: "rgba(0,186,242,0.15)", fontWeight: 700 }}
+              onClick={() => toast.success("Opening Paytm with exact ₹" + computedAmount + " locked!")}
+            >
+              🔷 Paytm
+            </a>
+          </div>
+
+          <a
+            href={upiIntentUrl}
+            className="btn btn-gold"
+            style={{ width: "100%", justifyContent: "center", marginTop: 4, padding: "10px", fontSize: "0.88rem", fontWeight: 800 }}
+            onClick={() => toast.success("Opening default UPI App with exact ₹" + computedAmount + " locked!")}
+          >
+            ⚡ Pay ₹{computedAmount} via Any UPI App
+          </a>
+        </div>
+
+        {/* Payee Details & Copy Tool */}
+        <div className="payment-box__upi-row" style={{ marginTop: 12 }}>
           <span className="payment-box__upi-label">UPI ID:</span>
           <span className="payment-box__upi-id">{activeUpiId}</span>
           <button
@@ -309,34 +392,50 @@ export default function BookingForm({
             {copiedUpi ? "Copied!" : "Copy"}
           </button>
         </div>
-
-        {/* Mobile UPI Deep Link */}
-        <a
-          href={upiIntentUrl}
-          className="btn btn-outline payment-box__pay-app-btn"
-          style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
-        >
-          <Smartphone size={16} /> Pay ₹{computedAmount} via GPay / PhonePe / Paytm
-        </a>
       </div>
 
-      {/* UTR Input */}
+      {/* UTR Input with Quick Paste Helper */}
       <div className="form-field" style={{ marginTop: 16 }}>
-        <label className="label" htmlFor="upiRef">
-          UTR / UPI Transaction Reference ID *
-        </label>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <label className="label" htmlFor="upiRef" style={{ margin: 0 }}>
+            12-Digit UPI UTR / Reference ID *
+          </label>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const text = await navigator.clipboard.readText();
+                const digits = text.replace(/\D/g, "");
+                if (digits.length >= 10) {
+                  setPrimaryContact((prev) => ({ ...prev, upiRef: digits.slice(0, 12) }));
+                  toast.success("UTR pasted from clipboard! 📋");
+                } else if (text.trim()) {
+                  setPrimaryContact((prev) => ({ ...prev, upiRef: text.trim() }));
+                  toast.success("Pasted from clipboard!");
+                } else {
+                  toast("Clipboard is empty. Please copy UTR from your bank app.", { icon: "ℹ️" });
+                }
+              } catch (e) {
+                toast("Please paste your 12-digit UTR manually.", { icon: "ℹ️" });
+              }
+            }}
+            style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
+          >
+            📋 Paste from Clipboard
+          </button>
+        </div>
         <input
           className="input"
           id="upiRef"
           name="upiRef"
           type="text"
-          placeholder="12-digit UTR (e.g. 423456789012)"
+          placeholder="e.g. 423456789012"
           value={primaryContact.upiRef}
           onChange={handlePrimaryChange}
           required
         />
         <span className="field-hint">
-          Open your UPI app after payment → Copy the 12-digit UTR/Ref number and paste here.
+          After paying in GPay/PhonePe/Paytm → Copy the 12-digit UPI Reference Number / UTR and paste here.
         </span>
       </div>
 
@@ -344,16 +443,16 @@ export default function BookingForm({
       <button
         type="submit"
         className="btn btn-gold btn-full"
-        style={{ marginTop: 20 }}
+        style={{ marginTop: 20, padding: "14px", fontSize: "1rem", fontWeight: 800 }}
         disabled={submitting || selectedSeats.length === 0}
       >
         {submitting ? (
           <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="spinner" style={{ width: 18, height: 18 }} />
-            Submitting Booking…
+            Confirming Booking & Generating Ticket…
           </span>
         ) : (
-          `Submit & Confirm Booking (₹${computedAmount})`
+          `⚡ Confirm Bank Payment & Generate Ticket (₹${computedAmount})`
         )}
       </button>
     </form>
