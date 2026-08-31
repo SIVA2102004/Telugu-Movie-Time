@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag } from "lucide-react";
+import { DEFAULT_SCREENS } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
