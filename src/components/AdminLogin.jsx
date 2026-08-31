@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { db } from "../firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AdminLogin.css";
@@ -84,7 +84,6 @@ export default function AdminLogin({ onLogin, config }) {
 
       // If not in cache, check Firestore
       if (!found) {
-        const { getDoc, doc } = await import("firebase/firestore");
         const docSnap = await getDoc(doc(db, "coAdmins", enteredId));
         if (docSnap.exists() && docSnap.data().password === enteredPw) {
           found = { id: docSnap.id, ...docSnap.data() };
@@ -170,7 +169,6 @@ export default function AdminLogin({ onLogin, config }) {
 
     // Save to Firestore & local storage
     try {
-      const { setDoc, doc } = await import("firebase/firestore");
       await setDoc(doc(db, "coAdmins", coId), newCoAdminRecord, { merge: true });
       await setDoc(doc(db, "coAdmins", `ca_${coAdminRegDetails.phone.trim()}`), newCoAdminRecord, { merge: true });
 

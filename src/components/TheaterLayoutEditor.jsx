@@ -3,7 +3,7 @@ import { db, storage } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { buildDefaultLayout } from "../hooks/useMovieConfig";
-import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image, Info, ArrowDownUp, Tag, IndianRupee } from "lucide-react";
+import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Info, ArrowDownUp, Tag, IndianRupee } from "lucide-react";
 import toast from "react-hot-toast";
 import "./TheaterLayoutEditor.css";
 
@@ -566,7 +566,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
           {/* Blueprint upload */}
           <div className="tle-section card">
-            <h3 className="tle-section-title"><Image size={15} /> Blueprint Reference</h3>
+            <h3 className="tle-section-title"><ImageIcon size={15} /> Blueprint Reference</h3>
             <div
               className={`tle-dropzone ${uploading ? "tle-dropzone--uploading" : ""}`}
               onDrop={onDrop}
