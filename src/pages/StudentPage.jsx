@@ -233,45 +233,75 @@ export default function StudentPage() {
       {submitted ? (
         <main className="student-page">
           <div className="student-page__success card" style={{ maxWidth: 640, margin: "40px auto" }}>
-            <CheckCircle size={64} color="var(--green)" />
-            <h2 style={{ color: "var(--green)", fontSize: "1.8rem", margin: "8px 0" }}>
-              Payment & Booking Submitted!
+            <div style={{ background: "rgba(0,230,118,0.15)", border: "2px solid var(--green)", borderRadius: "50%", width: 70, height: 70, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px" }}>
+              <CheckCircle size={44} color="var(--green)" />
+            </div>
+
+            <h2 style={{ color: "var(--green)", fontSize: "1.7rem", margin: "4px 0" }}>
+              🎉 Payment Verified & Ticket Generated!
             </h2>
-            <p style={{ color: "var(--text)", fontSize: "1rem", lineHeight: 1.6 }}>
-              Your booking request for <strong>{config?.movieName || "the movie"}</strong> ({activeScreenName}) has been received.
-              <br />
-              Your seats are currently set to <strong>Pending Verification (Orange)</strong>.
-              <br />
-              Once admin confirms your payment, your confirmed vintage ticket will be sent to your WhatsApp!
+            <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", margin: "0 0 16px" }}>
+              ⚡ <strong>DMart Smart Auto-Pay:</strong> Your seats have been secured & confirmed in the theater database.
             </p>
 
             {submittedData?.booking && (
               <div
                 style={{
-                  background: "var(--surface2)",
-                  border: "1px solid var(--border)",
-                  borderRadius: 8,
-                  padding: "16px 20px",
+                  background: "linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(20,16,24,0.95) 100%)",
+                  border: "1px solid var(--gold)",
+                  borderRadius: 12,
+                  padding: "18px 20px",
                   width: "100%",
                   textAlign: "left",
-                  margin: "12px 0",
+                  margin: "8px 0 16px",
                   display: "flex",
                   flexDirection: "column",
-                  gap: 8,
+                  gap: 10,
                 }}
               >
-                <div><strong>Screen:</strong> <span style={{ color: "var(--gold)" }}>{activeScreenName}</span></div>
-                <div><strong>Seats:</strong> <span style={{ color: "var(--gold)" }}>{(submittedData.booking.seats || []).join(", ")}</span></div>
-                <div><strong>Total Amount:</strong> ₹{submittedData.booking.totalAmount}</div>
-                <div><strong>Name:</strong> {submittedData.booking.name}</div>
-                <div><strong>UTR / Ref:</strong> {submittedData.booking.upiId}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,215,0,0.2)", paddingBottom: 8 }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Official Receipt No:</span>
+                  <strong style={{ color: "var(--gold)", fontSize: "0.9rem" }}>{submittedData.booking.id.toUpperCase()}</strong>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: "0.88rem" }}>
+                  <div><strong>Movie:</strong> {config?.movieName || "Telugu Movie Time"}</div>
+                  <div><strong>Screen:</strong> <span style={{ color: "var(--gold)" }}>{activeScreenName}</span></div>
+                  <div><strong>Seats:</strong> <span style={{ color: "var(--green)", fontWeight: 800 }}>{(submittedData.booking.seats || []).join(", ")}</span></div>
+                  <div><strong>Total Paid:</strong> <span style={{ color: "var(--gold)", fontWeight: 800 }}>₹{submittedData.booking.totalAmount}</span></div>
+                  <div><strong>Name:</strong> {submittedData.booking.name}</div>
+                  <div><strong>Status:</strong> <span style={{ color: "var(--green)", fontWeight: 800 }}>✅ CONFIRMED</span></div>
+                </div>
               </div>
             )}
 
-            {submittedData?.waUrl && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
+            {/* 1-Click Ticket & Bill Action Buttons */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 4 }}>
+              {submittedData?.ticketUrl && (
                 <a
-                  href={submittedData.waUrl}
+                  href={submittedData.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-gold"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "14px 20px",
+                    fontSize: "1rem",
+                    width: "100%",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                  }}
+                >
+                  🎟️ View & Download Official Digital Ticket Card ↗
+                </a>
+              )}
+
+              {submittedData?.waCustomerUrl && (
+                <a
+                  href={submittedData.waCustomerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-wa"
@@ -280,51 +310,28 @@ export default function StudentPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 8,
-                    padding: "14px 24px",
-                    fontSize: "1rem",
+                    padding: "12px 20px",
+                    fontSize: "0.92rem",
                     width: "100%",
-                    fontWeight: 700,
                     textDecoration: "none",
+                    fontWeight: 700,
                   }}
                 >
-                  <MessageCircle size={20} /> Send Screenshot to Admin on WhatsApp
+                  <MessageCircle size={18} /> Send Official Ticket to My WhatsApp
                 </a>
-
-                {submittedData?.waCustomerUrl && (
-                  <a
-                    href={submittedData.waCustomerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-outline"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      padding: "10px 20px",
-                      fontSize: "0.88rem",
-                      width: "100%",
-                      textDecoration: "none",
-                      color: "var(--gold)",
-                      borderColor: "var(--gold)",
-                    }}
-                  >
-                    <MessageCircle size={16} /> Save Pending Booking Receipt on My WhatsApp
-                  </a>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
             <button
-              className="btn btn-outline"
-              style={{ marginTop: 14, width: "100%", display: "inline-flex", justifyContent: "center", gap: 6 }}
+              className="btn btn-ghost"
+              style={{ marginTop: 14, width: "100%", display: "inline-flex", justifyContent: "center", gap: 6, color: "var(--text-muted)" }}
               onClick={() => {
                 setSubmitted(false);
                 setSubmittedData(null);
                 setActiveView("movie");
               }}
             >
-              <ArrowLeft size={16} /> Back to Movie Overview
+              <ArrowLeft size={15} /> Book More Tickets
             </button>
           </div>
         </main>

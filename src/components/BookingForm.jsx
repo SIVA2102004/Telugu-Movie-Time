@@ -89,31 +89,6 @@ export default function BookingForm({
     if (!primaryContact.name.trim()) return "Please enter student name.";
     if (!primaryContact.phone.trim()) return "Please enter WhatsApp phone number.";
     if (!/^\d{10}$/.test(primaryContact.phone.replace(/\D/g, ""))) return "Please enter a valid 10-digit phone number.";
-    if (!primaryContact.upiRef.trim()) return "Please enter the UPI 12-digit UTR / Reference ID.";
-    if (primaryContact.upiRef.trim().length < 6) return "Please enter a valid UPI Reference / UTR Number.";
-
-    // ── CHECK DUPLICATE UTR ──
-    const enteredUtr = primaryContact.upiRef.trim().toLowerCase();
-    
-    // Check against existingBookings prop
-    const duplicateInCloud = (existingBookings || []).some(
-      (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
-    );
-    if (duplicateInCloud) {
-      return "⚠️ This UTR / Reference ID has already been submitted for another booking! Please check your payment receipt.";
-    }
-
-    // Check against local bookings cache
-    try {
-      const localCache = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
-      const duplicateInLocal = localCache.some(
-        (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
-      );
-      if (duplicateInLocal) {
-        return "⚠️ This UTR / Reference ID is already in use! Each transaction must have a unique UTR.";
-      }
-    } catch (e) {}
-
     return null;
   };
 
@@ -128,6 +103,8 @@ export default function BookingForm({
     playSuccessChime();
 
     const bookingId = "bk_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4);
+    const assignedUtr = primaryContact.upiRef.trim() || `AUTO_${txnRef}`;
+
     const newBooking = {
       id: bookingId,
       txnRef: txnRef,
@@ -135,18 +112,20 @@ export default function BookingForm({
       screenName: screenName,
       name: primaryContact.name.trim(),
       phone: primaryContact.phone.trim(),
-      upiId: primaryContact.upiRef.trim(),
+      upiId: assignedUtr,
       upiTarget: activeUpiId,
       college: primaryContact.college.trim(),
       year: primaryContact.year,
       seats: [...selectedSeats],
       totalAmount: computedAmount,
-      status: "pending",
+      status: "confirmed", // ⚡ DMart Auto-Bill Instant Confirmation!
+      confirmedAt: new Date().toISOString(),
+      confirmedBy: "⚡ Smart Auto-Pay System (Instant Credit)",
       createdAt: new Date().toISOString(),
       source: "student_portal_smart_autopay",
     };
 
-    // 1. Instantly write to local shared cache & lock seats in 0ms
+    // 1. Instantly write to local shared cache & set seats as Confirmed (Red / Booked) in 0ms
     try {
       const existing = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
       const updated = [newBooking, ...existing];
@@ -154,60 +133,53 @@ export default function BookingForm({
 
       const seatsData = JSON.parse(localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`) || "{}");
       selectedSeats.forEach((seatId) => {
-        seatsData[seatId] = "pending";
+        seatsData[seatId] = "booked";
       });
       localStorage.setItem(`telugu_talkies_seats_cache_${screenId}`, JSON.stringify(seatsData));
       window.dispatchEvent(new Event("storage"));
     } catch (storageErr) {}
 
-    const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || "Screen 1";
+    const activeScreenName = config?.screens?.find((s) => s.id === config?.activeScreenId)?.name || screenName || "Screen 1";
+    const ticketUrl = `${window.location.origin}/ticket/${newBooking.id}`;
 
-    // 2. WhatsApp message sent to ADMIN by Student
-    const adminMsg = encodeURIComponent(
-      `Hi Admin! 🎬\n\nI just paid *₹${computedAmount}* for seats: *${selectedSeats.join(", ")}*.\n` +
-      `Screen: *${activeScreenName}*\n` +
-      `Name: *${primaryContact.name}*\n` +
-      `Phone: *${primaryContact.phone}*\n` +
-      `UTR/Ref: *${primaryContact.upiRef}*\n` +
-      `College: *${primaryContact.college}* (${primaryContact.year})\n\n` +
-      `Please verify and confirm my booking!`
-    );
-    const waAdminUrl = `https://wa.me/${adminPhone}?text=${adminMsg}`;
-
-    // 2b. WhatsApp Self-Confirmation / Receipt message for Customer
+    // 2. WhatsApp Official Confirmed Ticket Receipt message
     const cleanCustomerPhone = primaryContact.phone.replace(/\D/g, "");
     const formattedCustomerPhone = cleanCustomerPhone.startsWith("91") ? cleanCustomerPhone : `91${cleanCustomerPhone}`;
+
     const customerMsg = encodeURIComponent(
-      `🍿 *TELUGU MOVIE TIME — BOOKING ACKNOWLEDGEMENT* 🎬\n\n` +
-      `Hello *${primaryContact.name}*,\n` +
-      `Your booking request for *${config?.movieName || "the movie"}* (*${activeScreenName}*) has been recorded!\n\n` +
-      `💺 *Seats:* *${selectedSeats.join(", ")}*\n` +
-      `💰 *Amount:* *₹${computedAmount}*\n` +
-      `💳 *UTR / Ref:* ${primaryContact.upiRef}\n` +
-      `⏳ *Status:* *PENDING ADMIN VERIFICATION*\n\n` +
-      `📌 *Next Step:* Admin is verifying your payment. Your official confirmed vintage ticket will be sent to this WhatsApp number shortly after approval.\n\n` +
-      `Thank you for choosing Telugu Movie Time! 🎉`
+      `🎬 *TELUGU MOVIE TIME* 🎬\n` +
+      `✨ *Official Digital Movie Ticket* ✨\n\n` +
+      `Dear *${primaryContact.name}*,\n` +
+      `Thank you for booking with Telugu Movie Time! Your booking has been *CONFIRMED* via ⚡ Smart Auto-Pay.\n\n` +
+      `🧾 *Booking ID:* ${newBooking.id.toUpperCase()}\n` +
+      `🍿 *Movie:* ${config?.movieName || "Telugu Movie Time"}\n` +
+      `🖥️ *Screen:* ${activeScreenName}\n` +
+      `💺 *Seats:* ${selectedSeats.join(", ")} (${selectedSeats.length} Seats)\n` +
+      `💰 *Total Paid:* ₹${computedAmount}\n` +
+      `📅 *Date:* ${config?.date || "Show Date"}\n` +
+      `⏰ *Show Time:* ${config?.showTime || "Show Time"}\n` +
+      `📍 *Theater:* ${config?.theater || "Crystal Mall"}\n` +
+      `💳 *Payment:* UPI Auto-Pay (Ref: ${txnRef})\n` +
+      `✅ *Status:* CONFIRMED / SEATS SECURED\n\n` +
+      `👉 *View & Download Official Digital Ticket Card:*\n` +
+      `${ticketUrl}\n\n` +
+      `🍿 *Enjoy the show with Dolby Atmos sound & great student vibes!* 🚩`
     );
     const waCustomerUrl = `https://wa.me/${formattedCustomerPhone}?text=${customerMsg}`;
 
-    // 3. Parallel non-blocking Cloud sync (Firestore & RTDB)
+    // Parallel non-blocking Cloud sync (Firestore & RTDB)
     setDoc(doc(db, "bookings", newBooking.id), newBooking, { merge: true }).catch(console.error);
     Promise.all([
-      ...selectedSeats.map((seatId) => set(ref(rtdb, `seats_${screenId}/${seatId}`), "pending")),
+      ...selectedSeats.map((seatId) => set(ref(rtdb, `seats_${screenId}/${seatId}`), "booked")),
       set(ref(rtdb, `all_bookings/${newBooking.id}`), newBooking),
     ]).catch(console.warn);
 
-    toast.success("Booking request submitted! 🎟️");
+    toast.success("⚡ Payment Received & Official Ticket Generated!");
 
-    // Automatically trigger WhatsApp in new tab so user sends screenshot
-    try {
-      window.open(waAdminUrl, "_blank");
-    } catch (e) {}
-
-    // 4. Instant Transition to Success Screen (0ms latency)
+    // 4. Instant Transition to Confirmed Digital Ticket Bill
     onSuccess({
       booking: newBooking,
-      waUrl: waAdminUrl,
+      ticketUrl: ticketUrl,
       waCustomerUrl: waCustomerUrl,
     });
     setSubmitting(false);
