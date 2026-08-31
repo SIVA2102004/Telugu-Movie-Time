@@ -93,9 +93,9 @@ export default function AdminPage() {
     }
   };
 
-  const { bookings, setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings();
-  const { seatMap } = useSeats();
-  const { config, layout, loading: cLoading } = useMovieConfig();
+  const { bookings = [], setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings();
+  const { seatMap = {} } = useSeats();
+  const { config = {}, layout = {}, loading: cLoading } = useMovieConfig();
 
   const logout = () => {
     sessionStorage.removeItem("adminAuth");
