@@ -12,24 +12,17 @@ import "./AdminSeatMap.css";
  */
 export default function AdminSeatMap({ seatMap, bookings, config, layout, readOnly = false }) {
   const [selectedScreenId, setSelectedScreenId] = useState(() => config?.activeScreenId || "screen-1");
+  const [blockedSeats, setBlockedSeats] = useState(() => {
+    return new Set(config?.blockedSeats || []);
+  });
+  const [saving, setSaving] = useState(false);
+
   const screens = config?.screens || [
     { id: "screen-1", name: "Screen 1 (Main Hall)" },
     { id: "screen-2", name: "Screen 2 (Audi 2)" }
   ];
 
   const currentScreen = screens.find((s) => s.id === selectedScreenId) || screens[0];
-
-  const [blockedSeats, setBlockedSeats] = useState(() => {
-    return new Set(currentScreen?.blockedSeats || config?.blockedSeats || []);
-  });
-  const [saving, setSaving] = useState(false);
-
-  // Update local blocked seats when switching screens or when config updates
-  const handleSelectScreen = (screenId) => {
-    setSelectedScreenId(screenId);
-    const targetScreen = screens.find((s) => s.id === screenId);
-    setBlockedSeats(new Set(targetScreen?.blockedSeats || (screenId === "screen-1" ? config?.blockedSeats || [] : [])));
-  };
 
   const bookedByMap = {};
   const seatStatusMap = {};
@@ -56,7 +49,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     : (layout?.rows || []);
 
   const rowTiers = layout?.rowTiers || {};
-  const tierPrices = currentScreen?.tierPrices || config?.tierPrices || layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const tierPrices = config?.tierPrices || layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
 
   // Click seat in admin seat map to block/unblock
   const toggleSeatBlock = (seatId) => {
@@ -111,7 +104,16 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
   const clearAllBlocks = () => {
     if (readOnly) return;
-    setBlockedSeats(new Set());
+    setBlockedSeats((prev) => {
+      const next = new Set();
+      // keep other screens' blocked seats if prefixed
+      prev.forEach((s) => {
+        if (s.includes("_") && !s.startsWith(`${selectedScreenId}_`)) {
+          next.add(s);
+        }
+      });
+      return next;
+    });
     toast.success(`Cleared all seat blocks for ${currentScreen?.name}! 🟢`);
   };
 
@@ -119,26 +121,19 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     if (readOnly) return;
     setSaving(true);
     const blockedList = Array.from(blockedSeats);
-
-    // Save blocked list into specific screen and root config
-    const updatedScreens = screens.map((s) => {
-      if (s.id === selectedScreenId) {
-        return { ...s, blockedSeats: blockedList };
-      }
-      return s;
-    });
-
     const updated = {
       ...config,
-      screens: updatedScreens,
-      blockedSeats: selectedScreenId === "screen-1" ? blockedList : config?.blockedSeats || [],
+      blockedSeats: blockedList,
     };
 
     try {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
-      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
-      toast.success(`Seat availability for ${currentScreen?.name} saved to cloud! 🚀`);
+    } catch (e) {}
+
+    try {
+      await setDoc(doc(db, "movieConfig", "current"), { blockedSeats: blockedList }, { merge: true });
+      toast.success("Seat availability saved to cloud successfully! 🚀");
     } catch (err) {
       toast.success("Saved locally! ✅");
     }
@@ -160,7 +155,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
               type="button"
               className={`btn ${isCurrent ? "btn-gold" : "btn-ghost"}`}
               style={{ padding: "6px 14px", fontSize: "0.82rem", fontWeight: 700 }}
-              onClick={() => handleSelectScreen(scr.id)}
+              onClick={() => setSelectedScreenId(scr.id)}
             >
               {scr.name} {scr.isPublished ? "✓ LIVE" : ""}
             </button>

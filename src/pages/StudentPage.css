@@ -116,3 +116,30 @@
   font-size: 1.05rem;
   line-height: 1.6;
 }
+
+/* ── Responsive Enhancements ── */
+@media (max-width: 768px) {
+  .student-page {
+    padding: 12px 10px 40px;
+    gap: 16px;
+  }
+  .seatmap-header h2 {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .student-page {
+    padding: 8px 6px 30px;
+  }
+  .student-page__strip {
+    padding: 8px 10px;
+    font-size: 0.76rem;
+    gap: 8px;
+  }
+  .seatmap-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}

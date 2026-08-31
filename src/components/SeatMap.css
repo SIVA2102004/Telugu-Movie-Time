@@ -245,102 +245,97 @@
   flex-shrink: 0;
 }
 
-/* ── Responsive Mobile Optimizations ── */
+/* ── Responsive Mobile Enhancements ── */
 @media (max-width: 768px) {
   .seatmap-wrapper {
     padding: 12px 6px;
     gap: 12px;
   }
-
   .seatmap-grid {
-    padding: 10px 4px;
+    padding: 12px 6px;
     gap: 5px;
-    width: 100%;
     -webkit-overflow-scrolling: touch;
   }
-
-  .seatmap-tier-summary {
-    gap: 8px;
-  }
-
-  .seatmap-tier-pill {
-    padding: 3px 10px;
-    font-size: 0.72rem;
-  }
-
   .seat {
     width: 28px;
     height: 27px;
     font-size: 0.58rem;
     border-radius: 4px 4px 2px 2px;
   }
-
   .seat-gap {
     width: 28px;
     height: 27px;
   }
-
   .seatmap-seats {
     gap: 3px;
   }
-
   .seatmap-row {
     gap: 6px;
   }
-
   .seatmap-row-label-group {
-    width: 24px;
+    width: 26px;
   }
-
   .seatmap-row-label {
     font-size: 0.7rem;
   }
-
-  .seatmap-tier-tag {
-    font-size: 0.5rem;
+  .seatmap-tier-summary {
+    gap: 8px;
   }
-
-  .screen-bar {
-    max-width: 95%;
+  .seatmap-tier-pill {
+    padding: 3px 9px;
+    font-size: 0.72rem;
   }
-
   .seatmap-legend {
     gap: 12px;
-    padding: 8px;
-  }
-
-  .legend-item {
     font-size: 0.72rem;
-    gap: 4px;
   }
-
-  .legend-dot {
-    width: 12px;
-    height: 12px;
+  .screen-bar {
+    max-width: 90%;
   }
 }
 
 @media (max-width: 480px) {
+  .seatmap-wrapper {
+    padding: 8px 2px;
+  }
+  .seatmap-grid {
+    padding: 10px 2px;
+    gap: 4px;
+  }
   .seat {
     width: 25px;
     height: 25px;
     font-size: 0.52rem;
+    border-radius: 3px 3px 2px 2px;
   }
-
   .seat-gap {
     width: 25px;
     height: 25px;
   }
-
   .seatmap-seats {
-    gap: 2px;
+    gap: 2.5px;
   }
-
   .seatmap-row {
     gap: 4px;
   }
-
   .seatmap-row-label-group {
-    width: 20px;
+    width: 22px;
+  }
+  .seatmap-row-label {
+    font-size: 0.65rem;
+  }
+  .seatmap-tier-tag {
+    font-size: 0.48rem;
+  }
+  .seatmap-tier-pill {
+    padding: 2px 8px;
+    font-size: 0.68rem;
+  }
+  .legend-item {
+    font-size: 0.7rem;
+  }
+  .legend-dot {
+    width: 11px;
+    height: 11px;
   }
 }
