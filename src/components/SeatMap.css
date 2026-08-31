@@ -245,18 +245,102 @@
   flex-shrink: 0;
 }
 
-/* ── Responsive ── */
-@media (max-width: 480px) {
-  .seat {
-    width: 30px;
-    height: 28px;
-    font-size: 0.55rem;
-    border-radius: 4px 4px 3px 3px;
+/* ── Responsive Mobile Optimizations ── */
+@media (max-width: 768px) {
+  .seatmap-wrapper {
+    padding: 12px 6px;
+    gap: 12px;
   }
+
+  .seatmap-grid {
+    padding: 10px 4px;
+    gap: 5px;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .seatmap-tier-summary {
+    gap: 8px;
+  }
+
+  .seatmap-tier-pill {
+    padding: 3px 10px;
+    font-size: 0.72rem;
+  }
+
+  .seat {
+    width: 28px;
+    height: 27px;
+    font-size: 0.58rem;
+    border-radius: 4px 4px 2px 2px;
+  }
+
+  .seat-gap {
+    width: 28px;
+    height: 27px;
+  }
+
   .seatmap-seats {
     gap: 3px;
   }
+
+  .seatmap-row {
+    gap: 6px;
+  }
+
+  .seatmap-row-label-group {
+    width: 24px;
+  }
+
+  .seatmap-row-label {
+    font-size: 0.7rem;
+  }
+
+  .seatmap-tier-tag {
+    font-size: 0.5rem;
+  }
+
+  .screen-bar {
+    max-width: 95%;
+  }
+
+  .seatmap-legend {
+    gap: 12px;
+    padding: 8px;
+  }
+
+  .legend-item {
+    font-size: 0.72rem;
+    gap: 4px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .seat {
+    width: 25px;
+    height: 25px;
+    font-size: 0.52rem;
+  }
+
+  .seat-gap {
+    width: 25px;
+    height: 25px;
+  }
+
+  .seatmap-seats {
+    gap: 2px;
+  }
+
   .seatmap-row {
     gap: 4px;
+  }
+
+  .seatmap-row-label-group {
+    width: 20px;
   }
 }

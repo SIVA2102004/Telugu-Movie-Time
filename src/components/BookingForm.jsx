@@ -64,6 +64,12 @@ export default function BookingForm({
 
   const handlePrimaryChange = (e) => {
     const { name, value } = e.target;
+    if (name === "upiRef") {
+      // Strictly allow only numbers (digits 0-9)
+      const digitsOnly = value.replace(/\D/g, "");
+      setPrimaryContact((prev) => ({ ...prev, [name]: digitsOnly }));
+      return;
+    }
     setPrimaryContact((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -72,14 +78,15 @@ export default function BookingForm({
     if (!primaryContact.phone.trim()) return "Please enter WhatsApp phone number.";
     if (!/^\d{10}$/.test(primaryContact.phone.replace(/\D/g, ""))) return "Please enter a valid 10-digit phone number.";
     if (!primaryContact.upiRef.trim()) return "Please enter the UPI 12-digit UTR / Reference ID.";
-    if (primaryContact.upiRef.trim().length < 6) return "Please enter a valid UPI Reference / UTR Number.";
+    if (!/^\d+$/.test(primaryContact.upiRef.trim())) return "UTR / Reference Number must contain only numbers (no alphabets or special characters).";
+    if (primaryContact.upiRef.trim().length < 6) return "Please enter a valid UPI Reference / UTR Number (minimum 6 digits).";
 
     // ── CHECK DUPLICATE UTR ──
-    const enteredUtr = primaryContact.upiRef.trim().toLowerCase();
+    const enteredUtr = primaryContact.upiRef.trim();
     
     // Check against existingBookings prop
     const duplicateInCloud = (existingBookings || []).some(
-      (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
+      (b) => b.status !== "cancelled" && String(b.upiId || "").trim() === enteredUtr
     );
     if (duplicateInCloud) {
       return "⚠️ This UTR / Reference ID has already been submitted for another booking! Please check your payment receipt.";
@@ -89,7 +96,7 @@ export default function BookingForm({
     try {
       const localCache = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
       const duplicateInLocal = localCache.some(
-        (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
+        (b) => b.status !== "cancelled" && String(b.upiId || "").trim() === enteredUtr
       );
       if (duplicateInLocal) {
         return "⚠️ This UTR / Reference ID is already in use! Each transaction must have a unique UTR.";
@@ -330,13 +337,16 @@ export default function BookingForm({
           id="upiRef"
           name="upiRef"
           type="text"
-          placeholder="12-digit UTR (e.g. 423456789012)"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={18}
+          placeholder="12-digit numeric UTR (e.g. 423456789012)"
           value={primaryContact.upiRef}
           onChange={handlePrimaryChange}
           required
         />
         <span className="field-hint">
-          Open your UPI app after payment → Copy the 12-digit UTR/Ref number and paste here.
+          Open your UPI app after payment → Copy the 12-digit numeric UTR/Ref number and paste here.
         </span>
       </div>
 
