@@ -36,6 +36,7 @@ export default function AdminPage() {
         { id: "seatmap",   label: "Seat Map",          icon: Map },
       ];
 
+  const [activeTab, setActiveTab] = useState(isMasterAdmin ? "overview" : "bookings");
   const [layoutScreenId, setLayoutScreenId] = useState("screen-1");
 
   const handleOpenLayoutForScreen = (screenId) => {
