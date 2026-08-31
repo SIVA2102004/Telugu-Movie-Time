@@ -167,6 +167,7 @@ export default function CoAdminManager({ config, bookings = [] }) {
                 <tr>
                   <th>#</th>
                   <th>Co-Admin Name</th>
+                  <th>Login ID</th>
                   <th>WhatsApp Phone</th>
                   <th>College / Unit</th>
                   <th>Tickets Confirmed</th>
@@ -187,6 +188,11 @@ export default function CoAdminManager({ config, bookings = [] }) {
                           </span>
                           {admin.name}
                         </div>
+                      </td>
+                      <td>
+                        <code style={{ color: "var(--gold)", background: "rgba(255,215,0,0.1)", padding: "2px 6px", borderRadius: 4, fontSize: "0.82rem", fontWeight: 700 }}>
+                          {admin.loginId || admin.phone}
+                        </code>
                       </td>
                       <td>
                         <a

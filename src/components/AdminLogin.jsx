@@ -7,21 +7,26 @@ import "./AdminLogin.css";
 
 export default function AdminLogin({ onLogin, config }) {
   const [inputVal, setInputVal] = useState("");
+  const [passwordVal, setPasswordVal] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loginMode, setLoginMode] = useState("password"); // 'password' or 'code'
+  
+  // Login modes: 'master' | 'coadmin' | 'register'
+  const [loginMode, setLoginMode] = useState("coadmin"); // default to co-admin ID & Password or master
 
-  // Co-Admin 2-Step Verification & Details State
-  const [coAdminStep, setCoAdminStep] = useState(1); // 1 = Enter code, 2 = Enter details
+  // Co-Admin Registration State (One-time code verification + create credentials)
+  const [regStep, setRegStep] = useState(1); // 1 = enter joining code, 2 = set name, phone, loginId & password
   const [verifiedCode, setVerifiedCode] = useState("");
-  const [coAdminDetails, setCoAdminDetails] = useState({
+  const [coAdminRegDetails, setCoAdminRegDetails] = useState({
     name: "",
     phone: "",
+    loginId: "",
+    password: "",
     college: "",
   });
 
-  // Forgot password reset modal state
+  // Forgot password reset modal state for master admin
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [recoveryPin, setRecoveryPin] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -33,83 +38,161 @@ export default function AdminLogin({ onLogin, config }) {
   const validCoAdminCode = config?.coAdminCode || "COADMIN2026";
   const securityPin = config?.securityPin || "9999";
 
-  // Handle Master Admin Login or Co-Admin Step 1 (Code Verification)
-  const handleSubmit = (e) => {
+  // 1. MASTER ADMIN LOGIN
+  const handleMasterLogin = (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const entered = inputVal.trim();
-
+    const entered = passwordVal.trim();
     setTimeout(() => {
-      if (loginMode === "password") {
-        if (entered === masterPassword) {
-          sessionStorage.setItem("adminAuth", "true");
-          sessionStorage.setItem("adminRole", "master");
-          sessionStorage.setItem("adminName", "Master Admin");
-          onLogin();
-        } else {
-          setError("Incorrect master password. Default initial password is admin123.");
-        }
-      } else if (loginMode === "code") {
-        if (entered === validCoAdminCode) {
-          setVerifiedCode(entered);
-          setCoAdminStep(2); // Proceed to step 2: Enter Volunteer/Co-Admin Details
-          toast.success("Joining Code verified! Please enter your details. ✅");
-        } else {
-          setError("Invalid joining code. Please check with the main admin.");
-        }
+      if (entered === masterPassword) {
+        sessionStorage.setItem("adminAuth", "true");
+        sessionStorage.setItem("adminRole", "master");
+        sessionStorage.setItem("adminName", "Master Admin");
+        onLogin();
+      } else {
+        setError("Incorrect master password. (Default: admin123)");
       }
       setLoading(false);
     }, 300);
   };
 
-  // Handle Co-Admin Step 2: Finalize Details & Login
-  const handleCoAdminDetailsSubmit = (e) => {
+  // 2. CO-ADMIN DIRECT LOGIN (WITH LOGIN ID & PASSWORD)
+  const handleCoAdminLogin = async (e) => {
     e.preventDefault();
-    if (!coAdminDetails.name.trim()) {
-      setError("Please enter your full name.");
+    setLoading(true);
+    setError("");
+
+    const enteredId = inputVal.trim().toLowerCase();
+    const enteredPw = passwordVal.trim();
+
+    if (!enteredId || !enteredPw) {
+      setError("Please enter both Login ID and Password.");
+      setLoading(false);
       return;
     }
-    if (!/^\d{10}$/.test(coAdminDetails.phone.trim())) {
-      setError("Please enter a valid 10-digit WhatsApp phone number.");
+
+    try {
+      // Check local cache
+      const localCoAdmins = JSON.parse(localStorage.getItem("tmt_co_admins_cache") || "[]");
+      let found = localCoAdmins.find(
+        (c) =>
+          (c.loginId?.toLowerCase() === enteredId || c.phone === enteredId) &&
+          c.password === enteredPw
+      );
+
+      // If not in cache, check Firestore
+      if (!found) {
+        const { getDoc, doc } = await import("firebase/firestore");
+        const docSnap = await getDoc(doc(db, "coAdmins", enteredId));
+        if (docSnap.exists() && docSnap.data().password === enteredPw) {
+          found = { id: docSnap.id, ...docSnap.data() };
+        } else {
+          // Check by phone number key
+          const phoneSnap = await getDoc(doc(db, "coAdmins", `ca_${enteredId}`));
+          if (phoneSnap.exists() && phoneSnap.data().password === enteredPw) {
+            found = { id: phoneSnap.id, ...phoneSnap.data() };
+          }
+        }
+      }
+
+      if (found) {
+        sessionStorage.setItem("adminAuth", "true");
+        sessionStorage.setItem("adminRole", "co-admin");
+        sessionStorage.setItem("adminName", found.name || found.loginId);
+        sessionStorage.setItem("adminPhone", found.phone || "");
+        sessionStorage.setItem("adminCollege", found.college || "");
+        sessionStorage.setItem("coAdminLoginId", found.loginId || enteredId);
+
+        toast.success(`Welcome back, ${found.name || found.loginId}! 🎟️`);
+        onLogin();
+      } else {
+        setError("Invalid Login ID or Password. If you are a new volunteer, click 'Register with Code'.");
+      }
+    } catch (err) {
+      console.warn("Login lookup notice:", err);
+      setError("Login failed. Please check your credentials or network.");
+    }
+    setLoading(false);
+  };
+
+  // 3. CO-ADMIN REGISTRATION STEP 1 (VERIFY CODE)
+  const handleVerifyRegistrationCode = (e) => {
+    e.preventDefault();
+    setError("");
+    const entered = inputVal.trim();
+    if (entered === validCoAdminCode) {
+      setVerifiedCode(entered);
+      setRegStep(2);
+      toast.success("Joining code verified! Now set up your Login ID & Password. 🔑");
+    } else {
+      setError("Invalid joining code. Please check with the Master Admin.");
+    }
+  };
+
+  // 4. CO-ADMIN REGISTRATION STEP 2 (SAVE CREDENTIALS & LOGIN)
+  const handleCompleteRegistration = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!coAdminRegDetails.name.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+    if (!/^\d{10}$/.test(coAdminRegDetails.phone.trim())) {
+      setError("Please enter a valid 10-digit phone number.");
+      return;
+    }
+    if (!coAdminRegDetails.loginId.trim() || coAdminRegDetails.loginId.length < 3) {
+      setError("Login ID must be at least 3 characters.");
+      return;
+    }
+    if (!coAdminRegDetails.password.trim() || coAdminRegDetails.password.length < 4) {
+      setError("Password must be at least 4 characters.");
       return;
     }
 
     setLoading(true);
-    const coAdminId = "ca_" + coAdminDetails.phone.trim();
+    const coId = coAdminRegDetails.loginId.trim().toLowerCase();
     const newCoAdminRecord = {
-      id: coAdminId,
-      name: coAdminDetails.name.trim(),
-      phone: coAdminDetails.phone.trim(),
-      college: coAdminDetails.college.trim() || "Telugu Movie Club",
+      id: coId,
+      loginId: coId,
+      password: coAdminRegDetails.password.trim(),
+      name: coAdminRegDetails.name.trim(),
+      phone: coAdminRegDetails.phone.trim(),
+      college: coAdminRegDetails.college.trim() || "Telugu Movie Club",
       codeUsed: verifiedCode,
-      joinedAt: new Date().toISOString(),
-      lastActive: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
       role: "co-admin",
     };
 
-    // Save to Firestore & Local Storage
+    // Save to Firestore & local storage
     try {
-      import("firebase/firestore").then(({ setDoc, doc }) => {
-        setDoc(doc(db, "coAdmins", coAdminId), newCoAdminRecord, { merge: true }).catch(console.error);
-      });
-      const localCoAdmins = JSON.parse(localStorage.getItem("tmt_co_admins_cache") || "[]");
-      const filtered = localCoAdmins.filter((c) => c.phone !== coAdminDetails.phone.trim());
-      localStorage.setItem("tmt_co_admins_cache", JSON.stringify([newCoAdminRecord, ...filtered]));
-    } catch (e) {}
+      const { setDoc, doc } = await import("firebase/firestore");
+      await setDoc(doc(db, "coAdmins", coId), newCoAdminRecord, { merge: true });
+      await setDoc(doc(db, "coAdmins", `ca_${coAdminRegDetails.phone.trim()}`), newCoAdminRecord, { merge: true });
 
-    setTimeout(() => {
+      const localList = JSON.parse(localStorage.getItem("tmt_co_admins_cache") || "[]");
+      const filtered = localList.filter((c) => c.loginId !== coId && c.phone !== coAdminRegDetails.phone.trim());
+      localStorage.setItem("tmt_co_admins_cache", JSON.stringify([newCoAdminRecord, ...filtered]));
+
       sessionStorage.setItem("adminAuth", "true");
       sessionStorage.setItem("adminRole", "co-admin");
-      sessionStorage.setItem("adminName", coAdminDetails.name.trim());
-      sessionStorage.setItem("adminPhone", coAdminDetails.phone.trim());
-      sessionStorage.setItem("adminCollege", coAdminDetails.college.trim());
+      sessionStorage.setItem("adminName", coAdminRegDetails.name.trim());
+      sessionStorage.setItem("adminPhone", coAdminRegDetails.phone.trim());
+      sessionStorage.setItem("adminCollege", coAdminRegDetails.college.trim());
+      sessionStorage.setItem("coAdminLoginId", coId);
 
-      toast.success(`Welcome, ${coAdminDetails.name.trim()}! 🎟️`);
+      toast.success(`Account created! Logged in as ${coAdminRegDetails.name.trim()} 🚀`);
       onLogin();
-      setLoading(false);
-    }, 300);
+    } catch (err) {
+      console.error("Co-Admin registration error:", err);
+      toast.success("Account created locally! 🚀");
+      onLogin();
+    }
+    setLoading(false);
   };
 
   const handleResetPassword = async (e) => {
@@ -140,9 +223,6 @@ export default function AdminLogin({ onLogin, config }) {
     try {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
-    } catch (e) {}
-
-    try {
       await setDoc(doc(db, "movieConfig", "current"), { adminPassword: newPassword.trim() }, { merge: true });
     } catch (e) {}
 
@@ -150,7 +230,7 @@ export default function AdminLogin({ onLogin, config }) {
     toast.success("Password reset successfully! 🔑");
     setTimeout(() => {
       setShowForgotModal(false);
-      setInputVal(newPassword.trim());
+      setPasswordVal(newPassword.trim());
       setResetSuccess("");
       setResetError("");
     }, 1200);
@@ -165,134 +245,173 @@ export default function AdminLogin({ onLogin, config }) {
         <h1 className="admin-login__title">TMT Admin Portal</h1>
         <p className="admin-login__sub">Telugu Movie Time · Secure Management</p>
 
-        {/* Mode Toggle */}
-        <div className="admin-login-tabs" style={{ display: "flex", gap: 8, margin: "16px 0", width: "100%" }}>
+        {/* Mode Toggle Tabs */}
+        <div className="admin-login-tabs" style={{ display: "flex", gap: 6, margin: "16px 0 20px", width: "100%", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10 }}>
           <button
             type="button"
-            className={`btn ${loginMode === "password" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 10px", fontSize: "0.82rem", justifyContent: "center" }}
+            className={`btn ${loginMode === "coadmin" ? "btn-gold" : "btn-ghost"}`}
+            style={{ flex: 1, padding: "8px 6px", fontSize: "0.78rem", justifyContent: "center", borderRadius: 8 }}
             onClick={() => {
-              setLoginMode("password");
-              setCoAdminStep(1);
+              setLoginMode("coadmin");
               setError("");
               setInputVal("");
+              setPasswordVal("");
+            }}
+          >
+            <UserCheck size={14} /> Co-Admin Login
+          </button>
+
+          <button
+            type="button"
+            className={`btn ${loginMode === "master" ? "btn-gold" : "btn-ghost"}`}
+            style={{ flex: 1, padding: "8px 6px", fontSize: "0.78rem", justifyContent: "center", borderRadius: 8 }}
+            onClick={() => {
+              setLoginMode("master");
+              setError("");
+              setInputVal("");
+              setPasswordVal("");
             }}
           >
             <KeyRound size={14} /> Master Admin
           </button>
-          <button
-            type="button"
-            className={`btn ${loginMode === "code" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 10px", fontSize: "0.82rem", justifyContent: "center" }}
-            onClick={() => {
-              setLoginMode("code");
-              setCoAdminStep(1);
-              setError("");
-              setInputVal("");
-            }}
-          >
-            <UserCheck size={14} /> Co-Admin Code
-          </button>
         </div>
 
-        {/* ── SCREEN A: MASTER ADMIN LOGIN OR CO-ADMIN STEP 1 ── */}
-        {coAdminStep === 1 ? (
-          <form onSubmit={handleSubmit} className="admin-login__form">
+        {/* ═════════════════════════════════════════════════════════════
+            1. CO-ADMIN DIRECT LOGIN (LOGIN ID & PASSWORD)
+        ═════════════════════════════════════════════════════════════ */}
+        {loginMode === "coadmin" && (
+          <form onSubmit={handleCoAdminLogin} className="admin-login__form">
             <div className="admin-login__field">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <label className="label" htmlFor="authInput" style={{ margin: 0 }}>
-                  {loginMode === "password" ? "Master Admin Password" : "Step 1: Enter Joining Code"}
-                </label>
-                {loginMode === "password" && (
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotModal(true)}
-                    style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: 0 }}
-                  >
-                    Forgot Password?
-                  </button>
-                )}
-              </div>
+              <label className="label" htmlFor="coLoginId">Co-Admin Login ID or Phone Number *</label>
               <div className="admin-login__pw-wrap">
                 <input
                   className="input"
-                  id="authInput"
-                  type={showPw || loginMode === "code" ? "text" : "password"}
+                  id="coLoginId"
+                  type="text"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
-                  placeholder={loginMode === "password" ? "Enter admin password (default: admin123)" : "Enter joining code (e.g. COADMIN2026)"}
+                  placeholder="e.g. siva or 9876543210"
                   autoFocus
                   required
                 />
-                {loginMode === "password" && (
-                  <button
-                    type="button"
-                    className="admin-login__toggle"
-                    onClick={() => setShowPw((v) => !v)}
-                    tabIndex={-1}
-                  >
-                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                )}
+              </div>
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="coPassword">Co-Admin Password *</label>
+              <div className="admin-login__pw-wrap">
+                <input
+                  className="input"
+                  id="coPassword"
+                  type={showPw ? "text" : "password"}
+                  value={passwordVal}
+                  onChange={(e) => setPasswordVal(e.target.value)}
+                  placeholder="Enter your personal password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="admin-login__toggle"
+                  onClick={() => setShowPw((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
             {error && <p className="admin-login__error">{error}</p>}
 
             <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
-              {loading ? (
-                <span className="spinner" style={{ width: 18, height: 18 }} />
-              ) : loginMode === "code" ? (
-                "Verify Code & Continue →"
-              ) : (
-                "Login to Dashboard"
-              )}
+              {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Login as Co-Admin 🚀"}
+            </button>
+
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>New Co-Admin / Volunteer? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("register");
+                  setRegStep(1);
+                  setError("");
+                  setInputVal("");
+                }}
+                style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
+              >
+                Register with Code 🔑
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════
+            2. MASTER ADMIN LOGIN
+        ═════════════════════════════════════════════════════════════ */}
+        {loginMode === "master" && (
+          <form onSubmit={handleMasterLogin} className="admin-login__form">
+            <div className="admin-login__field">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <label className="label" htmlFor="masterPasswordInput" style={{ margin: 0 }}>
+                  Master Admin Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.75rem", cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="admin-login__pw-wrap">
+                <input
+                  className="input"
+                  id="masterPasswordInput"
+                  type={showPw ? "text" : "password"}
+                  value={passwordVal}
+                  onChange={(e) => setPasswordVal(e.target.value)}
+                  placeholder="Enter master password (default: admin123)"
+                  autoFocus
+                  required
+                />
+                <button
+                  type="button"
+                  className="admin-login__toggle"
+                  onClick={() => setShowPw((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="admin-login__error">{error}</p>}
+
+            <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
+              {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Login to Master Dashboard 👑"}
             </button>
           </form>
-        ) : (
-          /* ── SCREEN B: CO-ADMIN STEP 2: DETAILS ENTRY ── */
-          <form onSubmit={handleCoAdminDetailsSubmit} className="admin-login__form">
-            <div style={{ background: "rgba(79,195,247,0.1)", border: "1px solid #4fc3f7", borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8, fontSize: "0.8rem", color: "#4fc3f7" }}>
-              <CheckCircle2 size={16} /> Code Verified ({verifiedCode}). Enter your details to continue.
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════
+            3. ONE-TIME CO-ADMIN REGISTRATION (CODE -> CREATE CREDENTIALS)
+        ═════════════════════════════════════════════════════════════ */}
+        {loginMode === "register" && regStep === 1 && (
+          <form onSubmit={handleVerifyRegistrationCode} className="admin-login__form">
+            <div style={{ background: "rgba(255,215,0,0.08)", border: "1px solid rgba(255,215,0,0.2)", borderRadius: 8, padding: "10px 12px", marginBottom: 14, fontSize: "0.8rem", color: "var(--gold)" }}>
+              🔑 <strong>One-Time Registration:</strong> Enter the joining code from Master Admin to create your personal Login ID & Password.
             </div>
 
             <div className="admin-login__field">
-              <label className="label" htmlFor="coName">Your Full Name *</label>
+              <label className="label" htmlFor="regCode">Joining Code *</label>
               <input
                 className="input"
-                id="coName"
+                id="regCode"
                 type="text"
-                placeholder="e.g. Siva Kumar"
-                value={coAdminDetails.name}
-                onChange={(e) => setCoAdminDetails({ ...coAdminDetails, name: e.target.value })}
-                required
+                value={inputVal}
+                onChange={(e) => setInputVal(e.target.value)}
+                placeholder="Enter code (e.g. COADMIN2026)"
                 autoFocus
-              />
-            </div>
-
-            <div className="admin-login__field">
-              <label className="label" htmlFor="coPhone">WhatsApp Phone Number *</label>
-              <input
-                className="input"
-                id="coPhone"
-                type="tel"
-                placeholder="10-digit phone number"
-                maxLength={10}
-                value={coAdminDetails.phone}
-                onChange={(e) => setCoAdminDetails({ ...coAdminDetails, phone: e.target.value })}
                 required
-              />
-            </div>
-
-            <div className="admin-login__field">
-              <label className="label" htmlFor="coCollege">College / Branch (Optional)</label>
-              <input
-                className="input"
-                id="coCollege"
-                type="text"
-                placeholder="e.g. Marwadi University"
-                value={coAdminDetails.college}
-                onChange={(e) => setCoAdminDetails({ ...coAdminDetails, college: e.target.value })}
               />
             </div>
 
@@ -303,17 +422,102 @@ export default function AdminLogin({ onLogin, config }) {
                 type="button"
                 className="btn btn-ghost"
                 style={{ flex: 1 }}
-                onClick={() => { setCoAdminStep(1); setError(""); }}
+                onClick={() => { setLoginMode("coadmin"); setError(""); }}
               >
                 ← Back
               </button>
+              <button type="submit" className="btn btn-gold" style={{ flex: 2 }}>
+                Verify Code →
+              </button>
+            </div>
+          </form>
+        )}
+
+        {loginMode === "register" && regStep === 2 && (
+          <form onSubmit={handleCompleteRegistration} className="admin-login__form">
+            <div style={{ background: "rgba(0,230,118,0.1)", border: "1px solid var(--green)", borderRadius: 8, padding: "8px 12px", marginBottom: 12, display: "flex", alignItems: "center", gap: 8, fontSize: "0.8rem", color: "var(--green)", fontWeight: 700 }}>
+              <CheckCircle2 size={16} /> Code Verified! Create your Login credentials:
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regName">Full Name *</label>
+              <input
+                className="input"
+                id="regName"
+                type="text"
+                placeholder="e.g. Siva"
+                value={coAdminRegDetails.name}
+                onChange={(e) => setCoAdminRegDetails({ ...coAdminRegDetails, name: e.target.value })}
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regPhone">WhatsApp Phone *</label>
+              <input
+                className="input"
+                id="regPhone"
+                type="tel"
+                maxLength={10}
+                placeholder="10-digit number"
+                value={coAdminRegDetails.phone}
+                onChange={(e) => setCoAdminRegDetails({ ...coAdminRegDetails, phone: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regLoginId">Choose Your Login ID * (You will use this to login)</label>
+              <input
+                className="input"
+                id="regLoginId"
+                type="text"
+                placeholder="e.g. siva2026"
+                value={coAdminRegDetails.loginId}
+                onChange={(e) => setCoAdminRegDetails({ ...coAdminRegDetails, loginId: e.target.value.toLowerCase().replace(/\s+/g, "") })}
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regPassword">Choose Your Password *</label>
+              <input
+                className="input"
+                id="regPassword"
+                type="password"
+                placeholder="Enter a secure password"
+                value={coAdminRegDetails.password}
+                onChange={(e) => setCoAdminRegDetails({ ...coAdminRegDetails, password: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regCollege">College (Optional)</label>
+              <input
+                className="input"
+                id="regCollege"
+                type="text"
+                placeholder="e.g. Marwadi University"
+                value={coAdminRegDetails.college}
+                onChange={(e) => setCoAdminRegDetails({ ...coAdminRegDetails, college: e.target.value })}
+              />
+            </div>
+
+            {error && <p className="admin-login__error">{error}</p>}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button
-                type="submit"
-                className="btn btn-gold"
-                style={{ flex: 2 }}
-                disabled={loading}
+                type="button"
+                className="btn btn-ghost"
+                style={{ flex: 1 }}
+                onClick={() => setRegStep(1)}
               >
-                {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Complete Login 🚀"}
+                ← Back
+              </button>
+              <button type="submit" className="btn btn-gold" style={{ flex: 2 }} disabled={loading}>
+                {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Register & Login 🚀"}
               </button>
             </div>
           </form>
