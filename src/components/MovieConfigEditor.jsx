@@ -5,7 +5,7 @@ import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck,
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
-export default function MovieConfigEditor({ config, layout }) {
+export default function MovieConfigEditor({ config, layout, onOpenLayout }) {
   const [form, setForm] = useState({
     movieName: "Telugu Movie Time",
     date: "2026-08-30",
@@ -336,26 +336,42 @@ export default function MovieConfigEditor({ config, layout }) {
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                     ⏰ {screen.showTime} · {screen.theater}
-                  </div>
-                </div>
+                    <div style={{ display: "flex", gap: 6, width: "100%", marginTop: 8 }}>
+                      <button
+                        type="button"
+                        className={`btn ${isEditing ? "btn-gold" : "btn-ghost"}`}
+                        style={{ flex: 1, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
+                        onClick={() => handleSelectScreen(screen.id)}
+                      >
+                        {isEditing ? "Editing Screen ✏️" : "Select & Edit"}
+                      </button>
 
-                <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                  <button
-                    type="button"
-                    className={`btn ${isEditing ? "btn-outline" : "btn-ghost"}`}
-                    style={{ flex: 1, padding: "5px 8px", fontSize: "0.75rem" }}
-                    onClick={() => handleSelectScreen(screen.id)}
-                  >
-                    {isEditing ? "✏️ Editing" : "Edit"}
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${isLive ? "btn-outline" : "btn-green"}`}
-                    style={{ flex: 1.3, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
-                    onClick={() => handleTogglePublishScreen(screen.id)}
-                  >
-                    {isLive ? "🔴 Unpublish" : "🟢 Publish Live"}
-                  </button>
+                      {onOpenLayout && (
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700, borderColor: "var(--gold)", color: "var(--gold)" }}
+                          onClick={() => {
+                            handleSelectScreen(screen.id);
+                            onOpenLayout(screen.id);
+                          }}
+                          title="Open Layout Editor specifically for this screen"
+                        >
+                          📐 Layout
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className={`btn ${isLive ? "btn-red" : "btn-outline"}`}
+                        style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
+                        onClick={() => handleTogglePublishScreen(screen.id)}
+                        title={isLive ? "Click to take this screen offline" : "Click to publish this screen live for student bookings"}
+                      >
+                        {isLive ? "Unpublish" : "Publish Live"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );

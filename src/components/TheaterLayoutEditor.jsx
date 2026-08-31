@@ -13,11 +13,25 @@ const MAX_COLS = 30;
 
 const DEFAULT_TIERS = ["Platinum", "Gold", "Silver"];
 
-export default function TheaterLayoutEditor({ config }) {
+export default function TheaterLayoutEditor({ config, selectedScreenId: initialScreenId }) {
+  const screens = config?.screens || [
+    { id: "screen-1", name: "Screen 1 (Main Hall)" },
+    { id: "screen-2", name: "Screen 2 (Audi 2)" },
+    { id: "screen-3", name: "Screen 3 (Audi 3)" },
+    { id: "screen-4", name: "Screen 4 (Audi 4)" }
+  ];
+
+  const [activeScreenId, setActiveScreenId] = useState(
+    initialScreenId || config?.activeScreenId || "screen-1"
+  );
+
+  const currentScreenObj = screens.find((s) => s.id === activeScreenId) || screens[0];
+
   // ── Layout state ─────────────────────────────────────────────────────────
   const [layout, setLayout] = useState(() => {
-    if (config.layout && config.layout.rows && config.layout.seats) {
-      const cloned = JSON.parse(JSON.stringify(config.layout));
+    const scrLayout = currentScreenObj?.layout || config?.layout;
+    if (scrLayout && scrLayout.rows && scrLayout.seats) {
+      const cloned = JSON.parse(JSON.stringify(scrLayout));
       if (!cloned.rowTiers) cloned.rowTiers = {};
       if (!cloned.tierPrices) {
         cloned.tierPrices = { Platinum: 300, Gold: 250, Silver: 200 };
@@ -26,6 +40,20 @@ export default function TheaterLayoutEditor({ config }) {
     }
     return buildDefaultLayout(8, 10);
   });
+
+  // Switch screen in layout editor
+  const handleSelectScreen = (screenId) => {
+    setActiveScreenId(screenId);
+    const targetScr = screens.find((s) => s.id === screenId) || screens[0];
+    const scrLayout = targetScr?.layout || config?.layout || buildDefaultLayout(8, 10);
+    const cloned = JSON.parse(JSON.stringify(scrLayout));
+    if (!cloned.rowTiers) cloned.rowTiers = {};
+    if (!cloned.tierPrices) {
+      cloned.tierPrices = targetScr?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+    }
+    setLayout(cloned);
+    toast.success(`Loaded layout editor for ${targetScr.name}`);
+  };
 
   // ── Blueprint image state ─────────────────────────────────────────────────
   const [blueprintUrl, setBlueprintUrl]         = useState(config.blueprintImageUrl || null);
@@ -368,21 +396,36 @@ export default function TheaterLayoutEditor({ config }) {
 
   const handleSave = async () => {
     setSaving(true);
+
+    // Save layout into the specific active screen in screens array
+    const updatedScreens = screens.map((s) => {
+      if (s.id === activeScreenId) {
+        return {
+          ...s,
+          layout,
+          tierPrices: layout.tierPrices,
+        };
+      }
+      return s;
+    });
+
     const updatedData = {
       ...config,
-      layout,
+      screens: updatedScreens,
+      layout: activeScreenId === (config?.activeScreenId || "screen-1") ? layout : config?.layout,
       blueprintImageUrl: blueprintUrl || null,
     };
 
     // Instant local save
     try {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updatedData));
+      window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     // Cloud firestore save
     try {
       await setDoc(doc(db, "movieConfig", "current"), updatedData, { merge: true });
-      toast.success("Layout & Tier Prices Saved Instantly! 🚀");
+      toast.success(`Layout for ${currentScreenObj.name} Saved Instantly! 🚀`);
     } catch (err) {
       console.warn("Firestore sync error:", err);
       toast.success("Saved to local workspace cache! ✅");
@@ -399,10 +442,40 @@ export default function TheaterLayoutEditor({ config }) {
   return (
     <div className="tle-wrapper">
 
+      {/* ── Screen Switcher Tabs ── */}
+      <div style={{ background: "rgba(255,215,0,0.06)", border: "1px solid var(--gold)", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: "0.88rem", color: "var(--gold)", fontWeight: 800 }}>
+            🖥️ Select Screen to Edit Layout:
+          </span>
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+            (Each screen can have a completely unique seating structure)
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {screens.map((scr) => {
+            const isCurrent = scr.id === activeScreenId;
+            return (
+              <button
+                key={scr.id}
+                type="button"
+                className={`btn ${isCurrent ? "btn-gold" : "btn-ghost"}`}
+                style={{ padding: "6px 14px", fontSize: "0.82rem", fontWeight: 700 }}
+                onClick={() => handleSelectScreen(scr.id)}
+              >
+                {scr.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── Top bar ── */}
       <div className="tle-topbar">
         <div>
-          <h2 className="tle-title">Theater Layout & Category Pricing</h2>
+          <h2 className="tle-title">
+            Seating Layout: <span style={{ color: "var(--gold)" }}>{currentScreenObj.name}</span>
+          </h2>
           <p className="tle-subtitle">
             {layout.rows.length} rows · {totalSeats} seats · Configurable Silver / Gold / Platinum rates
           </p>
@@ -414,7 +487,7 @@ export default function TheaterLayoutEditor({ config }) {
           <button className="btn btn-gold" onClick={handleSave} disabled={saving}>
             {saving
               ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Saving…</>
-              : <><Save size={15} /> Save Layout & Prices</>
+              : <><Save size={15} /> Save Layout for {currentScreenObj.name}</>
             }
           </button>
         </div>

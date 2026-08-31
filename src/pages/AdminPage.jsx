@@ -36,7 +36,12 @@ export default function AdminPage() {
         { id: "seatmap",   label: "Seat Map",          icon: Map },
       ];
 
-  const [activeTab, setActiveTab] = useState(isMasterAdmin ? "overview" : "bookings");
+  const [layoutScreenId, setLayoutScreenId] = useState("screen-1");
+
+  const handleOpenLayoutForScreen = (screenId) => {
+    setLayoutScreenId(screenId);
+    setActiveTab("layout");
+  };
 
   // Keep activeTab in sync with allowed tabs if role changes
   useEffect(() => {
@@ -307,10 +312,10 @@ export default function AdminPage() {
               <CoAdminManager config={config} bookings={bookings} />
             )}
             {isMasterAdmin && activeTab === "layout" && (
-              <TheaterLayoutEditor config={config} />
+              <TheaterLayoutEditor config={config} selectedScreenId={layoutScreenId} />
             )}
             {isMasterAdmin && activeTab === "config" && (
-              <MovieConfigEditor config={config} layout={layout} />
+              <MovieConfigEditor config={config} layout={layout} onOpenLayout={handleOpenLayoutForScreen} />
             )}
           </div>
         </main>
