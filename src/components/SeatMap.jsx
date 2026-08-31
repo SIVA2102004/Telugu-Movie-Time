@@ -69,16 +69,27 @@ export default function SeatMap({
 
   // Filter blocked seats by screen or global list
   const blockedSet = useMemo(() => {
-    if (!blockedSeats || !Array.isArray(blockedSeats)) return new Set();
-    // Support screen-specific blocked seats e.g. "screen-1_A1" or plain "A1"
+    if (!blockedSeats) return new Set();
     const set = new Set();
-    blockedSeats.forEach((b) => {
+    
+    // Normalize blockedSeats if passed as array or comma string
+    const rawList = Array.isArray(blockedSeats)
+      ? blockedSeats
+      : typeof blockedSeats === "string"
+      ? blockedSeats.split(",")
+      : [];
+
+    rawList.forEach((b) => {
       if (typeof b === "string") {
-        if (b.includes("_")) {
-          const [bScr, bSeat] = b.split("_");
-          if (bScr === (screenId || "screen-1")) set.add(bSeat);
+        const item = b.trim().toUpperCase();
+        if (!item) return;
+        if (item.includes("_")) {
+          const [bScr, bSeat] = item.split("_");
+          if (bScr.toLowerCase() === (screenId || "screen-1").toLowerCase()) {
+            set.add(bSeat.trim().toUpperCase());
+          }
         } else {
-          set.add(b);
+          set.add(item);
         }
       }
     });

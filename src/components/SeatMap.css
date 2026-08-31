@@ -191,9 +191,12 @@
   opacity: 0.8;
 }
 .seat--blocked {
-  background: var(--grey);
-  color: #888;
-  opacity: 0.5;
+  background: #33333d !important;
+  color: #777788 !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  border: 1px solid #444455 !important;
 }
 
 .seat--clickable {
