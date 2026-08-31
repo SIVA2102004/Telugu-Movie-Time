@@ -563,7 +563,7 @@ export default function StudentPage() {
                     screenId={currentScreenId}
                     onSeatToggle={handleSeatToggle}
                     maxSeats={999}
-                    blockedSeats={config?.blockedSeats || []}
+                    blockedSeats={activeScreen.blockedSeats || config?.blockedSeats || []}
                   />
                 </section>
 

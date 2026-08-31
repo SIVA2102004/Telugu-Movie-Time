@@ -12,9 +12,6 @@ import "./AdminSeatMap.css";
  */
 export default function AdminSeatMap({ seatMap, bookings, config, layout, readOnly = false }) {
   const [selectedScreenId, setSelectedScreenId] = useState(() => config?.activeScreenId || "screen-1");
-  const [blockedSeats, setBlockedSeats] = useState(() => {
-    return new Set(config?.blockedSeats || []);
-  });
   const [saving, setSaving] = useState(false);
 
   const screens = config?.screens || [
@@ -23,6 +20,18 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
   ];
 
   const currentScreen = screens.find((s) => s.id === selectedScreenId) || screens[0];
+
+  // Whenever selected screen changes, load that screen's blocked seats
+  const [blockedSeats, setBlockedSeats] = useState(() => {
+    const scr = screens.find((s) => s.id === (config?.activeScreenId || "screen-1")) || screens[0];
+    return new Set(scr?.blockedSeats || config?.blockedSeats || []);
+  });
+
+  const handleScreenChange = (screenId) => {
+    setSelectedScreenId(screenId);
+    const targetScr = screens.find((s) => s.id === screenId) || screens[0];
+    setBlockedSeats(new Set(targetScr?.blockedSeats || []));
+  };
 
   const bookedByMap = {};
   const seatStatusMap = {};
@@ -104,16 +113,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
   const clearAllBlocks = () => {
     if (readOnly) return;
-    setBlockedSeats((prev) => {
-      const next = new Set();
-      // keep other screens' blocked seats if prefixed
-      prev.forEach((s) => {
-        if (s.includes("_") && !s.startsWith(`${selectedScreenId}_`)) {
-          next.add(s);
-        }
-      });
-      return next;
-    });
+    setBlockedSeats(new Set());
     toast.success(`Cleared all seat blocks for ${currentScreen?.name}! 🟢`);
   };
 
@@ -121,9 +121,21 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     if (readOnly) return;
     setSaving(true);
     const blockedList = Array.from(blockedSeats);
+
+    const updatedScreens = screens.map((s) => {
+      if (s.id === selectedScreenId) {
+        return {
+          ...s,
+          blockedSeats: blockedList,
+        };
+      }
+      return s;
+    });
+
     const updated = {
       ...config,
-      blockedSeats: blockedList,
+      screens: updatedScreens,
+      blockedSeats: selectedScreenId === (config?.activeScreenId || "screen-1") ? blockedList : config?.blockedSeats,
     };
 
     try {
@@ -132,8 +144,8 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     } catch (e) {}
 
     try {
-      await setDoc(doc(db, "movieConfig", "current"), { blockedSeats: blockedList }, { merge: true });
-      toast.success("Seat availability saved to cloud successfully! 🚀");
+      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+      toast.success(`Saved blocked seats for ${currentScreen?.name}! 🚀`);
     } catch (err) {
       toast.success("Saved locally! ✅");
     }
@@ -155,7 +167,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
               type="button"
               className={`btn ${isCurrent ? "btn-gold" : "btn-ghost"}`}
               style={{ padding: "6px 14px", fontSize: "0.82rem", fontWeight: 700 }}
-              onClick={() => setSelectedScreenId(scr.id)}
+              onClick={() => handleScreenChange(scr.id)}
             >
               {scr.name} {scr.isPublished ? "✓ LIVE" : ""}
             </button>
