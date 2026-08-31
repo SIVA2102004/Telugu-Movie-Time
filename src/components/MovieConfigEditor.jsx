@@ -91,18 +91,105 @@ export default function MovieConfigEditor({ config, layout }) {
     }
   };
 
+  const screens = form.screens || DEFAULT_SCREENS;
+  const activeScreenId = form.activeScreenId || "screen-1";
+
+  const handleSelectScreen = (screenId) => {
+    // 1. Before switching, save current form changes into current active screen object in screens array
+    const currentActiveId = form.activeScreenId || "screen-1";
+    const currentParsedBlocked = blockedInput
+      .split(",")
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+
+    const updatedScreensWithCurrent = screens.map((s) => {
+      if (s.id === currentActiveId) {
+        return {
+          ...s,
+          movieName: form.movieName,
+          theater: form.theater,
+          date: form.date,
+          showTime: form.showTime,
+          pricePerSeat: Number(form.pricePerSeat || 200),
+          posterUrl: form.posterUrl,
+          movieTagline: form.movieTagline,
+          movieDescription: form.movieDescription,
+          genre: form.genre,
+          locationAddress: form.locationAddress,
+          mapsUrl: form.mapsUrl,
+          tierPrices: form.tierPrices,
+          blockedSeats: currentParsedBlocked,
+          enableCategoryPricing: form.enableCategoryPricing,
+        };
+      }
+      return s;
+    });
+
+    const targetScreen = updatedScreensWithCurrent.find((s) => s.id === screenId) || updatedScreensWithCurrent[0];
+    if (!targetScreen) return;
+
+    setForm((prev) => ({
+      ...prev,
+      screens: updatedScreensWithCurrent,
+      activeScreenId: screenId,
+      movieName: targetScreen.movieName || "",
+      theater: targetScreen.theater || "",
+      date: targetScreen.date || "",
+      showTime: targetScreen.showTime || "",
+      pricePerSeat: targetScreen.pricePerSeat || 200,
+      posterUrl: targetScreen.posterUrl || null,
+      movieTagline: targetScreen.movieTagline || "",
+      movieDescription: targetScreen.movieDescription || "",
+      genre: targetScreen.genre || "Action / Drama · Telugu (U/A)",
+      locationAddress: targetScreen.locationAddress || "Crystal Mall, 3rd Floor, Kalawad Road, Rajkot",
+      mapsUrl: targetScreen.mapsUrl || "https://maps.google.com/?q=Crystal+Mall",
+      tierPrices: targetScreen.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 },
+      enableCategoryPricing: targetScreen.enableCategoryPricing !== false,
+    }));
+
+    setBlockedInput((targetScreen.blockedSeats || []).join(", "));
+    setIsEditingBlocked(false);
+    toast.success(`Switched editor to ${targetScreen.name}`);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     setIsEditingBlocked(false);
 
+    const currentActiveId = form.activeScreenId || "screen-1";
     const parsedBlocked = blockedInput
       .split(",")
       .map((s) => s.trim().toUpperCase())
       .filter(Boolean);
 
+    // Save individual screen data into the screens array for this specific screen
+    const updatedScreens = screens.map((s) => {
+      if (s.id === currentActiveId) {
+        return {
+          ...s,
+          movieName: form.movieName,
+          theater: form.theater,
+          date: form.date,
+          showTime: form.showTime,
+          pricePerSeat: Number(form.pricePerSeat || 200),
+          posterUrl: form.posterUrl,
+          movieTagline: form.movieTagline,
+          movieDescription: form.movieDescription,
+          genre: form.genre,
+          locationAddress: form.locationAddress,
+          mapsUrl: form.mapsUrl,
+          tierPrices: form.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 },
+          blockedSeats: parsedBlocked,
+          enableCategoryPricing: form.enableCategoryPricing,
+        };
+      }
+      return s;
+    });
+
     const updated = {
       ...form,
+      screens: updatedScreens,
       blockedSeats: parsedBlocked,
       pricePerSeat: Number(form.pricePerSeat || 200),
       layout: {
@@ -122,32 +209,11 @@ export default function MovieConfigEditor({ config, layout }) {
     // Cloud firestore save
     try {
       await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
-      toast.success("Settings, Prices & Details updated live! 🚀");
+      toast.success(`Saved! Data for ${screens.find((s) => s.id === currentActiveId)?.name || "Screen"} updated live! 🚀`);
     } catch (err) {
       toast.success("Saved to local workspace cache! ✅");
     }
     setSaving(false);
-  };
-
-  const screens = form.screens || DEFAULT_SCREENS;
-  const activeScreenId = form.activeScreenId || "screen-1";
-
-  const handleSelectScreen = (screenId) => {
-    const selectedScreen = screens.find((s) => s.id === screenId);
-    if (!selectedScreen) return;
-
-    setForm((prev) => ({
-      ...prev,
-      activeScreenId: screenId,
-      movieName: selectedScreen.movieName || prev.movieName,
-      theater: selectedScreen.theater || prev.theater,
-      date: selectedScreen.date || prev.date,
-      showTime: selectedScreen.showTime || prev.showTime,
-      pricePerSeat: selectedScreen.pricePerSeat || prev.pricePerSeat,
-      posterUrl: selectedScreen.posterUrl || prev.posterUrl,
-      tierPrices: selectedScreen.tierPrices || prev.tierPrices,
-    }));
-    toast.success(`Switched editor to ${selectedScreen.name}`);
   };
 
   const handleTogglePublishScreen = async (screenId) => {
@@ -176,13 +242,6 @@ export default function MovieConfigEditor({ config, layout }) {
       ...form,
       activeScreenId: nextActiveId,
       screens: updatedScreens,
-      movieName: activeScr.movieName || form.movieName,
-      theater: activeScr.theater || form.theater,
-      date: activeScr.date || form.date,
-      showTime: activeScr.showTime || form.showTime,
-      pricePerSeat: activeScr.pricePerSeat || form.pricePerSeat,
-      posterUrl: activeScr.posterUrl || form.posterUrl,
-      tierPrices: activeScr.tierPrices || form.tierPrices,
     };
 
     setForm(updated);
@@ -205,8 +264,9 @@ export default function MovieConfigEditor({ config, layout }) {
       reader.onload = () => {
         const posterData = reader.result;
         setForm((prev) => {
+          const currentId = prev.activeScreenId || "screen-1";
           const updatedScreens = (prev.screens || DEFAULT_SCREENS).map((s) =>
-            s.id === (prev.activeScreenId || "screen-1") ? { ...s, posterUrl: posterData } : s
+            s.id === currentId ? { ...s, posterUrl: posterData } : s
           );
           const nextState = { ...prev, posterUrl: posterData, screens: updatedScreens };
           try {
@@ -215,7 +275,7 @@ export default function MovieConfigEditor({ config, layout }) {
           } catch (err) {}
           return nextState;
         });
-        toast.success("Movie poster uploaded & dynamic UI theme applied! 🎬🔥");
+        toast.success("Movie poster uploaded specifically for this screen! 🎬🔥");
       };
       reader.readAsDataURL(file);
     }
