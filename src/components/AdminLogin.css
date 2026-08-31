@@ -1,20 +1,28 @@
 .admin-login {
   min-height: 100vh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, #1A1A2E 0%, #0D0D0D 70%);
+  background: #0d0d1a;
+  background-image: radial-gradient(ellipse at center, #1a1a2e 0%, #07070a 100%);
   padding: 24px;
+  box-sizing: border-box;
 }
 
 .admin-login__card {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   text-align: center;
+  background: #141018;
+  border: 1px solid #2e1c2e;
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
 .admin-login__icon {
