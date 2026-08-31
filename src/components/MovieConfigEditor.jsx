@@ -459,93 +459,9 @@ export default function MovieConfigEditor({ config, layout }) {
           />
         </div>
 
-        {/* ── TIER PRICING CONTROLS (DIRECTLY EDIT FROM MOVIE CONFIG) ── */}
-        <div className="form-field form-field--full" style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-            <div>
-              <h3 style={{ fontSize: "1rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
-                <IndianRupee size={18} /> Category Rates (₹) Option
-              </h3>
-              <small style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
-                Choose whether you want multi-tier category pricing (Platinum / Gold / Silver) or a single flat rate for all seats.
-              </small>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                className={`btn ${form.enableCategoryPricing !== false ? "btn-gold" : "btn-ghost"}`}
-                style={{ padding: "5px 12px", fontSize: "0.78rem", fontWeight: 700 }}
-                onClick={() => setForm((prev) => ({ ...prev, enableCategoryPricing: true }))}
-              >
-                ✓ Keep Category Rates
-              </button>
-              <button
-                type="button"
-                className={`btn ${form.enableCategoryPricing === false ? "btn-red" : "btn-ghost"}`}
-                style={{ padding: "5px 12px", fontSize: "0.78rem", fontWeight: 700 }}
-                onClick={() => setForm((prev) => ({ ...prev, enableCategoryPricing: false }))}
-              >
-                ✕ Remove Category Rates
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {form.enableCategoryPricing !== false ? (
-          <>
-            <div className="form-field">
-              <label className="label">
-                <span className="tier-tag tier-tag--platinum" style={{ display: "inline-flex", marginRight: 6 }}>Platinum</span>
-                Recliner Price (₹)
-              </label>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={form.tierPrices?.Platinum ?? 300}
-                onChange={(e) => handleTierPriceChange("Platinum", e.target.value)}
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="label">
-                <span className="tier-tag tier-tag--gold" style={{ display: "inline-flex", marginRight: 6 }}>Gold</span>
-                Gold Tier Price (₹)
-              </label>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={form.tierPrices?.Gold ?? 250}
-                onChange={(e) => handleTierPriceChange("Gold", e.target.value)}
-              />
-            </div>
-
-            <div className="form-field">
-              <label className="label">
-                <span className="tier-tag tier-tag--silver" style={{ display: "inline-flex", marginRight: 6 }}>Silver</span>
-                Silver Tier Price (₹)
-              </label>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={form.tierPrices?.Silver ?? 200}
-                onChange={(e) => handleTierPriceChange("Silver", e.target.value)}
-              />
-            </div>
-          </>
-        ) : (
-          <div className="form-field form-field--full" style={{ background: "rgba(255, 68, 68, 0.08)", border: "1px dashed var(--red)", borderRadius: 8, padding: 12 }}>
-            <p style={{ margin: 0, color: "#ff4444", fontSize: "0.82rem", fontWeight: 700 }}>
-              🚫 Category Rates are REMOVED. All seats will use the Flat Single Price configured below.
-            </p>
-          </div>
-        )}
-
         <div className="form-field">
           <label className="label" htmlFor="pricePerSeat">
-            {form.enableCategoryPricing === false ? "Flat Single Ticket Price (₹) for All Seats *" : "Base Fallback Price (₹)"}
+            Ticket Price (₹) *
           </label>
           <input className="input" type="number" id="pricePerSeat" name="pricePerSeat"
             min={1} value={form.pricePerSeat || ""} onChange={handleChange} required />
@@ -628,40 +544,6 @@ export default function MovieConfigEditor({ config, layout }) {
             value={form.adminPhone || ""}
             onChange={handleChange}
           />
-        </div>
-
-        {/* ── BLOCKED SEATS CONFIGURATION PER SCREEN ── */}
-        <div className="form-field form-field--full" style={{ borderTop: "1px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
-          <label className="label" htmlFor="blockedSeats" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-            <span>
-              🔒 Blocked Seats for <strong>{screens.find((s) => s.id === form.activeScreenId)?.name || "Screen 1"}</strong> (comma-separated, e.g. A1, J10)
-            </span>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                style={{ padding: "3px 10px", fontSize: "0.75rem", color: "var(--green)", fontWeight: 700, border: "1px solid var(--green)", borderRadius: 6 }}
-                onClick={handleClearBlockedSeats}
-              >
-                🔓 Clear / Unblock All Now
-              </button>
-            </div>
-          </label>
-          <input
-            className="input"
-            id="blockedSeats"
-            value={blockedInput}
-            onFocus={() => setIsEditingBlocked(true)}
-            onBlur={() => setIsEditingBlocked(false)}
-            onChange={(e) => {
-              setIsEditingBlocked(true);
-              setBlockedInput(e.target.value);
-            }}
-            placeholder="Leave empty for 100% available, or type: A1, A2, A3"
-          />
-          <small style={{ color: "var(--text-muted)", fontSize: "0.76rem" }}>
-            💡 Tip: Leave this input empty to keep all seats available for booking. You can also block/unblock visually with 1 click in the <strong>"Seat Map"</strong> tab.
-          </small>
         </div>
       </div>
 
