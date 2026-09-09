@@ -248,11 +248,17 @@
   flex-shrink: 0;
 }
 
-/* ── Responsive Mobile Enhancements ── */
-@media (max-width: 768px) {
+/* ── Responsive Auto-Layout Enhancements (Laptop, Tablet, Mobile) ── */
+@media (min-width: 1025px) {
+  .seatmap-grid {
+    align-items: center;
+  }
+}
+
+@media (max-width: 1024px) {
   .seatmap-wrapper {
-    padding: 12px 6px;
-    gap: 12px;
+    padding: 14px 8px;
+    gap: 14px;
   }
   .seatmap-grid {
     padding: 12px 6px;
@@ -260,85 +266,109 @@
     -webkit-overflow-scrolling: touch;
   }
   .seat {
-    width: 28px;
-    height: 27px;
-    font-size: 0.58rem;
+    width: 30px;
+    height: 28px;
+    font-size: 0.6rem;
+  }
+  .seat-gap {
+    width: 30px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .seatmap-wrapper {
+    padding: 10px 4px;
+    gap: 12px;
+  }
+  .seatmap-grid {
+    padding: 10px 4px;
+    gap: 4px;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+  .seat {
+    width: 27px;
+    height: 26px;
+    font-size: 0.55rem;
     border-radius: 4px 4px 2px 2px;
   }
   .seat-gap {
-    width: 28px;
-    height: 27px;
+    width: 27px;
+    height: 26px;
   }
   .seatmap-seats {
     gap: 3px;
   }
   .seatmap-row {
-    gap: 6px;
+    gap: 5px;
   }
   .seatmap-row-label-group {
-    width: 26px;
+    width: 24px;
   }
   .seatmap-row-label {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
   }
   .seatmap-tier-summary {
-    gap: 8px;
+    gap: 6px;
   }
   .seatmap-tier-pill {
-    padding: 3px 9px;
+    padding: 3px 8px;
     font-size: 0.72rem;
   }
   .seatmap-legend {
-    gap: 12px;
+    gap: 10px;
     font-size: 0.72rem;
   }
   .screen-bar {
-    max-width: 90%;
+    max-width: 95%;
   }
 }
 
 @media (max-width: 480px) {
   .seatmap-wrapper {
-    padding: 8px 2px;
+    padding: 6px 2px;
+    gap: 10px;
   }
   .seatmap-grid {
-    padding: 10px 2px;
-    gap: 4px;
+    padding: 8px 2px;
+    gap: 3.5px;
   }
   .seat {
-    width: 25px;
-    height: 25px;
-    font-size: 0.52rem;
+    width: 24px;
+    height: 24px;
+    font-size: 0.5rem;
     border-radius: 3px 3px 2px 2px;
   }
   .seat-gap {
-    width: 25px;
-    height: 25px;
+    width: 24px;
+    height: 24px;
   }
   .seatmap-seats {
-    gap: 2.5px;
+    gap: 2px;
   }
   .seatmap-row {
-    gap: 4px;
+    gap: 3px;
   }
   .seatmap-row-label-group {
-    width: 22px;
+    width: 20px;
   }
   .seatmap-row-label {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
   }
   .seatmap-tier-tag {
-    font-size: 0.48rem;
+    font-size: 0.45rem;
   }
   .seatmap-tier-pill {
-    padding: 2px 8px;
-    font-size: 0.68rem;
+    padding: 2px 6px;
+    font-size: 0.65rem;
   }
   .legend-item {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
+    gap: 4px;
   }
   .legend-dot {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
   }
 }
