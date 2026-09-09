@@ -150,6 +150,32 @@ const DEFAULT_CONFIG = {
   adminPassword: "admin123",
 };
 
+export function sanitizeLayout(layout) {
+  if (!layout || !layout.rows || !layout.seats) {
+    return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+  }
+  // If inverted (starts with O) or indented with nulls on left of J, auto-upgrade to exact blueprint
+  if (layout.rows[0] === "O" || layout.seats?.["J"]?.[0] === null) {
+    return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+  }
+  return layout;
+}
+
+export function sanitizeConfig(cfg) {
+  if (!cfg) return DEFAULT_CONFIG;
+  const layout = sanitizeLayout(cfg.layout);
+  const screens = (cfg.screens || DEFAULT_SCREENS).map((scr) => ({
+    ...scr,
+    layout: sanitizeLayout(scr.layout),
+  }));
+  return {
+    ...DEFAULT_CONFIG,
+    ...cfg,
+    layout,
+    screens,
+  };
+}
+
 /**
  * Subscribes to movieConfig/current in Firestore with cross-tab local storage synchronization.
  */
@@ -159,11 +185,7 @@ export function useMovieConfig() {
       const saved = localStorage.getItem("telugu_talkies_movie_config");
       if (saved) {
         const parsed = JSON.parse(saved);
-        return {
-          ...DEFAULT_CONFIG,
-          ...parsed,
-          layout: parsed.layout || BLUEPRINT_LAYOUT,
-        };
+        return sanitizeConfig(parsed);
       }
     } catch (e) {}
     return DEFAULT_CONFIG;
@@ -178,11 +200,7 @@ export function useMovieConfig() {
         const saved = localStorage.getItem("telugu_talkies_movie_config");
         if (saved) {
           const parsed = JSON.parse(saved);
-          setConfig({
-            ...DEFAULT_CONFIG,
-            ...parsed,
-            layout: parsed.layout || BLUEPRINT_LAYOUT,
-          });
+          setConfig(sanitizeConfig(parsed));
         }
       } catch (e) {}
     };
@@ -198,14 +216,10 @@ export function useMovieConfig() {
         (snap) => {
           if (snap.exists()) {
             const data = snap.data();
-            const merged = {
-              ...DEFAULT_CONFIG,
-              ...data,
-              layout: data.layout || BLUEPRINT_LAYOUT,
-            };
-            setConfig(merged);
+            const sanitized = sanitizeConfig(data);
+            setConfig(sanitized);
             try {
-              localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(merged));
+              localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(sanitized));
             } catch (e) {}
           }
         },
