@@ -309,6 +309,28 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Sticky Mobile Horizontal Tab Switcher Pills */}
+          <div className="admin-mobile-tab-pills">
+            {allowedTabs.map((t) => {
+              const Icon = t.icon;
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`admin-mobile-pill-btn ${isActive ? "admin-mobile-pill-btn--active" : ""}`}
+                  onClick={() => {
+                    setActiveTab(t.id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                >
+                  <Icon size={14} />
+                  <span>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="admin-content">
             {isMasterAdmin && activeTab === "overview" && (
               <AdminStats bookings={bookings} config={config} layout={layout} onInstallApp={installApp} isInstalled={isInstalled} />
