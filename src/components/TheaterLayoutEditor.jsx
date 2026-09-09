@@ -446,17 +446,30 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
             Seating Layout: <span style={{ color: "var(--gold)" }}>{currentScreenObj.name}</span>
           </h2>
           <p className="tle-subtitle">
-            {layout.rows.length} rows · {totalSeats} seats · Configurable Silver / Gold / Platinum rates
+            {layout.rows.length} rows · {totalSeats} seats · Auto-adjusts to Hall Blueprint
           </p>
         </div>
         <div className="tle-topbar-actions">
+          <button
+            type="button"
+            className="btn btn-gold"
+            style={{ fontWeight: 800, boxShadow: "0 0 12px rgba(255, 215, 0, 0.4)" }}
+            onClick={() => {
+              const blueprint = JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+              setLayout(blueprint);
+              toast.success("Applied & Auto-Aligned exact 274-seat Hall Blueprint (Row A Recliner to Row O Gold)! ✨");
+            }}
+            title="Click to instantly auto-align the entire layout to the exact 274-seat theater blueprint"
+          >
+            ✨ Auto-Align Blueprint (274 Seats)
+          </button>
           <button className="btn btn-ghost" onClick={() => setShowHelp((v) => !v)}>
             <Info size={15} /> Help
           </button>
-          <button className="btn btn-gold" onClick={handleSave} disabled={saving}>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ background: "var(--green)", color: "#000", fontWeight: 800 }}>
             {saving
               ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Saving…</>
-              : <><Save size={15} /> Save Layout for {currentScreenObj.name}</>
+              : <><Save size={15} /> Save Layout</>
             }
           </button>
         </div>
@@ -467,7 +480,8 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
         <div className="tle-help card">
           <strong>How to use Tier Pricing & Layout:</strong>
           <ul>
-            <li>🏷️ <strong>Category Pricing:</strong> Set price for Platinum, Gold, and Silver in the left panel.</li>
+            <li>✨ <strong>Auto-Align:</strong> Click "Auto-Align Blueprint" to instantly restore the 274-seat hall map (Row A Recliner, Rows B-O Gold).</li>
+            <li>🏷️ <strong>Category Pricing:</strong> Set price for Platinum, Gold, and Silver in the Category Rates card.</li>
             <li>💺 <strong>Row Tier:</strong> Select Platinum/Gold/Silver next to each row in the grid.</li>
             <li>🟢 <strong>Seats:</strong> Click any green seat to toggle into gap/aisle.</li>
             <li>🔄 <strong>Screen Position:</strong> Switch between TOP and BOTTOM screen orientation.</li>
@@ -475,162 +489,156 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
         </div>
       )}
 
-      <div className="tle-main">
+      {/* ══════════════════════════════════
+          TOP DECK: 3 Auto-Adjusting Tool Cards
+      ══════════════════════════════════ */}
+      <div className="tle-top-deck">
 
-        {/* ══════════════════════════════════
-            LEFT: Prices, Blueprint & Templates
-        ══════════════════════════════════ */}
-        <div className="tle-left">
-
-          {/* Tier Prices Card */}
-          <div className="tle-section card tle-tier-editor">
-            <h3 className="tle-section-title"><IndianRupee size={15} /> Category Rates (₹)</h3>
-            <p style={{ margin: "0 0 10px 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-              Toggle <strong>Keep</strong> or <strong>Remove</strong> for each category individually to decide whether to display it:
-            </p>
-            <div className="tle-tier-inputs">
-              {DEFAULT_TIERS.map((tier) => {
-                const isEnabled = layout.visibleTiers ? layout.visibleTiers[tier] !== false : true;
-                return (
-                  <div key={tier} className="tle-tier-row" style={{ opacity: isEnabled ? 1 : 0.6, background: isEnabled ? "transparent" : "rgba(255,255,255,0.02)", padding: "4px 6px", borderRadius: 6 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span className={`tle-tier-badge tle-tier-badge--${tier.toLowerCase()}`}>
-                        {tier}
-                      </span>
-                      <button
-                        type="button"
-                        className={`btn ${isEnabled ? "btn-green" : "btn-red"}`}
-                        style={{ padding: "2px 6px", fontSize: "0.68rem", fontWeight: 800, borderRadius: 4 }}
-                        onClick={() => {
-                          setLayout((prev) => ({
-                            ...prev,
-                            visibleTiers: {
-                              ...(prev.visibleTiers || { Platinum: true, Gold: true, Silver: true }),
-                              [tier]: !isEnabled,
-                            },
-                          }));
-                        }}
-                        title={isEnabled ? `Click to remove/hide ${tier} category` : `Click to keep/show ${tier} category`}
-                      >
-                        {isEnabled ? "✓ Keep" : "✕ Removed"}
-                      </button>
-                    </div>
-
-                    <div className="tle-price-input-wrap">
-                      <span>₹</span>
-                      <input
-                        type="number"
-                        className="input tle-price-input"
-                        value={tierPrices[tier] ?? ""}
-                        placeholder="e.g. 200"
-                        disabled={!isEnabled}
-                        onChange={(e) => setTierPrice(tier, e.target.value)}
-                      />
-                    </div>
+        {/* 1. Category Rates */}
+        <div className="tle-section card tle-tier-editor">
+          <h3 className="tle-section-title"><IndianRupee size={15} /> Category Rates (₹)</h3>
+          <div className="tle-tier-inputs">
+            {DEFAULT_TIERS.map((tier) => {
+              const isEnabled = layout.visibleTiers ? layout.visibleTiers[tier] !== false : true;
+              return (
+                <div key={tier} className="tle-tier-row" style={{ opacity: isEnabled ? 1 : 0.6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span className={`tle-tier-badge tle-tier-badge--${tier.toLowerCase()}`}>
+                      {tier}
+                    </span>
+                    <button
+                      type="button"
+                      className={`btn ${isEnabled ? "btn-green" : "btn-red"}`}
+                      style={{ padding: "2px 6px", fontSize: "0.68rem", fontWeight: 800, borderRadius: 4 }}
+                      onClick={() => {
+                        setLayout((prev) => ({
+                          ...prev,
+                          visibleTiers: {
+                            ...(prev.visibleTiers || { Platinum: true, Gold: true, Silver: true }),
+                            [tier]: !isEnabled,
+                          },
+                        }));
+                      }}
+                      title={isEnabled ? `Click to hide ${tier}` : `Click to show ${tier}`}
+                    >
+                      {isEnabled ? "✓ Keep" : "✕ Hide"}
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Blueprint upload */}
-          <div className="tle-section card">
-            <h3 className="tle-section-title"><ImageIcon size={15} /> Blueprint Reference</h3>
-            <div
-              className={`tle-dropzone ${uploading ? "tle-dropzone--uploading" : ""}`}
-              onDrop={onDrop}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {blueprintPreview ? (
-                <img src={blueprintPreview} alt="Blueprint" className="tle-blueprint-img" />
-              ) : (
-                <div className="tle-dropzone-placeholder">
-                  <Upload size={28} color="var(--text-muted)" />
-                  <p>Drop image here<br />or click to upload</p>
-                  <small>Auto-compressed for fast upload</small>
+                  <div className="tle-price-input-wrap">
+                    <span>₹</span>
+                    <input
+                      type="number"
+                      className="input tle-price-input"
+                      value={tierPrices[tier] ?? ""}
+                      placeholder="e.g. 200"
+                      disabled={!isEnabled}
+                      onChange={(e) => setTierPrice(tier, e.target.value)}
+                    />
+                  </div>
                 </div>
-              )}
-              {uploading && (
-                <div className="tle-dropzone-overlay">
-                  <span className="spinner" />
-                  <span>Compressing & Uploading…</span>
-                </div>
-              )}
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={onFileChange}
-            />
-            {blueprintPreview && (
-              <button
-                className="btn btn-ghost"
-                style={{ fontSize: "0.78rem", padding: "4px 10px", marginTop: 6 }}
-                onClick={() => { setBlueprintPreview(null); setBlueprintUrl(null); }}
-              >
-                <Trash2 size={13} /> Remove image
-              </button>
-            )}
-          </div>
-
-          {/* Templates */}
-          <div className="tle-section card">
-            <h3 className="tle-section-title">Templates</h3>
-            <div className="tle-templates">
-              {TEMPLATES.map((t) => (
-                <button
-                  key={t.name}
-                  className={`btn tle-template-btn ${t.highlight ? "tle-template-btn--highlight" : "btn-ghost"}`}
-                  onClick={() => applyTemplate(t)}
-                >
-                  {t.name}
-                  {t.highlight && <span className="tle-template-badge">15 rows · 274 seats</span>}
-                </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* ══════════════════════════════════
-            RIGHT: Visual Grid Editor
-        ══════════════════════════════════ */}
-        <div className="tle-right">
-          <div className="card tle-editor-card">
-
-            {/* Screen position controls & Screen indicator */}
-            <div className="tle-grid-header">
-              <div className="tle-grid-tools">
-                <button
-                  type="button"
-                  className={`btn ${layout.screenPosition === "bottom" ? "btn-outline" : "btn-ghost"}`}
-                  style={{ fontSize: "0.75rem", padding: "4px 10px" }}
-                  onClick={toggleScreenPosition}
-                  title="Switch screen position between Top and Bottom"
-                >
-                  Screen: <strong>{layout.screenPosition === "bottom" ? "BOTTOM" : "TOP"}</strong>
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  style={{ fontSize: "0.75rem", padding: "4px 10px" }}
-                  onClick={reverseRowOrder}
-                  title="Swap / reverse seating order from front to back"
-                >
-                  <ArrowDownUp size={13} /> Swap Row Order
-                </button>
+        {/* 2. Blueprint Reference Image */}
+        <div className="tle-section card">
+          <h3 className="tle-section-title"><ImageIcon size={15} /> Blueprint Image</h3>
+          <div
+            className={`tle-dropzone ${uploading ? "tle-dropzone--uploading" : ""}`}
+            onDrop={onDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {blueprintPreview ? (
+              <img src={blueprintPreview} alt="Blueprint" className="tle-blueprint-img" />
+            ) : (
+              <div className="tle-dropzone-placeholder">
+                <Upload size={22} color="var(--text-muted)" />
+                <p style={{ margin: 0, fontSize: "0.78rem" }}>Upload Photo / Sheet</p>
+                <small style={{ fontSize: "0.68rem" }}>Auto-compressed</small>
               </div>
+            )}
+            {uploading && (
+              <div className="tle-dropzone-overlay">
+                <span className="spinner" />
+                <span>Uploading…</span>
+              </div>
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={onFileChange}
+          />
+          {blueprintPreview && (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: "0.75rem", padding: "2px 8px", marginTop: 4 }}
+              onClick={() => { setBlueprintPreview(null); setBlueprintUrl(null); }}
+            >
+              <Trash2 size={12} /> Remove
+            </button>
+          )}
+        </div>
 
-              {layout.screenPosition !== "bottom" && (
-                <div className="tle-screen-bar">
-                  <div className="tle-screen-line" />
-                  <span>SCREEN (FRONT)</span>
-                  <div className="tle-screen-line" />
-                </div>
-              )}
+        {/* 3. Templates & Presets */}
+        <div className="tle-section card">
+          <h3 className="tle-section-title">Layout Presets</h3>
+          <div className="tle-templates">
+            {TEMPLATES.map((t) => (
+              <button
+                key={t.name}
+                className={`btn tle-template-btn ${t.highlight ? "tle-template-btn--highlight" : "btn-ghost"}`}
+                onClick={() => applyTemplate(t)}
+                style={{ padding: "6px 10px", fontSize: "0.78rem" }}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════
+          FULL-WIDTH VISUAL GRID EDITOR
+      ══════════════════════════════════ */}
+      <div className="card tle-editor-card">
+
+        {/* Screen position controls & Screen indicator */}
+        <div className="tle-grid-header">
+          <div className="tle-grid-tools">
+            <button
+              type="button"
+              className={`btn ${layout.screenPosition === "bottom" ? "btn-outline" : "btn-ghost"}`}
+              style={{ fontSize: "0.75rem", padding: "4px 10px" }}
+              onClick={toggleScreenPosition}
+              title="Switch screen position between Top and Bottom"
+            >
+              Screen: <strong>{layout.screenPosition === "bottom" ? "BOTTOM" : "TOP"}</strong>
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ fontSize: "0.75rem", padding: "4px 10px" }}
+              onClick={reverseRowOrder}
+              title="Swap / reverse seating order from front to back"
+            >
+              <ArrowDownUp size={13} /> Swap Row Order
+            </button>
+          </div>
+
+          {layout.screenPosition !== "bottom" && (
+            <div className="tle-screen-bar">
+              <div className="tle-screen-line" />
+              <span>SCREEN (FRONT)</span>
+              <div className="tle-screen-line" />
             </div>
+          )}
+        </div>
 
             {/* Row list */}
             <div className="tle-rows">
@@ -750,18 +758,16 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
                 <div className="tle-screen-line" />
               </div>
             )}
-          </div>
 
-          {/* Legend */}
-          <div className="tle-legend">
-            <span className="tle-legend-item"><span className="tle-dot tle-dot--seat" />Seat</span>
-            <span className="tle-legend-item"><span className="tle-dot tle-dot--gap" />Gap / Aisle</span>
-            <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
-              Click any seat to toggle · Select tier per row · Set tier prices on left
-            </span>
+            {/* Legend */}
+            <div className="tle-legend">
+              <span className="tle-legend-item"><span className="tle-dot tle-dot--seat" />Seat</span>
+              <span className="tle-legend-item"><span className="tle-dot tle-dot--gap" />Gap / Aisle</span>
+              <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>
+                Click any seat to toggle · Select tier per row · Set category rates in top card
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    }
