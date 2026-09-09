@@ -41,23 +41,32 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
   });
 
+  const isSavingRef = useRef(false);
+  const lastSavedLayoutStrRef = useRef("");
+
   // Automatically keep layout state in sync when config or activeScreenId changes
   useEffect(() => {
+    if (isSavingRef.current) return;
     const targetScr = screens.find((s) => s.id === activeScreenId) || screens[0];
-    const targetLayout = targetScr?.layout || config?.layout || BLUEPRINT_LAYOUT;
+    const targetLayout = targetScr?.layout || (activeScreenId === "screen-1" ? config?.layout : null) || BLUEPRINT_LAYOUT;
     const cloned = JSON.parse(JSON.stringify(targetLayout));
     if (!cloned.rowTiers) cloned.rowTiers = {};
     if (!cloned.tierPrices) {
       cloned.tierPrices = targetScr?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
     }
-    setLayout(sanitizeLayout(cloned));
+    const clean = sanitizeLayout(cloned);
+    if (JSON.stringify(clean) !== lastSavedLayoutStrRef.current) {
+      setLayout(clean);
+    }
   }, [config, activeScreenId]);
 
   // Switch screen in layout editor
   const handleSelectScreen = (screenId) => {
     setActiveScreenId(screenId);
+    isSavingRef.current = false;
+    lastSavedLayoutStrRef.current = "";
     const targetScr = screens.find((s) => s.id === screenId) || screens[0];
-    const scrLayout = targetScr?.layout || config?.layout || BLUEPRINT_LAYOUT;
+    const scrLayout = targetScr?.layout || (screenId === "screen-1" ? config?.layout : null) || BLUEPRINT_LAYOUT;
     const cloned = JSON.parse(JSON.stringify(scrLayout));
     if (!cloned.rowTiers) cloned.rowTiers = {};
     if (!cloned.tierPrices) {
@@ -364,7 +373,9 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   // ════════════════════════════════════════════════════════════════
 
   const handleSave = async () => {
+    isSavingRef.current = true;
     setSaving(true);
+    lastSavedLayoutStrRef.current = JSON.stringify(layout);
 
     // Save layout into the specific active screen in screens array
     const updatedScreens = screens.map((s) => {
@@ -400,6 +411,9 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       toast.success("Saved to local workspace cache! ✅");
     }
     setSaving(false);
+    setTimeout(() => {
+      isSavingRef.current = false;
+    }, 1500);
   };
 
   const totalSeats = layout.rows.reduce((sum, r) => {

@@ -51,14 +51,15 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
       });
     });
 
-  const screenPosition = layout?.screenPosition || "top";
+  const screenLayout = currentScreen?.layout || (selectedScreenId === (config?.activeScreenId || "screen-1") ? config?.layout : null) || layout;
+  const screenPosition = screenLayout?.screenPosition || "top";
   const screenAtBottom = screenPosition === "bottom";
   const displayRows = screenAtBottom
-    ? [...(layout?.rows || [])].reverse()
-    : (layout?.rows || []);
+    ? [...(screenLayout?.rows || [])].reverse()
+    : (screenLayout?.rows || []);
 
-  const rowTiers = layout?.rowTiers || {};
-  const tierPrices = config?.tierPrices || layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const rowTiers = screenLayout?.rowTiers || {};
+  const tierPrices = currentScreen?.tierPrices || screenLayout?.tierPrices || config?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
 
   // Click seat in admin seat map to block/unblock
   const toggleSeatBlock = (seatId) => {
@@ -87,7 +88,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
   const toggleRowBlock = (rowLabel) => {
     if (readOnly) return;
 
-    const rowSlots = layout?.seats?.[rowLabel] || [];
+    const rowSlots = screenLayout?.seats?.[rowLabel] || [];
     let seatNum = 0;
     const rowSeatIds = [];
     rowSlots.forEach((slot) => {
@@ -194,7 +195,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
               type="button"
               className="btn btn-outline"
               onClick={() => {
-                const rowSlots = layout?.seats?.["A"] || [];
+                const rowSlots = screenLayout?.seats?.["A"] || [];
                 let seatNum = 0;
                 const rowASeats = [];
                 rowSlots.forEach((slot) => {
@@ -246,7 +247,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
       {/* Interactive Seat Grid */}
       <div className="seatmap-grid" style={{ maxWidth: 880, margin: "0 auto" }}>
         {displayRows.map((rowLabel) => {
-          const rowSlots = layout?.seats?.[rowLabel] || [];
+          const rowSlots = screenLayout?.seats?.[rowLabel] || [];
           const tier = rowTiers[rowLabel] || "Silver";
           const tierPrice = tierPrices[tier] || 200;
 

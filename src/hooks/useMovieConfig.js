@@ -151,14 +151,17 @@ const DEFAULT_CONFIG = {
 };
 
 export function sanitizeLayout(layout) {
-  if (!layout || !layout.rows || !layout.seats) {
+  if (!layout || !Array.isArray(layout.rows) || !layout.seats || typeof layout.seats !== "object") {
     return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
   }
-  // If inverted (starts with O) or indented with nulls on left of J, auto-upgrade to exact blueprint
-  if (layout.rows[0] === "O" || layout.seats?.["J"]?.[0] === null) {
-    return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
-  }
-  return layout;
+  return {
+    ...layout,
+    rows: [...layout.rows],
+    seats: { ...layout.seats },
+    rowTiers: layout.rowTiers ? { ...layout.rowTiers } : {},
+    tierPrices: layout.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 },
+    screenPosition: layout.screenPosition || "top",
+  };
 }
 
 export function sanitizeConfig(cfg) {
