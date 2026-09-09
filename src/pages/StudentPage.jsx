@@ -359,28 +359,28 @@ export default function StudentPage() {
           )}
 
           {/* Navigation Pill Switcher */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 12, margin: "0 0 20px" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, margin: "0 auto 16px", width: "100%", maxWidth: 640 }}>
             <button
               type="button"
               className={`btn ${activeView === "movie" ? "btn-gold" : "btn-ghost"}`}
-              style={{ padding: "10px 24px", fontSize: "0.95rem", fontWeight: 700, borderRadius: 30 }}
+              style={{ flex: "1 1 140px", padding: "clamp(8px, 1.8vw, 12px) clamp(8px, 2vw, 20px)", fontSize: "clamp(0.8rem, 2.2vw, 0.95rem)", fontWeight: 700, borderRadius: 30, justifyContent: "center", textAlign: "center" }}
               onClick={() => setActiveView("movie")}
             >
-              🎬 Movie Details & Venue
+              🎬 Movie & Venue
             </button>
             <button
               type="button"
               className={`btn ${activeView === "booking" ? "btn-gold" : "btn-ghost"}`}
-              style={{ padding: "10px 24px", fontSize: "0.95rem", fontWeight: 700, borderRadius: 30 }}
+              style={{ flex: "1 1 140px", padding: "clamp(8px, 1.8vw, 12px) clamp(8px, 2vw, 20px)", fontSize: "clamp(0.8rem, 2.2vw, 0.95rem)", fontWeight: 700, borderRadius: 30, justifyContent: "center", textAlign: "center" }}
               onClick={() => setActiveView("booking")}
             >
-              🎟️ Book Your Seats ({selectedSeats.length})
+              🎟️ Book Seats ({selectedSeats.length})
             </button>
           </div>
 
           {activeView === "movie" ? (
             /* ════ VIEW 1: IMMERSIVE MOVIE OVERVIEW, VENUE & CONTACTS ════ */
-            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {/* Hero Movie Showcase Card */}
               <div
                 className="card"
@@ -388,8 +388,8 @@ export default function StudentPage() {
                   display: "flex",
                   flexDirection: "row",
                   flexWrap: "wrap",
-                  gap: 28,
-                  padding: 28,
+                  gap: "clamp(16px, 3vw, 28px)",
+                  padding: "clamp(14px, 3vw, 28px)",
                   background: "linear-gradient(135deg, rgba(26,26,46,0.92) 0%, rgba(22,33,62,0.95) 100%)",
                   backdropFilter: "blur(12px)",
                   border: "1px solid rgba(255,215,0,0.3)",
@@ -398,25 +398,28 @@ export default function StudentPage() {
                 }}
               >
                 {/* Poster Artwork Column */}
-                <div style={{ flex: "0 0 260px", maxWidth: 300, margin: "0 auto" }}>
+                <div style={{ flex: "1 1 240px", maxWidth: 300, margin: "0 auto", width: "100%" }}>
                   {activePoster ? (
                     <img
                       src={activePoster}
                       alt="Movie Poster"
                       style={{
                         width: "100%",
-                        height: 380,
+                        height: "auto",
+                        maxHeight: 380,
                         objectFit: "cover",
                         borderRadius: 12,
                         boxShadow: "0 15px 30px rgba(0,0,0,0.8), 0 0 20px rgba(255,215,0,0.2)",
                         border: "2px solid rgba(255,215,0,0.4)",
+                        display: "block",
                       }}
                     />
                   ) : (
                     <div
                       style={{
                         width: "100%",
-                        height: 380,
+                        minHeight: 280,
+                        height: 340,
                         background: "linear-gradient(180deg, #1b1714 0%, #0d0d1a 100%)",
                         borderRadius: 12,
                         border: "2px dashed var(--gold)",
@@ -428,72 +431,72 @@ export default function StudentPage() {
                         padding: 16,
                       }}
                     >
-                      <span style={{ fontSize: "4rem" }}>🎬</span>
-                      <h3 style={{ color: "var(--gold)", marginTop: 12 }}>{activeScreen.movieName || config?.movieName || "Telugu Movie Time"}</h3>
+                      <span style={{ fontSize: "3.5rem" }}>🎬</span>
+                      <h3 style={{ color: "var(--gold)", marginTop: 12, fontSize: "1.1rem" }}>{activeScreen.movieName || config?.movieName || "Telugu Movie Time"}</h3>
                     </div>
                   )}
                 </div>
 
                 {/* Movie Meta & Synopsis Column */}
-                <div style={{ flex: "1 1 340px", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 16 }}>
+                <div style={{ flex: "1 1 min(100%, 340px)", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 14 }}>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-                      <span style={{ background: "var(--gold)", color: "#0d0d1a", fontWeight: 900, fontSize: "0.75rem", padding: "3px 10px", borderRadius: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                      <span style={{ background: "var(--gold)", color: "#0d0d1a", fontWeight: 900, fontSize: "0.72rem", padding: "3px 8px", borderRadius: 6 }}>
                         {activeScreenName}
                       </span>
-                      <span style={{ background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "0.75rem", padding: "3px 10px", borderRadius: 6, fontWeight: 700 }}>
+                      <span style={{ background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "0.72rem", padding: "3px 8px", borderRadius: 6, fontWeight: 700 }}>
                         {activeScreen.genre || config?.genre || "Action / Drama · Telugu (U/A)"}
                       </span>
-                      <span style={{ color: "var(--gold)", fontSize: "0.85rem", fontWeight: 700 }}>
+                      <span style={{ color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700 }}>
                         From ₹{activeScreen.tierPrices?.Silver || config?.tierPrices?.Silver || activeScreen.pricePerSeat || 200}
                       </span>
                     </div>
 
-                    <h1 style={{ fontSize: "2.4rem", color: "#fff", margin: "4px 0 8px", textShadow: "0 2px 10px rgba(0,0,0,0.8)" }}>
+                    <h1 style={{ fontSize: "clamp(1.4rem, 4vw, 2.4rem)", color: "#fff", margin: "4px 0 8px", textShadow: "0 2px 10px rgba(0,0,0,0.8)", wordBreak: "break-word" }}>
                       {activeScreen.movieName || config?.movieName || "PARADISE"}
                     </h1>
 
-                    <p style={{ color: "var(--gold)", fontSize: "1rem", fontWeight: 600, fontStyle: "italic", margin: "0 0 16px" }}>
+                    <p style={{ color: "var(--gold)", fontSize: "clamp(0.85rem, 2vw, 1rem)", fontWeight: 600, fontStyle: "italic", margin: "0 0 12px" }}>
                       "{activeScreen.movieTagline || config?.movieTagline || "Experience the Grand Telugu Premiere with Student Special Treats!"}"
                     </p>
 
-                    <p style={{ color: "#d0d0e0", fontSize: "0.92rem", lineHeight: 1.7, margin: "0 0 20px" }}>
+                    <p style={{ color: "#d0d0e0", fontSize: "clamp(0.82rem, 1.8vw, 0.92rem)", lineHeight: 1.6, margin: "0 0 16px" }}>
                       {activeScreen.movieDescription || config?.movieDescription || "Join fellow movie enthusiasts for an exclusive cinematic screening organized by Telugu Movie Time! Experience premium Dolby Atmos sound, crystal-clear projection, luxury seating, and exciting Telugu student community vibes."}
                     </p>
                   </div>
 
                   {/* Highlights Grid */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                    <div style={{ background: "rgba(0,0,0,0.3)", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>📅 Date & Time</div>
-                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.88rem", marginTop: 2 }}>{activeScreen.date || config?.date || formattedDate}</div>
-                      <div style={{ color: "var(--gold)", fontWeight: 800, fontSize: "0.82rem" }}>{activeScreen.showTime || config?.showTime || "8:00 AM"}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 10 }}>
+                    <div style={{ background: "rgba(0,0,0,0.3)", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>📅 Date & Time</div>
+                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", marginTop: 2 }}>{activeScreen.date || config?.date || formattedDate}</div>
+                      <div style={{ color: "var(--gold)", fontWeight: 800, fontSize: "0.8rem" }}>{activeScreen.showTime || config?.showTime || "8:00 AM"}</div>
                     </div>
 
-                    <div style={{ background: "rgba(0,0,0,0.3)", padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>🏛️ Cinema Venue</div>
-                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.88rem", marginTop: 2 }}>{activeScreen.theater || config?.theater || "Crystal Mall"}</div>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>{activeScreenName}</div>
+                    <div style={{ background: "rgba(0,0,0,0.3)", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>🏛️ Cinema Venue</div>
+                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", marginTop: 2 }}>{activeScreen.theater || config?.theater || "Crystal Mall"}</div>
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{activeScreenName}</div>
                     </div>
                   </div>
 
                   {/* Big Call to Action Button */}
-                  <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
                     <button
                       type="button"
                       className="btn btn-gold"
-                      style={{ flex: "1 1 200px", padding: "14px 28px", fontSize: "1.05rem", fontWeight: 800, justifyContent: "center", gap: 8, boxShadow: "0 8px 25px rgba(255,215,0,0.4)" }}
+                      style={{ flex: "1 1 180px", padding: "12px 20px", fontSize: "clamp(0.9rem, 2.5vw, 1.05rem)", fontWeight: 800, justifyContent: "center", gap: 8, boxShadow: "0 8px 25px rgba(255,215,0,0.4)" }}
                       onClick={() => setActiveView("booking")}
                     >
-                      <Ticket size={20} /> Select Your Seats Now 🚀
+                      <Ticket size={18} /> Select Your Seats Now 🚀
                     </button>
                     <button
                       type="button"
                       className="btn btn-ghost"
-                      style={{ padding: "14px 20px", fontSize: "0.9rem", gap: 6 }}
+                      style={{ padding: "12px 16px", fontSize: "0.85rem", gap: 6 }}
                       onClick={handleShare}
                     >
-                      <Share2 size={18} /> Share Show
+                      <Share2 size={16} /> Share Show
                     </button>
                   </div>
                 </div>

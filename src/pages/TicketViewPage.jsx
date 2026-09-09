@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -131,31 +131,32 @@ export default function TicketViewPage() {
       </div>
 
       {/* Ticket Container */}
-      <div style={{ width: "100%", maxWidth: 800, background: "#11111a", borderRadius: 16, border: "1px solid rgba(255, 215, 0, 0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.8)", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 8px 24px" }}>
+      <div style={{ width: "100%", maxWidth: 840, background: "#11111a", borderRadius: 16, border: "1px solid rgba(255, 215, 0, 0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.8)", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", padding: "clamp(12px, 3vw, 24px) clamp(8px, 2vw, 16px)" }}>
         
         {/* Ticket Header text */}
         <div style={{ textAlign: "center", marginBottom: 14 }}>
-          <span style={{ fontSize: "0.75rem", letterSpacing: 3, textTransform: "uppercase", color: "var(--gold)", fontWeight: 800 }}>
+          <span style={{ fontSize: "clamp(0.68rem, 1.8vw, 0.78rem)", letterSpacing: 3, textTransform: "uppercase", color: "var(--gold)", fontWeight: 800 }}>
             Telugu Movie Time Official Entry Pass
           </span>
-          <h1 style={{ margin: "4px 0 0", fontSize: "1.4rem", color: "#fff", fontWeight: 900 }}>
+          <h1 style={{ margin: "4px 0 0", fontSize: "clamp(1.1rem, 3vw, 1.5rem)", color: "#fff", fontWeight: 900 }}>
             {booking.name}'s Movie Ticket
           </h1>
         </div>
 
-        {/* The Card Viewport */}
-        <div style={{ width: "100%", display: "flex", justifyContent: "center", overflowX: "auto", padding: "4px 0 12px" }}>
+        {/* The Card Viewport with responsive horizontal scroll and auto-scaling */}
+        <div style={{ width: "100%", display: "flex", justifyContent: "center", overflowX: "auto", padding: "4px 0 12px", WebkitOverflowScrolling: "touch" }}>
           <div
             ref={ticketRef}
             style={{
               position: "relative",
-              width: 760,
-              minWidth: 760,
-              height: 494,
+              width: "min(760px, 92vw)",
+              maxWidth: 760,
+              aspectRatio: "760 / 494",
               borderRadius: 10,
               overflow: "hidden",
               background: "#000",
               boxShadow: "0 10px 30px rgba(0,0,0,0.9)",
+              flexShrink: 0,
             }}
           >
             {/* The Paradise Official Ticket Artwork */}
@@ -192,7 +193,7 @@ export default function TicketViewPage() {
                 style={{
                   fontFamily: "'Arial Black', 'Impact', sans-serif",
                   fontWeight: 900,
-                  fontSize: seatsString.length > 12 ? "1.1rem" : seatsString.length > 6 ? "1.35rem" : "1.75rem",
+                  fontSize: seatsString.length > 12 ? "clamp(0.7rem, 2vw, 1.1rem)" : seatsString.length > 6 ? "clamp(0.85rem, 2.5vw, 1.35rem)" : "clamp(1rem, 3.2vw, 1.75rem)",
                   color: "#111111",
                   letterSpacing: "1px",
                   lineHeight: 1.1,
@@ -206,27 +207,27 @@ export default function TicketViewPage() {
         </div>
 
         {/* Action Controls */}
-        <div style={{ width: "100%", maxWidth: 600, display: "flex", gap: 12, marginTop: 16, padding: "0 12px", flexWrap: "wrap" }}>
+        <div style={{ width: "100%", maxWidth: 600, display: "flex", gap: 10, marginTop: 14, padding: "0 4px", flexWrap: "wrap" }}>
           <button
             onClick={handleDownload}
             disabled={downloading}
             className="btn btn-gold"
-            style={{ flex: 1, padding: "14px", justifyContent: "center", fontSize: "1rem", fontWeight: 800, gap: 8, minWidth: 200 }}
+            style={{ flex: "1 1 180px", padding: "12px 16px", justifyContent: "center", fontSize: "clamp(0.85rem, 2.2vw, 0.95rem)", fontWeight: 800, gap: 8 }}
           >
-            <Download size={18} /> {downloading ? "Saving Ticket..." : "Download Ticket Image (.PNG)"}
+            <Download size={17} /> {downloading ? "Saving Ticket..." : "Download Ticket (.PNG)"}
           </button>
           <button
             onClick={handleShare}
             disabled={downloading}
             className="btn btn-outline"
-            style={{ flex: 1, padding: "14px", justifyContent: "center", fontSize: "1rem", fontWeight: 800, gap: 8, minWidth: 200 }}
+            style={{ flex: "1 1 180px", padding: "12px 16px", justifyContent: "center", fontSize: "clamp(0.85rem, 2.2vw, 0.95rem)", fontWeight: 800, gap: 8 }}
           >
-            <Share2 size={18} /> Share Ticket
+            <Share2 size={17} /> Share Ticket
           </button>
         </div>
 
         {/* Gate Instructions */}
-        <div style={{ marginTop: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 18px", maxWidth: 600, width: "100%", fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 16px", maxWidth: 600, width: "100%", fontSize: "clamp(0.72rem, 1.8vw, 0.8rem)", color: "var(--text-muted)", lineHeight: 1.5 }}>
           <p style={{ margin: "0 0 4px", color: "var(--gold)", fontWeight: 700 }}>📌 Gate Instructions:</p>
           <p style={{ margin: 0 }}>• Please present this downloaded ticket card at the entry gate of <strong>Crystal Mall</strong>.</p>
           <p style={{ margin: 0 }}>• Show time is <strong>8:00 AM, 24-09-2026</strong>. Please arrive 15 minutes before the show.</p>

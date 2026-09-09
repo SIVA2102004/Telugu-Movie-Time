@@ -141,29 +141,53 @@ a {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
 
-/* ===== AUTO-LAYOUTING RESPONSIVE SYSTEM (Mobile, Tablet, Laptop) ===== */
+/* ===== GLOBAL RESPONSIVE SYSTEM (Mobile, Tablet, Laptop, Desktop Auto-Layouting) ===== */
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
 }
 
-@media (max-width: 1024px) {
-  html {
-    font-size: 15px;
-  }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Montserrat', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Fluid responsive device breakpoints */
+@media (max-width: 1200px) {
+  html { font-size: 15.5px; }
+}
+
+@media (max-width: 992px) {
+  html { font-size: 15px; }
 }
 
 @media (max-width: 768px) {
-  html {
-    font-size: 14px;
-  }
+  html { font-size: 14px; }
+  .card { padding: clamp(12px, 3vw, 18px); }
 }
 
 @media (max-width: 480px) {
-  html {
-    font-size: 13px;
-  }
+  html { font-size: 13.5px; }
+  .card { padding: 12px; border-radius: 8px; }
+}
+
+@media (max-width: 360px) {
+  html { font-size: 12.5px; }
+  .card { padding: 10px; }
 }
 
 /* Touch targets optimization */
@@ -171,11 +195,19 @@ button, select, input, a {
   touch-action: manipulation;
 }
 
-/* Auto-layouting containers */
+/* Fluid Auto-Container */
 .auto-container {
   width: 100%;
-  max-width: 1300px;
-  margin: 0 auto;
-  padding-left: clamp(10px, 3vw, 24px);
-  padding-right: clamp(10px, 3vw, 24px);
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(8px, 3vw, 24px);
+  padding-right: clamp(8px, 3vw, 24px);
+}
+
+/* Prevent iOS auto-zoom on input focus */
+@media (max-width: 768px) {
+  .input, .select, textarea {
+    font-size: 16px !important;
+  }
 }

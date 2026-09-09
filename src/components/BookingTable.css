@@ -8,6 +8,7 @@
 .booking-table-controls {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -32,12 +33,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .bt-search {
   position: relative;
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 200px;
+  min-width: min(100%, 180px);
 }
 
 .bt-search svg {
@@ -56,8 +58,27 @@
 /* ── Table ── */
 .bt-scroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .booking-table-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bt-filters {
+    width: 100%;
+  }
+  .bt-top-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .bt-search {
+    width: 100%;
+  }
 }
 
 .bt-table {

@@ -3,13 +3,14 @@
 .tle-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: clamp(14px, 2.5vw, 20px);
+  width: 100%;
 }
 
 /* ── Top bar ── */
 .tle-topbar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
@@ -19,16 +20,17 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .tle-title {
-  font-size: 1.2rem;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
   font-weight: 800;
   color: var(--gold);
 }
 
 .tle-subtitle {
-  font-size: 0.8rem;
+  font-size: clamp(0.72rem, 1.8vw, 0.82rem);
   color: var(--text-muted);
   margin-top: 2px;
 }
@@ -45,13 +47,16 @@
 /* ── Two-column main layout ── */
 .tle-main {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: minmax(260px, 300px) 1fr;
   gap: 20px;
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .tle-main { grid-template-columns: 1fr; }
+@media (max-width: 960px) {
+  .tle-main {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 /* ── Left panel ── */

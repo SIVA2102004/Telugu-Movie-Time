@@ -234,121 +234,109 @@
   color: var(--text);
 }
 
-/* ── UPI Payment Gateway Box ── */
-.upi-payment-box {
-  background: rgba(255, 215, 0, 0.04);
-  border: 1px solid var(--gold);
+/* ── Payment Box (Clean Responsive UPI Card) ── */
+.payment-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: clamp(12px, 2.5vw, 20px);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 14px;
+  text-align: center;
+  width: 100%;
 }
 
-.upi-payment-header {
+.payment-box__title {
+  font-size: clamp(0.9rem, 2.2vw, 1.05rem);
+  font-weight: 700;
+  color: var(--gold);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.upi-payment-header h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--gold);
-}
-
-.upi-payment-content {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.upi-qr-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background: #fff;
+.payment-box__qr-wrapper {
+  background: #ffffff;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 2px solid var(--gold);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
 }
 
-.upi-qr-img {
-  width: 170px;
-  height: 170px;
+.payment-box__qr-img {
+  width: clamp(140px, 35vw, 180px);
+  height: clamp(140px, 35vw, 180px);
+  object-fit: contain;
   display: block;
 }
 
-.upi-qr-placeholder {
-  width: 170px;
-  height: 170px;
+.payment-box__payee-info {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000;
-  font-size: 0.8rem;
+  gap: clamp(8px, 2vw, 16px);
+  font-size: clamp(0.78rem, 2vw, 0.88rem);
+  color: var(--text-muted);
+  flex-wrap: wrap;
 }
 
-.upi-qr-amount {
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: #000;
+.payment-box__amount {
+  color: var(--gold);
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-weight: 900;
 }
 
-.upi-details {
+.payment-box__upi-row {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  flex: 1;
-  min-width: 200px;
-}
-
-.upi-instruction {
-  font-size: 0.85rem;
-  color: var(--text);
-}
-
-.upi-id-badge {
-  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
-  background: var(--surface2);
+  background: var(--surface);
   border: 1px solid var(--border);
   padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 700;
-  color: var(--gold);
-  font-size: 0.88rem;
+  border-radius: 8px;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
-.btn-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(255, 215, 0, 0.15);
-  border: 1px solid var(--gold);
+.payment-box__upi-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.payment-box__upi-id {
+  font-size: clamp(0.78rem, 2vw, 0.88rem);
   color: var(--gold);
-  border-radius: 4px;
+  font-weight: 800;
+  word-break: break-all;
+}
+
+.payment-box__copy-btn {
   padding: 3px 8px;
   font-size: 0.72rem;
+}
+
+.payment-box__pay-app-btn {
+  width: 100%;
+  padding: clamp(10px, 2vw, 14px);
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
   font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-copy:hover {
-  background: var(--gold);
-  color: #000;
-}
-
-.upi-direct-btn {
-  font-size: 0.85rem;
-  padding: 8px 14px;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .booking-form {
+    padding: 14px 10px;
+  }
+  .payment-box {
+    padding: 12px 8px;
+  }
 }

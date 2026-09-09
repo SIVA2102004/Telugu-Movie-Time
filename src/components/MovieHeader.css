@@ -1,28 +1,29 @@
 .movie-header {
   background: linear-gradient(135deg, #12090e 0%, #1a0b12 60%, #07070a 100%);
   border-bottom: 2px solid #FF3344;
-  padding: 16px 24px;
+  padding: clamp(10px, 2vw, 16px) clamp(12px, 3vw, 24px);
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: 0 4px 25px rgba(255, 34, 51, 0.25);
+  width: 100%;
 }
 
 .movie-header__inner {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: clamp(8px, 2vw, 16px);
   flex-wrap: wrap;
 }
 
 .movie-header__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1rem;
+  gap: 8px;
+  font-size: clamp(0.85rem, 2vw, 1rem);
   font-weight: 800;
   color: #FF3344;
   letter-spacing: 0.5px;
@@ -33,11 +34,11 @@
   background: linear-gradient(135deg, #FF3344 0%, #B22222 100%);
   color: #ffffff;
   font-weight: 900;
-  font-size: 0.85rem;
-  padding: 4px 8px;
+  font-size: clamp(0.75rem, 1.8vw, 0.85rem);
+  padding: 3px 7px;
   border-radius: 6px;
-  letter-spacing: 1.5px;
-  box-shadow: 0 0 12px rgba(255, 51, 68, 0.5);
+  letter-spacing: 1.2px;
+  box-shadow: 0 0 10px rgba(255, 51, 68, 0.5);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -45,55 +46,58 @@
 
 .tmt-brand-text {
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
 }
 
 .movie-header__movie {
   flex: 1;
+  min-width: min(100%, 280px);
   text-align: center;
 }
 
 .movie-header__title {
-  font-size: 1.6rem;
+  font-size: clamp(1.1rem, 3.2vw, 1.6rem);
   font-weight: 900;
   background: linear-gradient(90deg, #FFFFFF 0%, #FF6677 50%, #FF3344 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: 1px;
+  letter-spacing: 0.8px;
   line-height: 1.2;
   text-transform: uppercase;
+  word-break: break-word;
 }
 
 .movie-header__meta {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: clamp(6px, 1.5vw, 14px);
   flex-wrap: wrap;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .movie-header__meta span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.82rem;
+  font-size: clamp(0.72rem, 1.8vw, 0.82rem);
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .movie-header__price {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   background: rgba(255, 215, 0, 0.12);
   border: 1px solid var(--gold);
   border-radius: 999px;
-  padding: 6px 14px;
+  padding: clamp(4px, 1vw, 6px) clamp(10px, 2vw, 14px);
   color: var(--gold);
   font-weight: 700;
   white-space: nowrap;
-  font-size: 1rem;
+  font-size: clamp(0.85rem, 2vw, 1rem);
 }
 
 .movie-header__price small {
@@ -102,15 +106,28 @@
   color: var(--gold-dim);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
+  .movie-header {
+    padding: 10px 12px;
+  }
   .movie-header__inner {
     flex-direction: column;
+    align-items: center;
     text-align: center;
-  }
-  .movie-header__title {
-    font-size: 1.2rem;
+    gap: 6px;
   }
   .movie-header__brand {
     justify-content: center;
+  }
+  .movie-header__meta {
+    justify-content: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 420px) {
+  .movie-header__meta span:nth-child(n+3) {
+    /* Auto wrap nicely */
+    font-size: 0.7rem;
   }
 }
