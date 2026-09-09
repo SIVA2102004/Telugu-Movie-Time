@@ -143,6 +143,15 @@
   margin: 0 auto;
 }
 
+.admin-mobile-tab-select {
+  display: none;
+}
+
+.admin-sidebar__install-desktop {
+  padding: 0 12px;
+  margin-bottom: 10px;
+}
+
 /* ── Tablet & Small Laptop (769px - 1024px) ── */
 @media (min-width: 769px) and (max-width: 1024px) {
   .admin-sidebar {
@@ -173,6 +182,23 @@
     padding-bottom: 74px; /* Space for bottom navigation bar */
   }
 
+  .admin-mobile-tab-select {
+    display: block;
+    background: #1e1b2e;
+    border: 1.5px solid var(--gold);
+    color: var(--gold);
+    font-size: 0.85rem;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: 8px;
+    outline: none;
+    max-width: 150px;
+  }
+
+  .admin-sidebar__install-desktop {
+    display: none;
+  }
+
   .admin-sidebar {
     width: 100%;
     height: 64px;
@@ -183,7 +209,7 @@
     right: 0;
     flex-direction: row;
     padding: 4px 6px;
-    background: rgba(13, 13, 26, 0.96);
+    background: rgba(13, 13, 26, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255, 215, 0, 0.3);
@@ -211,6 +237,8 @@
     gap: 4px;
     align-items: center;
     justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .sidebar-item {
@@ -254,19 +282,20 @@
   }
 
   .admin-topbar {
-    padding: 10px 14px;
+    padding: 10px 12px;
     gap: 8px;
   }
 
   .admin-topbar__title {
-    font-size: 1.05rem;
+    display: none; /* Replaced by admin-mobile-tab-select */
   }
 
-  .admin-topbar__movie {
-    font-size: 0.75rem;
+  .admin-live-screen-pill {
+    font-size: 0.7rem !important;
+    padding: 2px 6px !important;
   }
 
   .admin-content {
-    padding: 12px 8px;
+    padding: 12px 6px;
   }
 }

@@ -615,6 +615,26 @@ export default function StudentPage() {
               </div>
             </>
           )}
+
+          {/* Sticky Mobile Book Seats Bar (Only on Movie Overview mode) */}
+          {activeView === "movie" && (
+            <div className="student-mobile-sticky-book-bar">
+              <div className="student-mobile-sticky-book-info">
+                <span className="student-mobile-sticky-title">{activeScreen.movieName || config?.movieName || "Telugu Movie Time"}</span>
+                <span className="student-mobile-sticky-price">From ₹{activeScreen.tierPrices?.Silver || config?.tierPrices?.Silver || activeScreen.pricePerSeat || 200}</span>
+              </div>
+              <button
+                type="button"
+                className="btn btn-gold student-mobile-sticky-btn"
+                onClick={() => {
+                  setActiveView("booking");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              >
+                <Ticket size={18} /> Book Seats
+              </button>
+            </div>
+          )}
         </main>
       )}
     </>

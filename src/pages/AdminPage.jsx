@@ -151,18 +151,21 @@ export default function AdminPage() {
                   onClick={() => setActiveTab(t.id)}
                 >
                   <Icon size={17} />
-                  {t.label}
+                  <span>{t.label}</span>
                   {t.id === "layout" && (
                     <span className="sidebar-new-badge">NEW</span>
                   )}
                 </button>
               );
             })}
+            <button className="sidebar-item sidebar-item--logout" onClick={logout}>
+              <LogOut size={17} /> <span>Logout</span>
+            </button>
           </nav>
 
-          {/* Install App Button in Sidebar */}
+          {/* Install App Button in Sidebar (Desktop Only) */}
           {!isInstalled && (
-            <div style={{ padding: "0 12px", marginBottom: 10 }}>
+            <div className="admin-sidebar__install-desktop">
               <button
                 type="button"
                 onClick={installApp}
@@ -174,21 +177,32 @@ export default function AdminPage() {
               </button>
             </div>
           )}
-
-          <button className="sidebar-item sidebar-item--logout" onClick={logout}>
-            <LogOut size={17} /> Logout
-          </button>
         </aside>
 
         {/* Main */}
         <main className="admin-main">
           <div className="admin-topbar">
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", flex: "1 1 auto" }}>
+              {/* Mobile Tab Selector Dropdown */}
+              <select
+                className="admin-mobile-tab-select"
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+                aria-label="Select Admin Section"
+              >
+                {allowedTabs.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+
               <h1 className="admin-topbar__title" style={{ margin: 0 }}>
                 {allowedTabs.find((t) => t.id === activeTab)?.label}
               </h1>
               {config?.screens && (
                 <div
+                  className="admin-live-screen-pill"
                   style={{
                     background: "rgba(0, 200, 81, 0.15)",
                     border: "1px solid var(--green)",
@@ -207,8 +221,19 @@ export default function AdminPage() {
                 </div>
               )}
             </div>
-            
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto", flexWrap: "wrap" }}>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
+              {!isInstalled && (
+                <button
+                  type="button"
+                  onClick={installApp}
+                  className="btn btn-outline admin-topbar-install-btn"
+                  style={{ padding: "5px 10px", fontSize: "0.75rem", gap: 4, color: "var(--gold)", borderColor: "var(--gold)" }}
+                  title="Install Admin App"
+                >
+                  <Smartphone size={13} /> App
+                </button>
+              )}
               {/* Direct Student Portal Share Button */}
               <button
                 type="button"

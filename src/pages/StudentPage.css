@@ -127,17 +127,73 @@
   line-height: 1.6;
 }
 
+/* ── Sticky Mobile Booking Floating Bar ── */
+.student-mobile-sticky-book-bar {
+  display: none;
+}
+
 /* ── Responsive Mobile Enhancements ── */
 @media (max-width: 768px) {
   .student-page {
-    padding: 10px 8px 50px;
+    padding: 10px 8px 80px; /* Give room for sticky bottom bar */
     gap: 14px;
+  }
+
+  .student-mobile-sticky-book-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(13, 13, 26, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1.5px solid var(--gold);
+    padding: 10px 16px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 999;
+    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.85);
+    animation: slideUp 0.3s ease;
+  }
+
+  .student-mobile-sticky-book-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .student-mobile-sticky-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .student-mobile-sticky-price {
+    font-size: 0.76rem;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  .student-mobile-sticky-btn {
+    padding: 8px 18px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
   }
 }
 
 @media (max-width: 480px) {
   .student-page {
-    padding: 8px 4px 40px;
+    padding: 8px 4px 80px;
   }
   .student-page__strip {
     padding: 8px;
@@ -145,3 +201,4 @@
     gap: 6px;
   }
 }
+
