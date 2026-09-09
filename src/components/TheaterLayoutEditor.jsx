@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { db, storage } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { buildDefaultLayout, BLUEPRINT_LAYOUT } from "../hooks/useMovieConfig";
-import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Info, ArrowDownUp, Tag, IndianRupee } from "lucide-react";
+import { buildDefaultLayout, BLUEPRINT_LAYOUT, sanitizeLayout } from "../hooks/useMovieConfig";
+import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Info, ArrowDownUp, Tag, IndianRupee, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import "./TheaterLayoutEditor.css";
 
@@ -34,24 +34,36 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       const cloned = JSON.parse(JSON.stringify(scrLayout));
       if (!cloned.rowTiers) cloned.rowTiers = {};
       if (!cloned.tierPrices) {
-        cloned.tierPrices = { Platinum: 300, Gold: 250, Silver: 200 };
+        cloned.tierPrices = { Platinum: 500, Gold: 320, Silver: 200 };
       }
-      return cloned;
+      return sanitizeLayout(cloned);
     }
-    return buildDefaultLayout(8, 10);
+    return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
   });
+
+  // Automatically keep layout state in sync when config or activeScreenId changes
+  useEffect(() => {
+    const targetScr = screens.find((s) => s.id === activeScreenId) || screens[0];
+    const targetLayout = targetScr?.layout || config?.layout || BLUEPRINT_LAYOUT;
+    const cloned = JSON.parse(JSON.stringify(targetLayout));
+    if (!cloned.rowTiers) cloned.rowTiers = {};
+    if (!cloned.tierPrices) {
+      cloned.tierPrices = targetScr?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
+    }
+    setLayout(sanitizeLayout(cloned));
+  }, [config, activeScreenId]);
 
   // Switch screen in layout editor
   const handleSelectScreen = (screenId) => {
     setActiveScreenId(screenId);
     const targetScr = screens.find((s) => s.id === screenId) || screens[0];
-    const scrLayout = targetScr?.layout || config?.layout || buildDefaultLayout(8, 10);
+    const scrLayout = targetScr?.layout || config?.layout || BLUEPRINT_LAYOUT;
     const cloned = JSON.parse(JSON.stringify(scrLayout));
     if (!cloned.rowTiers) cloned.rowTiers = {};
     if (!cloned.tierPrices) {
-      cloned.tierPrices = targetScr?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+      cloned.tierPrices = targetScr?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
     }
-    setLayout(cloned);
+    setLayout(sanitizeLayout(cloned));
     toast.success(`Loaded layout editor for ${targetScr.name}`);
   };
 

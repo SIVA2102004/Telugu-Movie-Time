@@ -44,15 +44,16 @@
 .tle-help strong { color: var(--text); }
 .tle-help ul { padding-left: 20px; margin-top: 8px; }
 
-/* ── Two-column main layout ── */
+/* ── Two-column main layout with auto-adjusting fluid columns ── */
 .tle-main {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(230px, 270px) 1fr;
+  gap: clamp(14px, 2vw, 20px);
   align-items: start;
+  width: 100%;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .tle-main {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -382,15 +383,19 @@
 
 /* Individual seat button in editor */
 .tle-seat-btn {
-  width: 32px;
-  height: 28px;
-  border-radius: 5px 5px 3px 3px;
+  width: clamp(23px, 1.85vw, 29px);
+  height: clamp(23px, 1.85vw, 27px);
+  border-radius: 4px 4px 2px 2px;
   border: none;
-  font-size: 0.6rem;
+  font-size: clamp(0.5rem, 0.85vw, 0.62rem);
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.1s, opacity 0.15s;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 .tle-seat-btn--seat {
   background: var(--green);
@@ -400,14 +405,14 @@
   background: var(--surface2);
   border: 1px dashed var(--border);
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 .tle-seat-btn:hover { transform: scale(1.08); }
 
 /* Insert gap button (thin divider between seats) */
 .tle-insert-gap {
-  width: 6px;
-  height: 28px;
+  width: 4px;
+  height: clamp(23px, 1.85vw, 27px);
   background: none;
   border: none;
   color: transparent;
