@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { db, storage } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { buildDefaultLayout } from "../hooks/useMovieConfig";
+import { buildDefaultLayout, BLUEPRINT_LAYOUT } from "../hooks/useMovieConfig";
 import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Info, ArrowDownUp, Tag, IndianRupee } from "lucide-react";
 import toast from "react-hot-toast";
 import "./TheaterLayoutEditor.css";
@@ -306,49 +306,6 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   // TEMPLATES
   // ════════════════════════════════════════════════════════════════
 
-  const BLUEPRINT_LAYOUT = {
-    rows: ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O"],
-    screenPosition: "top",
-    rowTiers: {
-      A: "Platinum",
-      B: "Gold",
-      C: "Gold",
-      D: "Gold",
-      E: "Gold",
-      F: "Gold",
-      G: "Gold",
-      H: "Gold",
-      I: "Gold",
-      J: "Silver",
-      K: "Silver",
-      L: "Silver",
-      M: "Silver",
-      N: "Silver",
-      O: "Silver",
-    },
-    tierPrices: {
-      Platinum: 300,
-      Gold: 250,
-      Silver: 200,
-    },
-    seats: {
-      A: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],
-      B: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      C: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      D: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      E: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      F: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      G: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      H: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      I: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,null,17,18,19,20],
-      J: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-      K: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-      L: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-      M: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-      N: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-      O: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],
-    },
-  };
 
   const TEMPLATES = [
     {
