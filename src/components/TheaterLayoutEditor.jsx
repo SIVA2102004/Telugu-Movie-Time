@@ -338,7 +338,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   const applyTemplate = (tmpl) => {
     if (tmpl.highlight) {
       setLayout(tmpl.build());
-      toast.success("Blueprint layout with Platinum/Gold/Silver tiers applied! ✅");
+      toast.success("Blueprint layout (274 seats · Row A Platinum, Rows B-O Gold) applied! ✅");
     } else {
       if (window.confirm(`Apply template "${tmpl.name}"?`)) {
         setLayout(tmpl.build());

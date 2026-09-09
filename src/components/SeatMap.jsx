@@ -151,7 +151,9 @@ export default function SeatMap({
   );
 
   const showCategoryRates = layout?.enableCategoryPricing !== false && Object.keys(tierPrices).length > 0;
+  const tiersInLayout = useMemo(() => new Set(Object.values(layout?.rowTiers || {})), [layout?.rowTiers]);
   const visibleTierEntries = Object.entries(tierPrices).filter(([tier]) => {
+    if (tiersInLayout.size > 0 && !tiersInLayout.has(tier)) return false;
     return layout?.visibleTiers ? layout.visibleTiers[tier] !== false : true;
   });
 

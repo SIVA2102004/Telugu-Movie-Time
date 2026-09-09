@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
-// Screen 1 Layout (Default Hall - 274 Seats matching exact theater blueprint)
+// Screen 1 Layout (Default Hall - 274 Seats matching exact physical theater blueprint)
 export const BLUEPRINT_LAYOUT = {
-  rows: ["O", "N", "M", "L", "K", "J", "I", "H", "G", "F", "E", "D", "C", "B", "A"],
+  rows: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"],
   screenPosition: "top",
   rowTiers: {
     A: "Platinum",
@@ -24,26 +24,26 @@ export const BLUEPRINT_LAYOUT = {
     O: "Gold",
   },
   tierPrices: {
-    Platinum: 300,
-    Gold: 250,
+    Platinum: 500,
+    Gold: 320,
     Silver: 200,
   },
   seats: {
-    O: [null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    N: [null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    M: [null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    L: [null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    K: [null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    J: [null, null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-    I: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    H: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    G: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    F: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    E: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    D: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    C: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    A: [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, null, null],
     B: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
-    A: [null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+    C: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    D: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    E: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    F: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    G: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    H: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    I: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, 17, 18, 19, 20],
+    J: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
+    K: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
+    L: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
+    M: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
+    N: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
+    O: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
   },
 };
 
@@ -57,7 +57,7 @@ export const DEFAULT_SCREENS = [
     showTime: "8:00 AM",
     pricePerSeat: 200,
     posterUrl: null,
-    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
     layout: BLUEPRINT_LAYOUT,
     isPublished: true,
   },
@@ -70,7 +70,7 @@ export const DEFAULT_SCREENS = [
     showTime: "11:30 AM",
     pricePerSeat: 200,
     posterUrl: null,
-    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
     layout: BLUEPRINT_LAYOUT,
     isPublished: false,
   },
@@ -83,7 +83,7 @@ export const DEFAULT_SCREENS = [
     showTime: "3:00 PM",
     pricePerSeat: 200,
     posterUrl: null,
-    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
     layout: BLUEPRINT_LAYOUT,
     isPublished: false,
   },
@@ -96,7 +96,7 @@ export const DEFAULT_SCREENS = [
     showTime: "7:00 PM",
     pricePerSeat: 250,
     posterUrl: null,
-    tierPrices: { Platinum: 350, Gold: 300, Silver: 250 },
+    tierPrices: { Platinum: 550, Gold: 350, Silver: 250 },
     layout: BLUEPRINT_LAYOUT,
     isPublished: false,
   }
@@ -119,7 +119,7 @@ export function buildDefaultLayout(numRows = 15, numCols = 18) {
     rows,
     screenPosition: "top",
     rowTiers,
-    tierPrices: { Platinum: 300, Gold: 250, Silver: 200 },
+    tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
     seats,
   };
 }
@@ -135,8 +135,8 @@ const DEFAULT_CONFIG = {
   enableCategoryPricing: true, // Master Admin can enable/disable Category Rates
   posterUrl: null,
   tierPrices: {
-    Platinum: 300,
-    Gold: 250,
+    Platinum: 500,
+    Gold: 320,
     Silver: 200,
   },
   blockedSeats: [],
