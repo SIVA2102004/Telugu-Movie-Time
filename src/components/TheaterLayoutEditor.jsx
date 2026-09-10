@@ -73,12 +73,19 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       cloned.tierPrices = targetScr?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
     }
     setLayout(sanitizeLayout(cloned));
+
+    // Isolate blueprint image per screen
+    const scrBlueprint = targetScr?.blueprintImageUrl || (screenId === "screen-1" ? config?.blueprintImageUrl : null) || null;
+    setBlueprintUrl(scrBlueprint);
+    setBlueprintPreview(scrBlueprint);
+
     toast.success(`Loaded layout editor for ${targetScr.name}`);
   };
 
-  // ── Blueprint image state ─────────────────────────────────────────────────
-  const [blueprintUrl, setBlueprintUrl]         = useState(config?.blueprintImageUrl || null);
-  const [blueprintPreview, setBlueprintPreview] = useState(config?.blueprintImageUrl || null);
+  // ── Blueprint image state (strictly isolated per screen) ────────────────────
+  const initialBlueprint = currentScreenObj?.blueprintImageUrl || (activeScreenId === "screen-1" ? config?.blueprintImageUrl : null) || null;
+  const [blueprintUrl, setBlueprintUrl]         = useState(initialBlueprint);
+  const [blueprintPreview, setBlueprintPreview] = useState(initialBlueprint);
   const [uploading, setUploading]               = useState(false);
   const fileInputRef = useRef(null);
 
@@ -416,6 +423,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
           ...s,
           layout,
           tierPrices: layout.tierPrices,
+          blueprintImageUrl: blueprintUrl || null,
         };
       }
       return s;
@@ -425,7 +433,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       ...config,
       screens: updatedScreens,
       layout: activeScreenId === (config?.activeScreenId || "screen-1") ? layout : config?.layout,
-      blueprintImageUrl: blueprintUrl || null,
+      blueprintImageUrl: activeScreenId === "screen-1" ? (blueprintUrl || null) : (config?.blueprintImageUrl || null),
     };
 
     // Instant local save

@@ -170,6 +170,7 @@ export function sanitizeConfig(cfg) {
   const screens = (cfg.screens || DEFAULT_SCREENS).map((scr) => ({
     ...scr,
     layout: sanitizeLayout(scr.layout),
+    blueprintImageUrl: scr.blueprintImageUrl || null,
   }));
   return {
     ...DEFAULT_CONFIG,
