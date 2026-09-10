@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { db, storage } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { buildDefaultLayout, BLUEPRINT_LAYOUT, CURVED_AMPHITHEATER_LAYOUT, sanitizeLayout } from "../hooks/useMovieConfig";
+import { buildDefaultLayout, BLUEPRINT_LAYOUT, CURVED_AMPHITHEATER_LAYOUT, DEFAULT_SCREENS, sanitizeLayout } from "../hooks/useMovieConfig";
 import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Info, ArrowDownUp, Tag, IndianRupee, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import "./TheaterLayoutEditor.css";
@@ -14,12 +14,7 @@ const MAX_COLS = 30;
 const DEFAULT_TIERS = ["Platinum", "Gold", "Silver"];
 
 export default function TheaterLayoutEditor({ config, selectedScreenId: initialScreenId }) {
-  const screens = config?.screens || [
-    { id: "screen-1", name: "Screen 1 (Main Hall)" },
-    { id: "screen-2", name: "Screen 2 (Audi 2)" },
-    { id: "screen-3", name: "Screen 3 (Audi 3)" },
-    { id: "screen-4", name: "Screen 4 (Audi 4)" }
-  ];
+  const screens = config?.screens || DEFAULT_SCREENS;
 
   const [activeScreenId, setActiveScreenId] = useState(
     initialScreenId || config?.activeScreenId || "screen-1"

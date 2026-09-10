@@ -5,6 +5,8 @@ import { Lock, Unlock, ShieldAlert, Check, RefreshCw, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AdminSeatMap.css";
 
+import { DEFAULT_SCREENS } from "../hooks/useMovieConfig";
+
 /**
  * Interactive Admin Seat Map:
  * Highlights Confirmed (Red), Pending (Orange), and Blocked (Grey).
@@ -14,10 +16,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
   const [selectedScreenId, setSelectedScreenId] = useState(() => config?.activeScreenId || "screen-1");
   const [saving, setSaving] = useState(false);
 
-  const screens = config?.screens || [
-    { id: "screen-1", name: "Screen 1 (Main Hall)" },
-    { id: "screen-2", name: "Screen 2 (Audi 2)" }
-  ];
+  const screens = config?.screens || DEFAULT_SCREENS;
 
   const currentScreen = screens.find((s) => s.id === selectedScreenId) || screens[0];
 
