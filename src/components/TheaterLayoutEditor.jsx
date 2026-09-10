@@ -44,21 +44,23 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   const isSavingRef = useRef(false);
   const lastSavedLayoutStrRef = useRef("");
 
-  // Automatically keep layout state in sync when config or activeScreenId changes
+  // Automatically keep layout state in sync when activeScreenId changes
   useEffect(() => {
-    if (isSavingRef.current) return;
+    isSavingRef.current = false;
     const targetScr = screens.find((s) => s.id === activeScreenId) || screens[0];
-    const targetLayout = targetScr?.layout || (activeScreenId === "screen-1" ? config?.layout : null) || BLUEPRINT_LAYOUT;
+    const targetLayout = targetScr?.layout || (activeScreenId === "screen-1" ? config?.layout : null) || (activeScreenId === "screen-3" ? CURVED_AMPHITHEATER_LAYOUT : BLUEPRINT_LAYOUT);
     const cloned = JSON.parse(JSON.stringify(targetLayout));
     if (!cloned.rowTiers) cloned.rowTiers = {};
     if (!cloned.tierPrices) {
       cloned.tierPrices = targetScr?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
     }
     const clean = sanitizeLayout(cloned);
-    if (JSON.stringify(clean) !== lastSavedLayoutStrRef.current) {
-      setLayout(clean);
-    }
-  }, [config, activeScreenId]);
+    setLayout(clean);
+
+    const scrBlueprint = targetScr?.blueprintImageUrl || (activeScreenId === "screen-1" ? config?.blueprintImageUrl : null) || null;
+    setBlueprintUrl(scrBlueprint);
+    setBlueprintPreview(scrBlueprint);
+  }, [activeScreenId]);
 
   // Switch screen in layout editor
   const handleSelectScreen = (screenId) => {
@@ -512,19 +514,35 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
           </p>
         </div>
         <div className="tle-topbar-actions">
-          <button
-            type="button"
-            className="btn btn-gold"
-            style={{ fontWeight: 800, boxShadow: "0 0 12px rgba(255, 215, 0, 0.4)" }}
-            onClick={() => {
-              const blueprint = JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
-              setLayout(blueprint);
-              toast.success("Applied & Auto-Aligned exact 274-seat Hall Blueprint (Row A Recliner to Row O Gold)! ✨");
-            }}
-            title="Click to instantly auto-align the entire layout to the exact 274-seat theater blueprint"
-          >
-            ✨ Auto-Align Blueprint (274 Seats)
-          </button>
+          {activeScreenId === "screen-3" ? (
+            <button
+              type="button"
+              className="btn btn-gold"
+              style={{ fontWeight: 800, boxShadow: "0 0 12px rgba(255, 215, 0, 0.4)" }}
+              onClick={() => {
+                const curved = JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT));
+                setLayout(curved);
+                toast.success("Applied Screen 3 Amphitheater Blueprint Layout (8 Curved Rows · 152 Seats)! 🎯");
+              }}
+              title="Click to instantly auto-align Screen 3 layout to the uploaded amphitheater blueprint"
+            >
+              🎯 Auto-Align Blueprint (8 Rows · 152 Seats)
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-gold"
+              style={{ fontWeight: 800, boxShadow: "0 0 12px rgba(255, 215, 0, 0.4)" }}
+              onClick={() => {
+                const blueprint = JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+                setLayout(blueprint);
+                toast.success("Applied & Auto-Aligned exact 274-seat Hall Blueprint (Row A Recliner to Row O Gold)! ✨");
+              }}
+              title="Click to instantly auto-align the entire layout to the exact 274-seat theater blueprint"
+            >
+              ✨ Auto-Align Blueprint (274 Seats)
+            </button>
+          )}
           <button className="btn btn-ghost" onClick={() => setShowHelp((v) => !v)}>
             <Info size={15} /> Help
           </button>
