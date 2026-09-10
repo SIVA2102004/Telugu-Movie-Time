@@ -43,9 +43,41 @@ export const BLUEPRINT_LAYOUT = {
     L: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
     M: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
     N: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
-    O: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, null, null, null, null, null],
   },
 };
+
+// Screen 3 / Amphitheater Layout (8 Curved Rows matching newly uploaded blueprint photo)
+export const CURVED_AMPHITHEATER_LAYOUT = {
+  rows: ["A", "B", "C", "D", "E", "F", "G", "H"],
+  screenPosition: "bottom",
+  rowTiers: {
+    A: "Platinum",
+    B: "Platinum",
+    C: "Gold",
+    D: "Gold",
+    E: "Gold",
+    F: "Silver",
+    G: "Silver",
+    H: "Silver",
+  },
+  tierPrices: {
+    Platinum: 500,
+    Gold: 320,
+    Silver: 200,
+  },
+  seats: {
+    // Front to back fan layout: Row A (front/12 seats) to Row H (back/26 seats)
+    A: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    B: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    C: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    D: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+    E: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+    F: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+    G: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+    H: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26],
+  },
+};
+
 
 export const DEFAULT_SCREENS = [
   {
@@ -84,7 +116,7 @@ export const DEFAULT_SCREENS = [
     pricePerSeat: 200,
     posterUrl: null,
     tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
-    layout: BLUEPRINT_LAYOUT,
+    layout: CURVED_AMPHITHEATER_LAYOUT,
     isPublished: false,
   },
   {

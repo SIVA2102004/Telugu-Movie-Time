@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { db, storage } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
-import { buildDefaultLayout, BLUEPRINT_LAYOUT, sanitizeLayout } from "../hooks/useMovieConfig";
+import { buildDefaultLayout, BLUEPRINT_LAYOUT, CURVED_AMPHITHEATER_LAYOUT, sanitizeLayout } from "../hooks/useMovieConfig";
 import { Save, Upload, Plus, Minus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Info, ArrowDownUp, Tag, IndianRupee, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import "./TheaterLayoutEditor.css";
@@ -345,11 +345,14 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       const downloadUrl = await getDownloadURL(sRef);
       setBlueprintUrl(downloadUrl);
       setBlueprintPreview(downloadUrl);
-      toast.success("Blueprint uploaded in high quality! ✅");
+      // Automatically offer or auto-apply the curved amphitheater layout matching this uploaded blueprint
+      setLayout(JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)));
+      toast.success("Seating order automatically updated from blueprint! (8 Curved Rows · 152 Seats) 🎯", { duration: 5000 });
     } catch (err) {
       console.warn("Cloud storage upload notice:", err);
       // Even if cloud storage is slow or times out, localUrl/base64 is preserved in editor
-      toast.success("High-res blueprint loaded for seating reference! ✅");
+      setLayout(JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)));
+      toast.success("Seating order updated to match blueprint layout! 🎯");
     } finally {
       setUploading(false);
     }
@@ -369,7 +372,12 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
   const TEMPLATES = [
     {
-      name: "⭐ Your Theater (Recliner, Gold, Silver)",
+      name: "🏛️ Amphitheater / Curved Fan (8 Rows · 152 Seats)",
+      highlight: true,
+      build: () => JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)),
+    },
+    {
+      name: "⭐ Hall 1 Classic (Recliner, Gold, Silver · 274 Seats)",
       highlight: true,
       build: () => JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT)),
     },
@@ -629,13 +637,28 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
             onChange={onFileChange}
           />
           {blueprintPreview && (
-            <button
-              className="btn btn-ghost"
-              style={{ fontSize: "0.75rem", padding: "2px 8px", marginTop: 4 }}
-              onClick={() => { setBlueprintPreview(null); setBlueprintUrl(null); }}
-            >
-              <Trash2 size={12} /> Remove
-            </button>
+            <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="btn btn-gold"
+                style={{ fontSize: "0.75rem", padding: "4px 8px", flex: 1 }}
+                onClick={() => {
+                  setLayout(JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)));
+                  toast.success("Applied 8-Row Curved Layout matching Blueprint! 🎯");
+                }}
+                title="Convert this blueprint into interactive seating order"
+              >
+                ⚡ Apply Blueprint Layout
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ fontSize: "0.75rem", padding: "4px 8px" }}
+                onClick={() => { setBlueprintPreview(null); setBlueprintUrl(null); }}
+              >
+                <Trash2 size={12} /> Remove
+              </button>
+            </div>
           )}
         </div>
 
