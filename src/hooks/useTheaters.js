@@ -104,13 +104,20 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
   // 3. Add a new Cinema Hall to current theater
   const addHall = useCallback(
     async (theaterId, { hallName, movieName, showTime, date, pricePerSeat, layoutType }) => {
-      if (!theaterId) return;
-      const targetTheater = theaters.find((t) => t.id === theaterId) || currentTheater;
-      if (!targetTheater) return;
+      const activeId = theaterId || currentTheater?.id || "default-theater";
+      let targetTheater = theaters.find((t) => t.id === activeId) || currentTheater;
 
-      // Validate Hall Uniqueness per theater
-      const existingScreens = targetTheater.screens || [];
-      const newHallId = `screen-${existingScreens.length + 1}`;
+      if (!targetTheater) {
+        targetTheater = {
+          id: activeId,
+          name: "My Cinema Hall",
+          screens: DEFAULT_SCREENS,
+        };
+      }
+
+      const existingScreens = targetTheater.screens || DEFAULT_SCREENS;
+      const nextIndex = existingScreens.length + 1;
+      const newHallId = `screen-${Date.now()}`;
 
       const chosenLayout =
         layoutType === "amphitheater"
@@ -119,10 +126,10 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
 
       const newHall = {
         id: newHallId,
-        name: hallName || `Screen ${existingScreens.length + 1}`,
+        name: hallName || `Screen ${nextIndex}`,
         movieName: movieName || "NEW SHOW",
-        theater: `${targetTheater.name} (${hallName || `Screen ${existingScreens.length + 1}`})`,
-        date: date || "2026-09-26",
+        theater: `${targetTheater.name || "Cinema"} (${hallName || `Screen ${nextIndex}`})`,
+        date: date || new Date().toISOString().split("T")[0],
         showTime: showTime || "6:00 PM",
         pricePerSeat: Number(pricePerSeat) || 200,
         posterUrl: null,
@@ -138,7 +145,33 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
         screens: updatedScreens,
       };
 
-      await setDoc(doc(db, "theaters", theaterId), updatedTheater, { merge: true });
+      // Update Firestore theaters document
+      try {
+        await setDoc(doc(db, "theaters", activeId), updatedTheater, { merge: true });
+      } catch (e) {
+        console.warn("Firestore theater update notice:", e);
+      }
+
+      // Synchronize with movieConfig/current so multi-screen manager & booking pages update instantly
+      try {
+        const savedConfigStr = localStorage.getItem("telugu_talkies_movie_config");
+        let currentConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
+        const configScreens = currentConfig.screens || DEFAULT_SCREENS;
+        const nextConfigScreens = [...configScreens, newHall];
+        const nextConfig = {
+          ...currentConfig,
+          screens: nextConfigScreens,
+          activeScreenId: newHallId,
+        };
+
+        localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextConfig));
+        window.dispatchEvent(new Event("storage"));
+
+        await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
+      } catch (err) {
+        console.warn("Movie config sync notice:", err);
+      }
+
       return newHall;
     },
     [theaters, currentTheater]

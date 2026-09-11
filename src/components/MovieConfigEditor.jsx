@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag, Trash2 } from "lucide-react";
+import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag, Trash2, Plus } from "lucide-react";
 import { DEFAULT_SCREENS, resetAllSystemData } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
-export default function MovieConfigEditor({ config, layout, onOpenLayout }) {
+export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddHall }) {
   const [form, setForm] = useState({
     movieName: "Telugu Movie Time",
     date: "2026-08-30",
@@ -294,9 +294,20 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout }) {
               🎬 Multi-Screen & Audi Manager (Admin Decides Which Screen is Live)
             </h3>
             <p style={{ margin: "4px 0 0", color: "var(--text-muted)", fontSize: "0.8rem" }}>
-              Configure up to 4 different screens / movie showtimes and click <strong>"Publish Live"</strong> to make that screen live for student bookings.
+              Configure cinema screens / movie showtimes and click <strong>"Publish Live"</strong> to make that screen live for student bookings.
             </p>
           </div>
+          {onAddHall && (
+            <button
+              type="button"
+              className="btn btn-gold"
+              style={{ padding: "6px 14px", fontSize: "0.78rem", fontWeight: 800, gap: 5 }}
+              onClick={onAddHall}
+              title="Add a new Cinema Hall or Screen"
+            >
+              <Plus size={14} /> Add Cinema Hall / Screen
+            </button>
+          )}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>

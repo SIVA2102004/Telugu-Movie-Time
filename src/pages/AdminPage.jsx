@@ -387,7 +387,7 @@ export default function AdminPage() {
               <TheaterLayoutEditor config={config} selectedScreenId={layoutScreenId} />
             )}
             {activeTab === "config" && (
-              <MovieConfigEditor config={config} layout={layout} onOpenLayout={handleOpenLayoutForScreen} />
+              <MovieConfigEditor config={config} layout={layout} onOpenLayout={handleOpenLayoutForScreen} onAddHall={() => setShowAddHallModal(true)} />
             )}
           </div>
         </main>
