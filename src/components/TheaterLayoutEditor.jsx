@@ -450,6 +450,12 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     // Cloud firestore save
     try {
       await setDoc(doc(db, "movieConfig", "current"), updatedData, { merge: true });
+
+      const activeTheaterId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId");
+      if (activeTheaterId) {
+        await setDoc(doc(db, "theaters", activeTheaterId), { screens: updatedScreens }, { merge: true });
+      }
+
       toast.success(`Layout for ${currentScreenObj.name} Saved Instantly! 🚀`);
     } catch (err) {
       console.warn("Firestore sync error:", err);

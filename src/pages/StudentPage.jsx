@@ -33,19 +33,33 @@ export default function StudentPage() {
   // Active Theater Selection
   const activeTheaterObj = theaters.find((t) => t.id === selectedTheaterId) || (theaters.length > 0 ? theaters[0] : null);
   const effectiveTheaterId = activeTheaterObj?.id || config?.id || "default-theater";
-  const effectiveConfig = activeTheaterObj ? { ...config, ...activeTheaterObj } : config;
 
-  const publishedScreens = (effectiveConfig?.screens || []).filter((s) => s.isPublished !== false);
-  const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : (effectiveConfig?.screens || []).slice(0, 1);
-  const currentScreenId = selectedScreenId || effectiveConfig?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
+  // Merge screens: start with activeTheaterObj.screens if available, but allow config.screens (which has live admin edits) to take precedence for each screen ID!
+  const configScreens = config?.screens || DEFAULT_SCREENS;
+  const theaterScreens = activeTheaterObj?.screens || [];
+
+  const mergedScreensMap = new Map();
+  theaterScreens.forEach((thScr) => {
+    mergedScreensMap.set(thScr.id, thScr);
+  });
+  configScreens.forEach((cfgScr) => {
+    const existing = mergedScreensMap.get(cfgScr.id) || {};
+    mergedScreensMap.set(cfgScr.id, { ...existing, ...cfgScr });
+  });
+
+  const mergedScreens = Array.from(mergedScreensMap.values());
+  const publishedScreens = mergedScreens.filter((s) => s.isPublished !== false);
+  const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : mergedScreens.slice(0, 1);
+
+  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
   const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
-  const activePoster = activeScreen.posterUrl || effectiveConfig?.posterUrl || null;
+  const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
   const activeScreenName = activeScreen.name || "Screen 1";
 
   // Dynamic layout & tier prices specifically for active screen
-  const screenLayout = activeScreen.layout || effectiveConfig?.layout || layout;
-  const screenTierPrices = activeScreen.tierPrices || screenLayout?.tierPrices || effectiveConfig?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
-  const isCategoryPricingEnabled = activeScreen.enableCategoryPricing !== false && effectiveConfig?.enableCategoryPricing !== false;
+  const screenLayout = activeScreen.layout || (currentScreenId === "screen-1" ? config?.layout : null) || layout;
+  const screenTierPrices = activeScreen.tierPrices || screenLayout?.tierPrices || config?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
+  const isCategoryPricingEnabled = activeScreen.enableCategoryPricing !== false && config?.enableCategoryPricing !== false;
 
   const getScreenSeatPrice = (seatId) => {
     if (!isCategoryPricingEnabled) {
@@ -637,7 +651,12 @@ export default function StudentPage() {
                       pricePerSeat={activeScreen.pricePerSeat || config?.pricePerSeat}
                       getSeatPrice={getScreenSeatPrice}
                       getSeatTier={getScreenSeatTier}
-                      config={config}
+                      config={{
+                        ...config,
+                        upiId: activeScreen.upiId || config?.upiId,
+                        payeeName: activeScreen.payeeName || config?.payeeName,
+                        adminPhone: activeScreen.adminPhone || config?.adminPhone,
+                      }}
                       existingBookings={bookings}
                       screenId={currentScreenId}
                       screenName={activeScreenName}

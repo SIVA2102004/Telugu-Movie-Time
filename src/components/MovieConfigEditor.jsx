@@ -210,6 +210,17 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
     // Cloud firestore save
     try {
       await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+
+      const activeTheaterId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId");
+      if (activeTheaterId) {
+        await setDoc(doc(db, "theaters", activeTheaterId), {
+          screens: updatedScreens,
+          upiId: form.upiId,
+          payeeName: form.payeeName,
+          adminPhone: form.adminPhone,
+        }, { merge: true });
+      }
+
       toast.success(`Saved! Data for ${screens.find((s) => s.id === currentActiveId)?.name || "Screen"} updated live! 🚀`);
     } catch (err) {
       toast.success("Saved to local workspace cache! ✅");
