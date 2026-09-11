@@ -3,6 +3,10 @@ import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+import { seedFirestoreIfEmpty } from "./utils/autoSeed.js";
+
+// Auto-seed Cloud Firestore if database was wiped
+seedFirestoreIfEmpty();
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
