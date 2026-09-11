@@ -301,3 +301,68 @@ export function useMovieConfig() {
 
   return { config, layout, loading, getSeatPrice, getSeatTier };
 }
+
+/**
+ * Universal system data wipe: deletes all accounts, blueprints, seat layouts, and bookings
+ * for a fresh start.
+ */
+export async function resetAllSystemData() {
+  localStorage.clear();
+  sessionStorage.clear();
+
+  try {
+    const { getDocs, collection, deleteDoc, doc, setDoc } = await import("firebase/firestore");
+    const { ref, set } = await import("firebase/database");
+    const { db, rtdb } = await import("../firebase");
+
+    const collectionsToClear = ["bookings", "theaters", "users", "coAdmins", "activeLocks"];
+    for (const colName of collectionsToClear) {
+      try {
+        const snap = await getDocs(collection(db, colName));
+        for (const d of snap.docs) {
+          await deleteDoc(d.ref);
+        }
+      } catch (e) {}
+    }
+
+    // Reset movieConfig/current to fresh clean state
+    const freshScreens = DEFAULT_SCREENS.map((s) => ({
+      ...s,
+      blueprintImageUrl: null,
+      posterUrl: null,
+    }));
+
+    const freshConfig = {
+      activeScreenId: "screen-1",
+      screens: freshScreens,
+      movieName: "NEW SHOW",
+      date: "2026-09-26",
+      theater: "My Cinema Hall",
+      showTime: "6:00 PM",
+      pricePerSeat: 200,
+      enableCategoryPricing: true,
+      posterUrl: null,
+      tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+      blockedSeats: [],
+      layout: BLUEPRINT_LAYOUT,
+      blueprintImageUrl: null,
+      upiId: "",
+      payeeName: "",
+      adminPhone: "",
+      coAdminCode: "COADMIN2026",
+      adminPassword: "admin123",
+    };
+
+    await setDoc(doc(db, "movieConfig", "current"), freshConfig);
+
+    for (let i = 1; i <= 4; i++) {
+      try {
+        await set(ref(rtdb, `seats_screen-${i}`), null);
+      } catch (e) {}
+    }
+  } catch (err) {
+    console.warn("Wipe notice:", err);
+  }
+
+  window.location.reload();
+}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag } from "lucide-react";
-import { DEFAULT_SCREENS } from "../hooks/useMovieConfig";
+import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag, Trash2 } from "lucide-react";
+import { DEFAULT_SCREENS, resetAllSystemData } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
@@ -562,9 +562,32 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout }) {
             onChange={handleChange}
           />
         </div>
+
+        {/* ── DANGER ZONE: FULL SYSTEM DATA WIPE ── */}
+        <div className="form-field form-field--full" style={{ borderTop: "2px dashed var(--red)", paddingTop: 16, marginTop: 16, background: "rgba(255, 23, 68, 0.05)", borderRadius: 10, padding: 16 }}>
+          <h3 style={{ fontSize: "1rem", color: "var(--red)", display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+            <Trash2 size={18} /> Danger Zone: Full System Reset
+          </h3>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", margin: "6px 0 12px" }}>
+            Delete all registered accounts, theaters, seating order blueprints, payment details, and booking records to start completely fresh.
+          </p>
+          <button
+            type="button"
+            className="btn btn-red"
+            style={{ padding: "8px 16px", fontSize: "0.82rem", fontWeight: 800, gap: 6 }}
+            onClick={async () => {
+              if (window.confirm("⚠️ DANGER: Are you sure you want to delete ALL accounts, theaters, seating blueprints, payment details, and bookings?\n\nThis will clear everything so you can freshly register accounts and payment details.")) {
+                toast.loading("Wiping all system data, accounts, and blueprints...", { duration: 3000 });
+                await resetAllSystemData();
+              }
+            }}
+          >
+            <Trash2 size={15} /> 🧹 Wipe All Accounts & Blueprints (Fresh Start)
+          </button>
+        </div>
       </div>
 
-      <button className="btn btn-gold" style={{ alignSelf: "flex-start", marginTop: 8 }} disabled={saving}>
+      <button className="btn btn-gold" style={{ alignSelf: "flex-start", marginTop: 16 }} disabled={saving}>
         {saving ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Saving…</> : <><Save size={15} /> Save All Settings</>}
       </button>
     </form>

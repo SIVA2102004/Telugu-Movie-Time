@@ -2,7 +2,8 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2, Building2, UserPlus, LogIn } from "lucide-react";
+import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2, Building2, UserPlus, LogIn, Trash2 } from "lucide-react";
+import { resetAllSystemData } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./AdminLogin.css";
 
@@ -794,11 +795,25 @@ export default function AdminLogin({ onLogin, config }) {
           </form>
         )}
 
-        {/* Back to student page link */}
-        <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+        {/* Back to student page link & Wipe Data Fresh Start */}
+        <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <a href="/" style={{ color: "var(--text-muted)", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>
             <ArrowLeft size={14} /> Back to Movie Booking
           </a>
+
+          <button
+            type="button"
+            onClick={async () => {
+              if (window.confirm("⚠️ DANGER: Are you sure you want to delete ALL registered accounts, theaters, seating blueprints, payment details, and bookings?\n\nThis will reset the application completely so you can freshly register accounts and payment details.")) {
+                toast.loading("Wiping all system data, accounts, and blueprints...", { duration: 3000 });
+                await resetAllSystemData();
+              }
+            }}
+            style={{ background: "none", border: "none", color: "var(--red)", fontSize: "0.76rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, padding: 0 }}
+            title="Delete all accounts, blueprints, and payment info for a fresh start"
+          >
+            <Trash2 size={13} /> 🧹 Wipe Data & Start Fresh
+          </button>
         </div>
       </div>
 
