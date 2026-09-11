@@ -34,17 +34,40 @@ export function AuthProvider({ children }) {
             const profile = { userId: user.uid, ...userDoc.data() };
             setUserProfile(profile);
             sessionStorage.setItem("tmt_user_profile", JSON.stringify(profile));
+            if (profile.theaterId) {
+              sessionStorage.setItem("adminTheaterId", profile.theaterId);
+            }
           } else {
-            // Fallback default profile if doc not created yet
+            // Fresh clean slate initialization for wiped/existing accounts
+            const freshTheaterId = `th_${user.uid.slice(0, 8)}_${Date.now().toString(36).slice(-4)}`;
+            const freshName = user.displayName || user.email?.split("@")[0] || "Theater Owner";
+
             const defaultProfile = {
               userId: user.uid,
               email: user.email,
-              name: user.displayName || user.email?.split("@")[0] || "User",
+              name: freshName,
               role: "THEATER_OWNER",
-              theaterId: `th_${user.uid.slice(0, 8)}`,
+              theaterId: freshTheaterId,
+              createdAt: new Date().toISOString(),
             };
+
+            const freshConfig = buildFreshTheaterConfig(freshTheaterId, freshName, "Hyderabad", user.uid);
+
+            await setDoc(doc(db, "users", user.uid), defaultProfile, { merge: true });
+            await setDoc(doc(db, "theaters", freshTheaterId), { ...freshConfig, name: freshName }, { merge: true });
+            await setDoc(doc(db, "movieConfig", freshTheaterId), freshConfig, { merge: true });
+
+            try {
+              localStorage.setItem(`telugu_talkies_movie_config_${freshTheaterId}`, JSON.stringify(freshConfig));
+              localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(freshConfig));
+            } catch (e) {}
+
             setUserProfile(defaultProfile);
             sessionStorage.setItem("tmt_user_profile", JSON.stringify(defaultProfile));
+            sessionStorage.setItem("adminAuth", "true");
+            sessionStorage.setItem("adminRole", "owner");
+            sessionStorage.setItem("adminName", freshName);
+            sessionStorage.setItem("adminTheaterId", freshTheaterId);
           }
         } catch (err) {
           console.warn("User profile fetch notice:", err);
@@ -76,11 +99,25 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  // 1. REGISTER NEW THEATER OWNER
+  // 1. REGISTER NEW THEATER OWNER (Handles new & existing Firebase Auth emails)
   const registerTheaterOwner = async ({ name, email, password, theaterName, location }) => {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    const uid = user.uid;
+    let user = null;
+    let uid = null;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      user = userCredential.user;
+      uid = user.uid;
+    } catch (authErr) {
+      if (authErr.code === "auth/email-already-in-use") {
+        // Sign in with existing credentials and re-initialize fresh theater
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        user = userCredential.user;
+        uid = user.uid;
+      } else {
+        throw authErr;
+      }
+    }
 
     const theaterId = `th_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
@@ -134,7 +171,7 @@ export function AuthProvider({ children }) {
     sessionStorage.setItem("adminName", name);
     sessionStorage.setItem("adminTheaterId", theaterId);
 
-    return { user, profile: newProfile, theater: newTheater };
+    return { user, profile: newProfile };
   };
 
   // 2. LOGIN USER (FIREBASE AUTH)
@@ -147,13 +184,28 @@ export function AuthProvider({ children }) {
     if (userDoc.exists()) {
       profile = { userId: user.uid, ...userDoc.data() };
     } else {
+      const freshTheaterId = `th_${user.uid.slice(0, 8)}_${Date.now().toString(36).slice(-4)}`;
+      const freshName = user.displayName || user.email?.split("@")[0] || "Theater Owner";
+
       profile = {
         userId: user.uid,
         email: user.email,
-        name: user.displayName || user.email?.split("@")[0] || "Theater Owner",
+        name: freshName,
         role: "THEATER_OWNER",
-        theaterId: `th_${user.uid.slice(0, 8)}`,
+        theaterId: freshTheaterId,
+        createdAt: new Date().toISOString(),
       };
+
+      const freshConfig = buildFreshTheaterConfig(freshTheaterId, freshName, "Hyderabad", user.uid);
+
+      await setDoc(doc(db, "users", user.uid), profile, { merge: true });
+      await setDoc(doc(db, "theaters", freshTheaterId), { ...freshConfig, name: freshName }, { merge: true });
+      await setDoc(doc(db, "movieConfig", freshTheaterId), freshConfig, { merge: true });
+
+      try {
+        localStorage.setItem(`telugu_talkies_movie_config_${freshTheaterId}`, JSON.stringify(freshConfig));
+        localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(freshConfig));
+      } catch (e) {}
     }
 
     setUserProfile(profile);
