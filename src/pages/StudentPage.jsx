@@ -370,30 +370,6 @@ export default function StudentPage() {
       ) : (
         /* ── Standard Booking & Movie Overview Page ── */
         <main className="student-page">
-          {/* Multi-Tenant Theater Selector Bar (Hidden when locked to specific theater URL) */}
-          {theaters.length > 1 && !theaterFromUrl && (
-            <div style={{ background: "rgba(255, 215, 0, 0.08)", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--gold)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", margin: "0 auto 16px", maxWidth: 700 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gold)", fontWeight: 800, fontSize: "0.85rem" }}>
-                <Building2 size={16} /> Select Cinema Hall / Theater:
-              </div>
-              <select
-                className="input"
-                style={{ width: "auto", minWidth: 200, padding: "6px 12px", fontSize: "0.85rem", fontWeight: 700, borderColor: "var(--gold)" }}
-                value={effectiveTheaterId}
-                onChange={(e) => {
-                  setSelectedTheaterId(e.target.value);
-                  setSelectedScreenId(null);
-                  setSelectedSeats([]);
-                }}
-              >
-                {theaters.map((th) => (
-                  <option key={th.id} value={th.id}>
-                    {th.name} ({th.location || "Hyderabad"})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           {/* Multiple Published Screens Switcher */}
           {effectiveScreenList.length > 1 && (
