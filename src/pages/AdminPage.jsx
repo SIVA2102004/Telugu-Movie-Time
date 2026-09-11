@@ -93,22 +93,17 @@ export default function AdminPage() {
   const activeScreenId = config?.activeScreenId || "screen-1";
   const { seatMap = {} } = useSeats(activeScreenId, activeTheaterId);
 
-  // Tab definitions based on role
-  const allowedTabs = isMasterAdmin || isTheaterOwner
-    ? [
-        { id: "overview",  label: "Overview",         icon: LayoutDashboard },
-        { id: "bookings",  label: "Bookings",          icon: List },
-        { id: "seatmap",   label: "Seat Map",          icon: Map },
-        { id: "coadmins",  label: "Co-Admins",         icon: Users },
-        { id: "layout",    label: "Layout Editor",     icon: LayoutTemplate },
-        { id: "config",    label: "Movie Config",      icon: Settings },
-      ]
-    : [
-        { id: "bookings",  label: "Booking & Confirm", icon: List },
-        { id: "seatmap",   label: "Seat Map",          icon: Map },
-      ];
+  // Tab definitions available to all authenticated admins & theater owners
+  const allowedTabs = [
+    { id: "overview",  label: "Overview",         icon: LayoutDashboard },
+    { id: "bookings",  label: "Bookings",          icon: List },
+    { id: "seatmap",   label: "Seat Map",          icon: Map },
+    { id: "coadmins",  label: "Co-Admins",         icon: Users },
+    { id: "layout",    label: "Layout Editor",     icon: LayoutTemplate },
+    { id: "config",    label: "Movie Config",      icon: Settings },
+  ];
 
-  const [activeTab, setActiveTab] = useState(isTheaterOwner || isMasterAdmin ? "overview" : "bookings");
+  const [activeTab, setActiveTab] = useState("overview");
   const [layoutScreenId, setLayoutScreenId] = useState("screen-1");
 
   const handleOpenLayoutForScreen = (screenId) => {
@@ -361,7 +356,7 @@ export default function AdminPage() {
           </div>
 
           <div className="admin-content">
-            {isMasterAdmin && activeTab === "overview" && (
+            {activeTab === "overview" && (
               <AdminStats bookings={bookings} config={config} layout={layout} onInstallApp={installApp} isInstalled={isInstalled} />
             )}
             {activeTab === "bookings" && (
@@ -381,17 +376,17 @@ export default function AdminPage() {
                   bookings={bookings}
                   config={config}
                   layout={layout}
-                  readOnly={!isMasterAdmin}
+                  readOnly={false}
                 />
               </div>
             )}
-            {isMasterAdmin && activeTab === "coadmins" && (
+            {activeTab === "coadmins" && (
               <CoAdminManager config={config} bookings={bookings} />
             )}
-            {isMasterAdmin && activeTab === "layout" && (
+            {activeTab === "layout" && (
               <TheaterLayoutEditor config={config} selectedScreenId={layoutScreenId} />
             )}
-            {isMasterAdmin && activeTab === "config" && (
+            {activeTab === "config" && (
               <MovieConfigEditor config={config} layout={layout} onOpenLayout={handleOpenLayoutForScreen} />
             )}
           </div>
