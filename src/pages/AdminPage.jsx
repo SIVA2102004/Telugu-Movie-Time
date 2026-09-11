@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useTheaters } from "../hooks/useTheaters";
 import { useBookings } from "../hooks/useBookings";
 import { useSeats } from "../hooks/useSeats";
 import { useMovieConfig } from "../hooks/useMovieConfig";
@@ -10,19 +12,46 @@ import MovieConfigEditor from "../components/MovieConfigEditor";
 import TheaterLayoutEditor from "../components/TheaterLayoutEditor";
 import CoAdminManager from "../components/CoAdminManager";
 import { Toaster, toast } from "react-hot-toast";
-import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw, Users, Share2 } from "lucide-react";
+import { Film, LayoutDashboard, List, Map, Settings, LogOut, LayoutTemplate, Smartphone, Download, Check, ShieldCheck, UserCheck, RefreshCw, Users, Share2, Plus, Building2 } from "lucide-react";
 import "../styles/globals.css";
 import "./AdminPage.css";
 
 export default function AdminPage() {
+  const { userProfile, role, ownerId, theaterId, logoutUser } = useAuth();
   const [authed, setAuthed] = useState(
-    sessionStorage.getItem("adminAuth") === "true"
+    sessionStorage.getItem("adminAuth") === "true" || !!userProfile
   );
-  const adminRole = sessionStorage.getItem("adminRole") || "master";
-  const isMasterAdmin = adminRole === "master";
+
+  const isMasterAdmin = role === "SUPER_ADMIN" || sessionStorage.getItem("adminRole") === "master";
+  const isTheaterOwner = role === "THEATER_OWNER" || sessionStorage.getItem("adminRole") === "owner" || isMasterAdmin;
+  const adminRole = isMasterAdmin ? "master" : isTheaterOwner ? "owner" : "co-admin";
+
+  // Multi-tenant theaters & halls hook
+  const { theaters, currentTheater, addHall } = useTheaters(ownerId, theaterId);
+
+  // Modal state for adding a new Cinema Hall
+  const [showAddHallModal, setShowAddHallModal] = useState(false);
+  const [newHallForm, setNewHallForm] = useState({
+    hallName: "",
+    movieName: "",
+    showTime: "6:00 PM",
+    pricePerSeat: 200,
+    layoutType: "standard",
+  });
+
+  // Filter bookings strictly by active theater for owner isolation
+  const activeTheaterId = currentTheater?.id || theaterId;
+  const { bookings = [], setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings(
+    isMasterAdmin ? null : activeTheaterId,
+    isMasterAdmin ? null : ownerId
+  );
+
+  const { config = {}, layout = {} } = useMovieConfig();
+  const activeScreenId = config?.activeScreenId || "screen-1";
+  const { seatMap = {} } = useSeats(activeScreenId, activeTheaterId);
 
   // Tab definitions based on role
-  const allowedTabs = isMasterAdmin
+  const allowedTabs = isMasterAdmin || isTheaterOwner
     ? [
         { id: "overview",  label: "Overview",         icon: LayoutDashboard },
         { id: "bookings",  label: "Bookings",          icon: List },
@@ -36,7 +65,7 @@ export default function AdminPage() {
         { id: "seatmap",   label: "Seat Map",          icon: Map },
       ];
 
-  const [activeTab, setActiveTab] = useState(isMasterAdmin ? "overview" : "bookings");
+  const [activeTab, setActiveTab] = useState(isTheaterOwner || isMasterAdmin ? "overview" : "bookings");
   const [layoutScreenId, setLayoutScreenId] = useState("screen-1");
 
   const handleOpenLayoutForScreen = (screenId) => {
@@ -44,64 +73,36 @@ export default function AdminPage() {
     setActiveTab("layout");
   };
 
-  // Keep activeTab in sync with allowed tabs if role changes
-  useEffect(() => {
-    if (!isMasterAdmin && (activeTab === "overview" || activeTab === "layout" || activeTab === "config")) {
-      setActiveTab("bookings");
+  const handleAddHallSubmit = async (e) => {
+    e.preventDefault();
+    if (!newHallForm.hallName.trim()) {
+      toast.error("Please enter a Hall Name.");
+      return;
     }
-  }, [isMasterAdmin, activeTab]);
-
-  // PWA Install prompt listener
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstalled, setIsInstalled] = useState(
-    window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true
-  );
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-      toast.success("TMT Admin App installed successfully! 📱");
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", handleAppInstalled);
-    };
-  }, []);
-
-  const installApp = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") {
-        setIsInstalled(true);
-        setDeferredPrompt(null);
-      }
-    } else {
-      toast("To install on iPhone/Safari: Tap 'Share' → 'Add to Home Screen'. On Android/Chrome: Tap '⋮' → 'Install App'.", {
-        duration: 6000,
-        icon: "📱",
+    try {
+      await addHall(activeTheaterId, {
+        hallName: newHallForm.hallName.trim(),
+        movieName: newHallForm.movieName.trim() || "NEW BLOCKBUSTER",
+        showTime: newHallForm.showTime.trim() || "6:00 PM",
+        pricePerSeat: newHallForm.pricePerSeat || 200,
+        layoutType: newHallForm.layoutType,
       });
+      toast.success(`Cinema Hall "${newHallForm.hallName}" created successfully! 🎬`);
+      setShowAddHallModal(false);
+      setNewHallForm({
+        hallName: "",
+        movieName: "",
+        showTime: "6:00 PM",
+        pricePerSeat: 200,
+        layoutType: "standard",
+      });
+    } catch (err) {
+      toast.error("Failed to create hall: " + err.message);
     }
   };
 
-  const { bookings = [], setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings();
-  const { seatMap = {} } = useSeats();
-  const { config = {}, layout = {}, loading: cLoading } = useMovieConfig();
-
-  const logout = () => {
-    sessionStorage.removeItem("adminAuth");
-    sessionStorage.removeItem("adminRole");
-    sessionStorage.removeItem("adminName");
+  const handleLogout = async () => {
+    await logoutUser();
     setAuthed(false);
   };
 
@@ -158,25 +159,10 @@ export default function AdminPage() {
                 </button>
               );
             })}
-            <button className="sidebar-item sidebar-item--logout" onClick={logout}>
+            <button className="sidebar-item sidebar-item--logout" onClick={handleLogout}>
               <LogOut size={17} /> <span>Logout</span>
             </button>
           </nav>
-
-          {/* Install App Button in Sidebar (Desktop Only) */}
-          {!isInstalled && (
-            <div className="admin-sidebar__install-desktop">
-              <button
-                type="button"
-                onClick={installApp}
-                className="btn btn-gold"
-                style={{ width: "100%", padding: "8px 10px", fontSize: "0.78rem", justifyContent: "center", gap: 6 }}
-                title="Install TMT Admin as an App on Phone/Desktop"
-              >
-                <Smartphone size={15} /> Install Admin App
-              </button>
-            </div>
-          )}
         </aside>
 
         {/* Main */}
@@ -200,26 +186,26 @@ export default function AdminPage() {
               <h1 className="admin-topbar__title" style={{ margin: 0 }}>
                 {allowedTabs.find((t) => t.id === activeTab)?.label}
               </h1>
-              {config?.screens && (
-                <div
-                  className="admin-live-screen-pill"
-                  style={{
-                    background: "rgba(0, 200, 81, 0.15)",
-                    border: "1px solid var(--green)",
-                    color: "var(--green)",
-                    fontSize: "0.76rem",
-                    fontWeight: 800,
-                    padding: "3px 10px",
-                    borderRadius: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                >
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
-                  Live: <strong>{config.screens.find((s) => s.id === config.activeScreenId)?.name || "Screen 1"}</strong> ({config.movieName || "Movie"})
-                </div>
-              )}
+
+              {/* Theater Badge & Active Screen Pill */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                {currentTheater && (
+                  <span style={{ fontSize: "0.76rem", background: "rgba(255,215,0,0.12)", border: "1px solid var(--gold)", color: "var(--gold)", fontWeight: 800, padding: "3px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Building2 size={13} /> {currentTheater.name}
+                  </span>
+                )}
+                {isTheaterOwner && (
+                  <button
+                    type="button"
+                    className="btn btn-gold"
+                    style={{ padding: "3px 10px", fontSize: "0.75rem", fontWeight: 800, gap: 4 }}
+                    onClick={() => setShowAddHallModal(true)}
+                    title="Add a new Cinema Hall under your theater"
+                  >
+                    <Plus size={13} /> Add Hall
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto", flexWrap: "wrap" }}>
@@ -368,6 +354,97 @@ export default function AdminPage() {
           </div>
         </main>
       </div>
+
+      {/* Add Hall Modal Overlay */}
+      {showAddHallModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div className="card" style={{ maxWidth: 480, width: "100%", background: "#1A1A2E", border: "1px solid var(--gold)", padding: 24, borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: "1.2rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 8 }}>
+              <Building2 size={20} /> Add Cinema Hall / Screen
+            </h2>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0 0 16px" }}>
+              Add a new cinema hall to <strong>{currentTheater?.name || "your theater"}</strong>.
+            </p>
+
+            <form onSubmit={handleAddHallSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label className="label">Hall / Screen Name *</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={newHallForm.hallName}
+                  onChange={(e) => setNewHallForm({ ...newHallForm, hallName: e.target.value })}
+                  placeholder="e.g. Screen 3 (Audi 3) or IMAX Hall"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Movie Name</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={newHallForm.movieName}
+                  onChange={(e) => setNewHallForm({ ...newHallForm, movieName: e.target.value })}
+                  placeholder="e.g. TELUGU MOVIE TIME"
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <label className="label">Show Time</label>
+                  <input
+                    className="input"
+                    type="text"
+                    value={newHallForm.showTime}
+                    onChange={(e) => setNewHallForm({ ...newHallForm, showTime: e.target.value })}
+                    placeholder="e.g. 6:00 PM"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="label">Base Seat Price (₹)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    value={newHallForm.pricePerSeat}
+                    onChange={(e) => setNewHallForm({ ...newHallForm, pricePerSeat: e.target.value })}
+                    placeholder="200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Initial Layout Pattern</label>
+                <select
+                  className="input"
+                  value={newHallForm.layoutType}
+                  onChange={(e) => setNewHallForm({ ...newHallForm, layoutType: e.target.value })}
+                >
+                  <option value="standard">Classic Hall (15 Rows · 274 Seats)</option>
+                  <option value="amphitheater">Amphitheater / Curved Fan (8 Rows · 152 Seats)</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 12, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setShowAddHallModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-gold"
+                  style={{ fontWeight: 800 }}
+                >
+                  Create Cinema Hall 🚀
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

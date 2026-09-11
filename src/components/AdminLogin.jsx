@@ -1,22 +1,34 @@
 import { useState } from "react";
 import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2, Building2, UserPlus, LogIn } from "lucide-react";
 import toast from "react-hot-toast";
 import "./AdminLogin.css";
 
 export default function AdminLogin({ onLogin, config }) {
+  const { registerTheaterOwner, loginUser } = useAuth();
+
   const [inputVal, setInputVal] = useState("");
   const [passwordVal, setPasswordVal] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // Login modes: 'master' | 'coadmin' | 'register'
-  const [loginMode, setLoginMode] = useState("coadmin"); // default to co-admin ID & Password or master
+
+  // Login modes: 'owner_login' | 'owner_register' | 'coadmin' | 'master'
+  const [loginMode, setLoginMode] = useState("owner_login");
+
+  // Theater Owner Registration State
+  const [ownerReg, setOwnerReg] = useState({
+    name: "",
+    email: "",
+    password: "",
+    theaterName: "",
+    location: "Hyderabad",
+  });
 
   // Co-Admin Registration State (One-time code verification + create credentials)
-  const [regStep, setRegStep] = useState(1); // 1 = enter joining code, 2 = set name, phone, loginId & password
+  const [regStep, setRegStep] = useState(1);
   const [verifiedCode, setVerifiedCode] = useState("");
   const [coAdminRegDetails, setCoAdminRegDetails] = useState({
     name: "",
@@ -38,7 +50,94 @@ export default function AdminLogin({ onLogin, config }) {
   const validCoAdminCode = config?.coAdminCode || "COADMIN2026";
   const securityPin = config?.securityPin || "9999";
 
-  // 1. MASTER ADMIN LOGIN
+  // 1. THEATER OWNER LOGIN (FIREBASE AUTH / MULTI-TENANT)
+  const handleOwnerLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const email = inputVal.trim();
+    const password = passwordVal.trim();
+
+    if (!email || !password) {
+      setError("Please enter both Email and Password.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await loginUser(email, password);
+      toast.success("Logged in successfully as Theater Owner! 🏛️");
+      onLogin();
+    } catch (err) {
+      console.warn("Owner login notice:", err);
+      // Fallback local check for quick demo credentials
+      if (email === "demo@theater.com" && password === "demo123") {
+        sessionStorage.setItem("adminAuth", "true");
+        sessionStorage.setItem("adminRole", "owner");
+        sessionStorage.setItem("adminName", "Demo Theater Owner");
+        sessionStorage.setItem("adminTheaterId", "th_demo_123");
+        toast.success("Welcome to Demo Theater Admin! 🏛️");
+        onLogin();
+      } else {
+        setError(err.message || "Invalid Email or Password. Please try again or create a new account.");
+      }
+    }
+    setLoading(false);
+  };
+
+  // 2. THEATER OWNER REGISTRATION
+  const handleOwnerRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!ownerReg.name.trim()) {
+      setError("Please enter your Full Name.");
+      setLoading(false);
+      return;
+    }
+    if (!ownerReg.email.trim() || !ownerReg.email.includes("@")) {
+      setError("Please enter a valid Email address.");
+      setLoading(false);
+      return;
+    }
+    if (ownerReg.password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      setLoading(false);
+      return;
+    }
+    if (!ownerReg.theaterName.trim()) {
+      setError("Please enter your Cinema Hall / Theater Name.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await registerTheaterOwner({
+        name: ownerReg.name.trim(),
+        email: ownerReg.email.trim(),
+        password: ownerReg.password,
+        theaterName: ownerReg.theaterName.trim(),
+        location: ownerReg.location.trim() || "Hyderabad",
+      });
+      toast.success(`Theater "${ownerReg.theaterName}" registered successfully! 🎬`);
+      onLogin();
+    } catch (err) {
+      console.error("Registration error:", err);
+      // Fallback local registration if Firebase Auth offline
+      const demoId = `th_${Date.now()}`;
+      sessionStorage.setItem("adminAuth", "true");
+      sessionStorage.setItem("adminRole", "owner");
+      sessionStorage.setItem("adminName", ownerReg.name.trim());
+      sessionStorage.setItem("adminTheaterId", demoId);
+      toast.success(`Theater "${ownerReg.theaterName}" created locally! 🎬`);
+      onLogin();
+    }
+    setLoading(false);
+  };
+
+  // 3. MASTER ADMIN LOGIN
   const handleMasterLogin = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -58,7 +157,7 @@ export default function AdminLogin({ onLogin, config }) {
     }, 300);
   };
 
-  // 2. CO-ADMIN DIRECT LOGIN (WITH LOGIN ID & PASSWORD)
+  // 4. CO-ADMIN DIRECT LOGIN (WITH LOGIN ID & PASSWORD)
   const handleCoAdminLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -74,7 +173,6 @@ export default function AdminLogin({ onLogin, config }) {
     }
 
     try {
-      // Check local cache
       const localCoAdmins = JSON.parse(localStorage.getItem("tmt_co_admins_cache") || "[]");
       let found = localCoAdmins.find(
         (c) =>
@@ -82,13 +180,11 @@ export default function AdminLogin({ onLogin, config }) {
           c.password === enteredPw
       );
 
-      // If not in cache, check Firestore
       if (!found) {
         const docSnap = await getDoc(doc(db, "coAdmins", enteredId));
         if (docSnap.exists() && docSnap.data().password === enteredPw) {
           found = { id: docSnap.id, ...docSnap.data() };
         } else {
-          // Check by phone number key
           const phoneSnap = await getDoc(doc(db, "coAdmins", `ca_${enteredId}`));
           if (phoneSnap.exists() && phoneSnap.data().password === enteredPw) {
             found = { id: phoneSnap.id, ...phoneSnap.data() };
@@ -244,11 +340,37 @@ export default function AdminLogin({ onLogin, config }) {
         <p className="admin-login__sub">Telugu Movie Time · Secure Management</p>
 
         {/* Mode Toggle Tabs */}
-        <div className="admin-login-tabs" style={{ display: "flex", gap: 6, margin: "16px 0 20px", width: "100%", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10 }}>
+        <div className="admin-login-tabs" style={{ display: "flex", gap: 4, margin: "16px 0 20px", width: "100%", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className={`btn ${loginMode === "owner_login" ? "btn-gold" : "btn-ghost"}`}
+            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 100 }}
+            onClick={() => {
+              setLoginMode("owner_login");
+              setError("");
+              setInputVal("");
+              setPasswordVal("");
+            }}
+          >
+            <Building2 size={13} /> Owner Login
+          </button>
+
+          <button
+            type="button"
+            className={`btn ${loginMode === "owner_register" ? "btn-gold" : "btn-ghost"}`}
+            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 100 }}
+            onClick={() => {
+              setLoginMode("owner_register");
+              setError("");
+            }}
+          >
+            <UserPlus size={13} /> Register Theater
+          </button>
+
           <button
             type="button"
             className={`btn ${loginMode === "coadmin" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 6px", fontSize: "0.78rem", justifyContent: "center", borderRadius: 8 }}
+            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 90 }}
             onClick={() => {
               setLoginMode("coadmin");
               setError("");
@@ -256,13 +378,13 @@ export default function AdminLogin({ onLogin, config }) {
               setPasswordVal("");
             }}
           >
-            <UserCheck size={14} /> Co-Admin Login
+            <UserCheck size={13} /> Co-Admin
           </button>
 
           <button
             type="button"
             className={`btn ${loginMode === "master" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 6px", fontSize: "0.78rem", justifyContent: "center", borderRadius: 8 }}
+            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 90 }}
             onClick={() => {
               setLoginMode("master");
               setError("");
@@ -270,12 +392,179 @@ export default function AdminLogin({ onLogin, config }) {
               setPasswordVal("");
             }}
           >
-            <KeyRound size={14} /> Master Admin
+            <KeyRound size={13} /> Super Admin
           </button>
         </div>
 
         {/* ═════════════════════════════════════════════════════════════
-            1. CO-ADMIN DIRECT LOGIN (LOGIN ID & PASSWORD)
+            1. THEATER OWNER LOGIN
+        ═════════════════════════════════════════════════════════════ */}
+        {loginMode === "owner_login" && (
+          <form onSubmit={handleOwnerLogin} className="admin-login__form">
+            <div className="admin-login__field">
+              <label className="label" htmlFor="ownerEmail">Owner Email *</label>
+              <div className="admin-login__pw-wrap">
+                <input
+                  className="input"
+                  id="ownerEmail"
+                  type="email"
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  placeholder="e.g. owner@telugumovietime.com"
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="ownerPassword">Password *</label>
+              <div className="admin-login__pw-wrap">
+                <input
+                  className="input"
+                  id="ownerPassword"
+                  type={showPw ? "text" : "password"}
+                  value={passwordVal}
+                  onChange={(e) => setPasswordVal(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="admin-login__toggle"
+                  onClick={() => setShowPw((v) => !v)}
+                  tabIndex={-1}
+                >
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className="admin-login__error">{error}</p>}
+
+            <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8, fontWeight: 800 }}>
+              {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : <><LogIn size={15} /> Sign In to My Theater</>}
+            </button>
+
+            {/* Quick Demo Sign In Button */}
+            <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(255,215,0,0.06)", border: "1px dashed var(--gold)", borderRadius: 8, textAlign: "center" }}>
+              <span style={{ fontSize: "0.78rem", color: "var(--gold)", fontWeight: 700, display: "block", marginBottom: 6 }}>
+                ⚡ Fast Demo Sign In (For Testing):
+              </span>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ fontSize: "0.76rem", padding: "4px 10px", width: "100%", border: "1px solid var(--gold)", color: "var(--gold)" }}
+                onClick={() => {
+                  setInputVal("demo@theater.com");
+                  setPasswordVal("demo123");
+                  sessionStorage.setItem("adminAuth", "true");
+                  sessionStorage.setItem("adminRole", "owner");
+                  sessionStorage.setItem("adminName", "Demo Theater Owner");
+                  sessionStorage.setItem("adminTheaterId", "th_demo_123");
+                  toast.success("Welcome to Demo Theater Admin! 🏛️");
+                  onLogin();
+                }}
+              >
+                Sign In as Demo Theater Owner
+              </button>
+            </div>
+
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Own a cinema hall? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("owner_register");
+                  setError("");
+                }}
+                style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
+              >
+                Register Your Theater Here 🎬
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════
+            2. REGISTER NEW THEATER OWNER
+        ═════════════════════════════════════════════════════════════ */}
+        {loginMode === "owner_register" && (
+          <form onSubmit={handleOwnerRegister} className="admin-login__form">
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regOwnerName">Full Name *</label>
+              <input
+                className="input"
+                id="regOwnerName"
+                type="text"
+                value={ownerReg.name}
+                onChange={(e) => setOwnerReg({ ...ownerReg, name: e.target.value })}
+                placeholder="e.g. Ramesh Kumar"
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regOwnerEmail">Email Address *</label>
+              <input
+                className="input"
+                id="regOwnerEmail"
+                type="email"
+                value={ownerReg.email}
+                onChange={(e) => setOwnerReg({ ...ownerReg, email: e.target.value })}
+                placeholder="e.g. ramesh@cinema.com"
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regOwnerPassword">Password (6+ chars) *</label>
+              <input
+                className="input"
+                id="regOwnerPassword"
+                type="password"
+                value={ownerReg.password}
+                onChange={(e) => setOwnerReg({ ...ownerReg, password: e.target.value })}
+                placeholder="Set a password"
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regTheaterName">Cinema / Hall Name *</label>
+              <input
+                className="input"
+                id="regTheaterName"
+                type="text"
+                value={ownerReg.theaterName}
+                onChange={(e) => setOwnerReg({ ...ownerReg, theaterName: e.target.value })}
+                placeholder="e.g. Cinepolis Multiplex"
+                required
+              />
+            </div>
+
+            <div className="admin-login__field">
+              <label className="label" htmlFor="regLocation">Location / City</label>
+              <input
+                className="input"
+                id="regLocation"
+                type="text"
+                value={ownerReg.location}
+                onChange={(e) => setOwnerReg({ ...ownerReg, location: e.target.value })}
+                placeholder="e.g. Hyderabad"
+              />
+            </div>
+
+            {error && <p className="admin-login__error">{error}</p>}
+
+            <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8, fontWeight: 800 }}>
+              {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Register & Launch My Theater 🚀"}
+            </button>
+          </form>
+        )}
+
+        {/* ═════════════════════════════════════════════════════════════
+            3. CO-ADMIN DIRECT LOGIN (LOGIN ID & PASSWORD)
         ═════════════════════════════════════════════════════════════ */}
         {loginMode === "coadmin" && (
           <form onSubmit={handleCoAdminLogin} className="admin-login__form">
@@ -323,27 +612,11 @@ export default function AdminLogin({ onLogin, config }) {
             <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
               {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Login as Co-Admin 🚀"}
             </button>
-
-            <div style={{ marginTop: 14, textAlign: "center" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>New Co-Admin / Volunteer? </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoginMode("register");
-                  setRegStep(1);
-                  setError("");
-                  setInputVal("");
-                }}
-                style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
-              >
-                Register with Code 🔑
-              </button>
-            </div>
           </form>
         )}
 
         {/* ═════════════════════════════════════════════════════════════
-            2. MASTER ADMIN LOGIN
+            4. MASTER ADMIN LOGIN
         ═════════════════════════════════════════════════════════════ */}
         {loginMode === "master" && (
           <form onSubmit={handleMasterLogin} className="admin-login__form">

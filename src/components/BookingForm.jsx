@@ -132,6 +132,8 @@ export default function BookingForm({
     const newBooking = {
       id: bookingId,
       txnRef: txnRef,
+      theaterId: config?.id || config?.theaterId || "default-theater",
+      ownerId: config?.ownerId || null,
       screenId: screenId,
       screenName: screenName,
       name: primaryContact.name.trim(),

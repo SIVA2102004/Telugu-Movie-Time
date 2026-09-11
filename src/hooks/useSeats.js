@@ -7,10 +7,12 @@ import { ref, onValue } from "firebase/database";
  * High-performance hook for real-time seat tracking.
  * Reacts to Firestore bookings, RTDB seats node, and local storage cache.
  */
-export function useSeats(screenId = "screen-1") {
+export function useSeats(screenId = "screen-1", theaterId = null) {
+  const cacheKey = theaterId ? `telugu_talkies_seats_cache_${theaterId}_${screenId}` : `telugu_talkies_seats_cache_${screenId}`;
+
   const [seatMap, setSeatMap] = useState(() => {
     try {
-      const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`);
+      const cached = localStorage.getItem(cacheKey);
       return cached ? JSON.parse(cached) : {};
     } catch (e) {
       return {};
@@ -20,9 +22,9 @@ export function useSeats(screenId = "screen-1") {
   const throttleRef = useRef(null);
 
   useEffect(() => {
-    // 0. Immediately re-initialize state when screenId switches
+    // 0. Immediately re-initialize state when screenId or theaterId switches
     try {
-      const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`);
+      const cached = localStorage.getItem(cacheKey);
       setSeatMap(cached ? JSON.parse(cached) : {});
     } catch (e) {
       setSeatMap({});
@@ -31,7 +33,7 @@ export function useSeats(screenId = "screen-1") {
     // 1. Cross-tab and local storage listener for instant 0ms seat map refresh
     const handleStorage = () => {
       try {
-        const cached = localStorage.getItem(`telugu_talkies_seats_cache_${screenId}`);
+        const cached = localStorage.getItem(cacheKey);
         if (cached) {
           setSeatMap(JSON.parse(cached));
         }
@@ -53,14 +55,15 @@ export function useSeats(screenId = "screen-1") {
       };
       setSeatMap(merged);
       try {
-        localStorage.setItem(`telugu_talkies_seats_cache_${screenId}`, JSON.stringify(merged));
+        localStorage.setItem(cacheKey, JSON.stringify(merged));
       } catch (e) {}
     };
 
-    // 2. Realtime Database listener per screen
+    // 2. Realtime Database listener per theater + screen
     let unsubRTDB = () => {};
     try {
-      const seatsRef = ref(rtdb, `seats_${screenId}`);
+      const rtdbNode = theaterId ? `seats_${theaterId}_${screenId}` : `seats_${screenId}`;
+      const seatsRef = ref(rtdb, rtdbNode);
       unsubRTDB = onValue(
         seatsRef,
         (snapshot) => {
@@ -79,7 +82,7 @@ export function useSeats(screenId = "screen-1") {
       console.warn("RTDB offline mode:", err);
     }
 
-    // 3. Realtime activeLocks listener from Firestore per screen
+    // 3. Realtime activeLocks listener from Firestore per theater + screen
     let unsubActiveLocks = () => {};
     try {
       unsubActiveLocks = onSnapshot(
@@ -89,10 +92,13 @@ export function useSeats(screenId = "screen-1") {
           const now = Date.now();
           snapshot.docs.forEach((d) => {
             const data = d.data();
-            // Discard stale locks older than 5 minutes and match screen
+            // Discard stale locks older than 5 minutes and match screen/theater
             if (data && (!data.timestamp || now - data.timestamp < 5 * 60 * 1000)) {
-              if (data.screenId === screenId) {
-                const cleanSeatId = d.id.startsWith(`${screenId}_`) ? d.id.replace(`${screenId}_`, "") : d.id;
+              const matchesTheater = !theaterId || !data.theaterId || data.theaterId === theaterId;
+              if (data.screenId === screenId && matchesTheater) {
+                const cleanSeatId = d.id.startsWith(`${screenId}_`)
+                  ? d.id.replace(`${screenId}_`, "")
+                  : d.id;
                 locks[cleanSeatId] = "locked";
               }
             }
@@ -106,7 +112,7 @@ export function useSeats(screenId = "screen-1") {
       );
     } catch (e) {}
 
-    // 4. Firestore bookings listener for seat map filtered strictly by screenId
+    // 4. Firestore bookings listener for seat map filtered strictly by theaterId & screenId
     let unsubFirestore = () => {};
     try {
       unsubFirestore = onSnapshot(
@@ -116,7 +122,8 @@ export function useSeats(screenId = "screen-1") {
           snapshot.docs.forEach((d) => {
             const b = d.data();
             const bScreen = b.screenId || "screen-1";
-            if (b && b.status !== "cancelled" && Array.isArray(b.seats) && bScreen === screenId) {
+            const matchesTheater = !theaterId || !b.theaterId || b.theaterId === theaterId;
+            if (b && b.status !== "cancelled" && Array.isArray(b.seats) && bScreen === screenId && matchesTheater) {
               b.seats.forEach((seatId) => {
                 map[seatId] = b.status === "confirmed" ? "booked" : "pending";
               });
@@ -138,7 +145,7 @@ export function useSeats(screenId = "screen-1") {
       unsubActiveLocks();
       unsubFirestore();
     };
-  }, [screenId]);
+  }, [screenId, theaterId, cacheKey]);
 
   return { seatMap, setSeatMap };
 }

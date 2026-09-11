@@ -1,14 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { rtdb } from "../firebase";
+import { rtdb, db } from "../firebase";
 import { ref, set } from "firebase/database";
 import { useSeats } from "../hooks/useSeats";
 import { useBookings } from "../hooks/useBookings";
 import { useMovieConfig } from "../hooks/useMovieConfig";
+import { useTheaters } from "../hooks/useTheaters";
 import SeatMap from "../components/SeatMap";
 import BookingForm from "../components/BookingForm";
 import MovieHeader from "../components/MovieHeader";
 import VintageTicketModal from "../components/VintageTicketModal";
-import { CheckCircle, Share2, Timer, Ticket, MessageCircle, ArrowLeft, Download } from "lucide-react";
+import { CheckCircle, Share2, Timer, Ticket, MessageCircle, ArrowLeft, Download, Building2 } from "lucide-react";
 import { Toaster, toast } from "react-hot-toast";
 import "../styles/globals.css";
 import "./StudentPage.css";
@@ -17,7 +18,9 @@ const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function StudentPage() {
   const { config, layout, getSeatPrice, getSeatTier } = useMovieConfig();
+  const { theaters } = useTheaters();
 
+  const [selectedTheaterId, setSelectedTheaterId] = useState(null);
   const [activeView, setActiveView] = useState("movie"); // "movie" (Overview) or "booking" (Seat Selection)
   const [selectedScreenId, setSelectedScreenId] = useState(null);
   const [selectedSeats, setSelectedSeats] = useState([]);
@@ -27,29 +30,34 @@ export default function StudentPage() {
   const timerRef = useRef(null);
   const lockStartRef = useRef(null);
 
-  const publishedScreens = (config?.screens || []).filter((s) => s.isPublished);
-  const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : (config?.screens || []).slice(0, 1);
-  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
+  // Active Theater Selection
+  const activeTheaterObj = theaters.find((t) => t.id === selectedTheaterId) || (theaters.length > 0 ? theaters[0] : null);
+  const effectiveTheaterId = activeTheaterObj?.id || config?.id || "default-theater";
+  const effectiveConfig = activeTheaterObj ? { ...config, ...activeTheaterObj } : config;
+
+  const publishedScreens = (effectiveConfig?.screens || []).filter((s) => s.isPublished !== false);
+  const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : (effectiveConfig?.screens || []).slice(0, 1);
+  const currentScreenId = selectedScreenId || effectiveConfig?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
   const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
-  const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
+  const activePoster = activeScreen.posterUrl || effectiveConfig?.posterUrl || null;
   const activeScreenName = activeScreen.name || "Screen 1";
 
   // Dynamic layout & tier prices specifically for active screen
-  const screenLayout = activeScreen.layout || config?.layout || layout;
-  const screenTierPrices = activeScreen.tierPrices || screenLayout?.tierPrices || config?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
-  const isCategoryPricingEnabled = activeScreen.enableCategoryPricing !== false && config?.enableCategoryPricing !== false;
+  const screenLayout = activeScreen.layout || effectiveConfig?.layout || layout;
+  const screenTierPrices = activeScreen.tierPrices || screenLayout?.tierPrices || effectiveConfig?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  const isCategoryPricingEnabled = activeScreen.enableCategoryPricing !== false && effectiveConfig?.enableCategoryPricing !== false;
 
   const getScreenSeatPrice = (seatId) => {
     if (!isCategoryPricingEnabled) {
-      return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
+      return Number(activeScreen.pricePerSeat || effectiveConfig?.pricePerSeat || 200);
     }
-    if (!seatId) return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
+    if (!seatId) return Number(activeScreen.pricePerSeat || effectiveConfig?.pricePerSeat || 200);
     const row = seatId.charAt(0);
     const tier = screenLayout?.rowTiers?.[row] || "Silver";
     if (screenTierPrices[tier] !== undefined) {
       return Number(screenTierPrices[tier]);
     }
-    return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
+    return Number(activeScreen.pricePerSeat || effectiveConfig?.pricePerSeat || 200);
   };
 
   const getScreenSeatTier = (seatId) => {
@@ -59,9 +67,9 @@ export default function StudentPage() {
     return screenLayout?.rowTiers?.[row] || "Silver";
   };
 
-  // Use isolated seatMap and bookings for this specific screen
-  const { seatMap } = useSeats(currentScreenId);
-  const { bookings } = useBookings();
+  // Use isolated seatMap and bookings for this specific theater and screen
+  const { seatMap } = useSeats(currentScreenId, effectiveTheaterId);
+  const { bookings } = useBookings(effectiveTheaterId);
 
   // ── Seat toggle ──────────────────────────────────────────────────────────
   const handleSeatToggle = useCallback(
@@ -332,6 +340,31 @@ export default function StudentPage() {
       ) : (
         /* ── Standard Booking & Movie Overview Page ── */
         <main className="student-page">
+          {/* Multi-Tenant Theater Selector Bar */}
+          {theaters.length > 1 && (
+            <div style={{ background: "rgba(255, 215, 0, 0.08)", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--gold)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", margin: "0 auto 16px", maxWidth: 700 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gold)", fontWeight: 800, fontSize: "0.85rem" }}>
+                <Building2 size={16} /> Select Cinema Hall / Theater:
+              </div>
+              <select
+                className="input"
+                style={{ width: "auto", minWidth: 200, padding: "6px 12px", fontSize: "0.85rem", fontWeight: 700, borderColor: "var(--gold)" }}
+                value={effectiveTheaterId}
+                onChange={(e) => {
+                  setSelectedTheaterId(e.target.value);
+                  setSelectedScreenId(null);
+                  setSelectedSeats([]);
+                }}
+              >
+                {theaters.map((th) => (
+                  <option key={th.id} value={th.id}>
+                    {th.name} ({th.location || "Hyderabad"})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Multiple Published Screens Switcher */}
           {effectiveScreenList.length > 1 && (
             <div style={{ background: "rgba(255,255,255,0.04)", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", margin: "0 auto 16px", maxWidth: 700 }}>

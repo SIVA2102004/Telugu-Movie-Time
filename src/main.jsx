@@ -2,6 +2,7 @@ import React, { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles/globals.css";
 import App from "./App.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -44,7 +45,9 @@ class ErrorBoundary extends React.Component {
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </ErrorBoundary>
   </StrictMode>
 );

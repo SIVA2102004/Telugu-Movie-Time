@@ -1,0 +1,204 @@
+import { useState, useEffect, useCallback } from "react";
+import { db } from "../firebase";
+import { collection, doc, onSnapshot, setDoc, deleteDoc, getDocs, query, where } from "firebase/firestore";
+import { DEFAULT_SCREENS, BLUEPRINT_LAYOUT, CURVED_AMPHITHEATER_LAYOUT } from "./useMovieConfig";
+
+/**
+ * Universal hook for multi-tenant Theater & Cinema Hall management.
+ */
+export function useTheaters(ownerId = null, activeTheaterId = null) {
+  const [theaters, setTheaters] = useState([]);
+  const [currentTheater, setCurrentTheater] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // 1. Subscribe to all theaters or owner's specific theater
+  useEffect(() => {
+    let unsub = () => {};
+    try {
+      const colRef = collection(db, "theaters");
+      unsub = onSnapshot(
+        colRef,
+        (snap) => {
+          const list = snap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          }));
+          setTheaters(list);
+
+          // Find current active theater for owner or selected ID
+          if (activeTheaterId) {
+            const found = list.find((t) => t.id === activeTheaterId);
+            if (found) setCurrentTheater(found);
+          } else if (ownerId) {
+            const found = list.find((t) => t.ownerId === ownerId);
+            if (found) setCurrentTheater(found);
+          } else if (list.length > 0) {
+            setCurrentTheater(list[0]);
+          }
+          setLoading(false);
+        },
+        (err) => {
+          console.warn("Theaters subscription notice:", err);
+          setLoading(false);
+        }
+      );
+    } catch (e) {
+      setLoading(false);
+    }
+
+    return () => unsub();
+  }, [ownerId, activeTheaterId]);
+
+  // 2. Create a new Theater for an owner
+  const createTheater = useCallback(
+    async ({ name, location, upiId, payeeName, adminPhone, ownerId }) => {
+      const id = `th_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const initialScreens = [
+        {
+          id: "screen-1",
+          name: "Screen 1 (Main Hall)",
+          movieName: "PARADISE",
+          theater: `${name} (Screen 1)`,
+          date: "2026-09-26",
+          showTime: "8:00 AM",
+          pricePerSeat: 200,
+          posterUrl: null,
+          tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+          layout: BLUEPRINT_LAYOUT,
+          isPublished: true,
+        },
+        {
+          id: "screen-2",
+          name: "Screen 2 (Audi 2)",
+          movieName: "TELUGU SPECIAL SHOW",
+          theater: `${name} (Screen 2)`,
+          date: "2026-09-26",
+          showTime: "11:30 AM",
+          pricePerSeat: 200,
+          posterUrl: null,
+          tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+          layout: BLUEPRINT_LAYOUT,
+          isPublished: false,
+        },
+      ];
+
+      const newTheater = {
+        id,
+        ownerId,
+        name,
+        location: location || "Hyderabad",
+        upiId: upiId || `${name.toLowerCase().replace(/[^a-z0-9]/g, "")}@upi`,
+        payeeName: payeeName || name,
+        adminPhone: adminPhone || "919876543210",
+        screens: initialScreens,
+        activeScreenId: "screen-1",
+        createdAt: new Date().toISOString(),
+      };
+
+      await setDoc(doc(db, "theaters", id), newTheater);
+      return newTheater;
+    },
+    []
+  );
+
+  // 3. Add a new Cinema Hall to current theater
+  const addHall = useCallback(
+    async (theaterId, { hallName, movieName, showTime, date, pricePerSeat, layoutType }) => {
+      if (!theaterId) return;
+      const targetTheater = theaters.find((t) => t.id === theaterId) || currentTheater;
+      if (!targetTheater) return;
+
+      // Validate Hall Uniqueness per theater
+      const existingScreens = targetTheater.screens || [];
+      const newHallId = `screen-${existingScreens.length + 1}`;
+
+      const chosenLayout =
+        layoutType === "amphitheater"
+          ? CURVED_AMPHITHEATER_LAYOUT
+          : BLUEPRINT_LAYOUT;
+
+      const newHall = {
+        id: newHallId,
+        name: hallName || `Screen ${existingScreens.length + 1}`,
+        movieName: movieName || "NEW SHOW",
+        theater: `${targetTheater.name} (${hallName || `Screen ${existingScreens.length + 1}`})`,
+        date: date || "2026-09-26",
+        showTime: showTime || "6:00 PM",
+        pricePerSeat: Number(pricePerSeat) || 200,
+        posterUrl: null,
+        tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+        layout: chosenLayout,
+        isPublished: true,
+      };
+
+      const updatedScreens = [...existingScreens, newHall];
+
+      const updatedTheater = {
+        ...targetTheater,
+        screens: updatedScreens,
+      };
+
+      await setDoc(doc(db, "theaters", theaterId), updatedTheater, { merge: true });
+      return newHall;
+    },
+    [theaters, currentTheater]
+  );
+
+  // 4. Update an existing Cinema Hall inside a theater
+  const updateHall = useCallback(
+    async (theaterId, hallId, updatedData) => {
+      if (!theaterId) return;
+      const targetTheater = theaters.find((t) => t.id === theaterId) || currentTheater;
+      if (!targetTheater) return;
+
+      const updatedScreens = (targetTheater.screens || []).map((scr) => {
+        if (scr.id === hallId) {
+          return { ...scr, ...updatedData };
+        }
+        return scr;
+      });
+
+      const updatedTheater = {
+        ...targetTheater,
+        screens: updatedScreens,
+      };
+
+      await setDoc(doc(db, "theaters", theaterId), updatedTheater, { merge: true });
+    },
+    [theaters, currentTheater]
+  );
+
+  // 5. Delete a Cinema Hall
+  const deleteHall = useCallback(
+    async (theaterId, hallId) => {
+      if (!theaterId) return;
+      const targetTheater = theaters.find((t) => t.id === theaterId) || currentTheater;
+      if (!targetTheater) return;
+
+      if ((targetTheater.screens || []).length <= 1) {
+        throw new Error("A theater must have at least one cinema hall.");
+      }
+
+      const updatedScreens = (targetTheater.screens || []).filter((s) => s.id !== hallId);
+
+      const updatedTheater = {
+        ...targetTheater,
+        screens: updatedScreens,
+        activeScreenId: updatedScreens[0]?.id || "screen-1",
+      };
+
+      await setDoc(doc(db, "theaters", theaterId), updatedTheater, { merge: true });
+    },
+    [theaters, currentTheater]
+  );
+
+  return {
+    theaters,
+    currentTheater,
+    loading,
+    createTheater,
+    addHall,
+    updateHall,
+    deleteHall,
+  };
+}

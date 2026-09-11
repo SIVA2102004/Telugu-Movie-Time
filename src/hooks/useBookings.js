@@ -5,11 +5,17 @@ import { collection, onSnapshot, getDocs } from "firebase/firestore";
 /**
  * Universal real-time synchronization hook for bookings directly from Firestore.
  */
-export function useBookings() {
+export function useBookings(filterTheaterId = null, filterOwnerId = null) {
   const [bookings, setBookings] = useState(() => {
     try {
       const cached = localStorage.getItem("telugu_talkies_bookings_cache");
-      return cached ? JSON.parse(cached) : [];
+      const list = cached ? JSON.parse(cached) : [];
+      if (!Array.isArray(list)) return [];
+      return list.filter((b) => {
+        if (filterTheaterId && b.theaterId && b.theaterId !== filterTheaterId) return false;
+        if (filterOwnerId && b.ownerId && b.ownerId !== filterOwnerId) return false;
+        return true;
+      });
     } catch (e) {
       return [];
     }
@@ -18,12 +24,15 @@ export function useBookings() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Helper to deduplicate, sort, and save bookings
+  // Helper to deduplicate, sort, filter, and save bookings
   const updateBookings = useCallback((list) => {
     if (!Array.isArray(list)) return;
     const map = new Map();
     list.forEach((b) => {
       if (b && b.id) {
+        // Enforce owner / theater isolation filter
+        if (filterTheaterId && b.theaterId && b.theaterId !== filterTheaterId) return;
+        if (filterOwnerId && b.ownerId && b.ownerId !== filterOwnerId) return;
         map.set(b.id, b);
       }
     });
@@ -35,7 +44,7 @@ export function useBookings() {
     try {
       localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(sorted));
     } catch (e) {}
-  }, []);
+  }, [filterTheaterId, filterOwnerId]);
 
   // Manual one-click cloud fetch
   const refreshBookings = useCallback(async () => {
@@ -64,7 +73,10 @@ export function useBookings() {
       try {
         const cached = localStorage.getItem("telugu_talkies_bookings_cache");
         if (cached) {
-          setBookings(JSON.parse(cached));
+          const list = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            updateBookings(list);
+          }
         }
       } catch (e) {}
     };
