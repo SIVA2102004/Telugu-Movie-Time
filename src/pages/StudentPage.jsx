@@ -70,7 +70,8 @@ export default function StudentPage() {
 
   const mergedScreens = Array.from(mergedScreensMap.values());
   const publishedScreens = mergedScreens.filter((s) => s.isPublished !== false);
-  const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : mergedScreens.slice(0, 1);
+  const hasPublishedScreens = publishedScreens.length > 0;
+  const effectiveScreenList = hasPublishedScreens ? publishedScreens : mergedScreens.slice(0, 1);
 
   const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
   const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
@@ -370,6 +371,30 @@ export default function StudentPage() {
             >
               <ArrowLeft size={16} /> Back to Movie Overview
             </button>
+          </div>
+        </main>
+      ) : !hasPublishedScreens ? (
+        /* ── Booking Closed (All Screens Unpublished) ── */
+        <main className="student-page">
+          <div className="card" style={{ maxWidth: 540, margin: "60px auto", textAlign: "center", padding: "40px 24px", background: "rgba(26,26,46,0.9)", border: "1px solid var(--border)", borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.6)" }}>
+            <span style={{ fontSize: "3.5rem" }}>🔒</span>
+            <h2 style={{ color: "var(--gold)", margin: "16px 0 8px", fontSize: "1.5rem" }}>Booking Currently Closed</h2>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", lineHeight: 1.6 }}>
+              There are currently no active or published showtimes available for booking at this theater.
+              <br />
+              Please check back later or contact the admin team.
+            </p>
+            {config?.adminPhone && (
+              <a
+                href={`https://wa.me/${config.adminPhone}?text=Hi%20Admin!%20When%20will%20booking%20open%20for%20the%20show?`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-wa"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 20, padding: "12px 24px", fontWeight: 700, textDecoration: "none" }}
+              >
+                <MessageCircle size={18} /> Contact Admin Helpline
+              </a>
+            )}
           </div>
         </main>
       ) : (

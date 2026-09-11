@@ -266,13 +266,6 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
       return s;
     });
 
-    // Ensure at least one published screen is active
-    const anyPublished = updatedScreens.some((s) => s.isPublished);
-    if (!anyPublished) {
-      toast.error("At least one screen must remain published!");
-      return;
-    }
-
     const currentScreenStillPublished = updatedScreens.find((s) => s.id === form.activeScreenId)?.isPublished;
     const nextActiveId = currentScreenStillPublished
       ? form.activeScreenId
