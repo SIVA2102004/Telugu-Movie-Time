@@ -117,6 +117,11 @@ export default function AdminLogin({ onLogin, config }) {
       setLoading(false);
       return;
     }
+    if (!ownerReg.location.trim()) {
+      setError("Please enter your Location / City.");
+      setLoading(false);
+      return;
+    }
 
     try {
       await registerTheaterOwner({
@@ -124,26 +129,17 @@ export default function AdminLogin({ onLogin, config }) {
         email: ownerReg.email.trim(),
         password: ownerReg.password,
         theaterName: ownerReg.theaterName.trim(),
-        location: ownerReg.location.trim() || "Hyderabad",
+        location: ownerReg.location.trim(),
       });
       toast.success(`Theater "${ownerReg.theaterName}" registered successfully! 🎬`);
       onLogin();
     } catch (err) {
       console.error("Registration error:", err);
-      // Fallback local registration if Firebase Auth offline
-      const demoId = `th_${Date.now()}`;
-      const freshConfig = buildFreshTheaterConfig(demoId, ownerReg.theaterName.trim(), ownerReg.location.trim() || "Hyderabad");
-      try {
-        localStorage.setItem(`telugu_talkies_movie_config_${demoId}`, JSON.stringify(freshConfig));
-        localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(freshConfig));
-      } catch (e) {}
-
-      sessionStorage.setItem("adminAuth", "true");
-      sessionStorage.setItem("adminRole", "owner");
-      sessionStorage.setItem("adminName", ownerReg.name.trim());
-      sessionStorage.setItem("adminTheaterId", demoId);
-      toast.success(`Theater "${ownerReg.theaterName}" created successfully! 🎬`);
-      onLogin();
+      if (err?.code === "auth/email-already-in-use" || err?.message?.includes("already registered")) {
+        setError("This Email is already registered! Please sign in with your email under the Admin tab or use a different email.");
+      } else {
+        setError(err.message || "Registration failed. Please check your details.");
+      }
     }
     setLoading(false);
   };
@@ -686,7 +682,7 @@ export default function AdminLogin({ onLogin, config }) {
             </div>
 
             <div className="admin-login__field">
-              <label className="label" htmlFor="regLocation">Location / City</label>
+              <label className="label" htmlFor="regLocation">Location / City *</label>
               <input
                 className="input"
                 id="regLocation"
@@ -694,6 +690,7 @@ export default function AdminLogin({ onLogin, config }) {
                 value={ownerReg.location}
                 onChange={(e) => setOwnerReg({ ...ownerReg, location: e.target.value })}
                 placeholder="e.g. Hyderabad"
+                required
               />
             </div>
 

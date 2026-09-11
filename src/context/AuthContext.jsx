@@ -99,24 +99,40 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  // 1. REGISTER NEW THEATER OWNER (Handles new & existing Firebase Auth emails)
+  // 1. REGISTER NEW THEATER OWNER (Strict Email Uniqueness)
   const registerTheaterOwner = async ({ name, email, password, theaterName, location }) => {
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check if email already registered in users collection
+    try {
+      const { collection, query, where, getDocs } = await import("firebase/firestore");
+      const q = query(collection(db, "users"), where("email", "==", cleanEmail));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        const err = new Error("This email is already registered! Please sign in under the Admin tab or use a different email.");
+        err.code = "auth/email-already-in-use";
+        throw err;
+      }
+    } catch (e) {
+      if (e.code === "auth/email-already-in-use" || e.message?.includes("already registered")) {
+        throw e;
+      }
+    }
+
     let user = null;
     let uid = null;
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
       user = userCredential.user;
       uid = user.uid;
     } catch (authErr) {
       if (authErr.code === "auth/email-already-in-use") {
-        // Sign in with existing credentials and re-initialize fresh theater
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        user = userCredential.user;
-        uid = user.uid;
-      } else {
-        throw authErr;
+        const err = new Error("This email is already registered! Please sign in under the Admin tab or use a different email.");
+        err.code = "auth/email-already-in-use";
+        throw err;
       }
+      throw authErr;
     }
 
     const theaterId = `th_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
