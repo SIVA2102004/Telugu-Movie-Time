@@ -168,6 +168,8 @@ export default function AdminLogin({ onLogin, config }) {
     }, 300);
   };
 
+  const [targetTheaterInfo, setTargetTheaterInfo] = useState(null);
+
   // 4. CO-ADMIN DIRECT LOGIN (WITH LOGIN ID & PASSWORD)
   const handleCoAdminLogin = async (e) => {
     e.preventDefault();
@@ -210,8 +212,14 @@ export default function AdminLogin({ onLogin, config }) {
         sessionStorage.setItem("adminPhone", found.phone || "");
         sessionStorage.setItem("adminCollege", found.college || "");
         sessionStorage.setItem("coAdminLoginId", found.loginId || enteredId);
+        if (found.theaterId) {
+          sessionStorage.setItem("adminTheaterId", found.theaterId);
+        }
+        if (found.theaterName) {
+          sessionStorage.setItem("adminTheaterName", found.theaterName);
+        }
 
-        toast.success(`Welcome back, ${found.name || found.loginId}! 🎟️`);
+        toast.success(`Welcome back, ${found.name || found.loginId}! Logged into ${found.theaterName || "Admin Portal"} 🎟️`);
         onLogin();
       } else {
         setError("Invalid Login ID or Password. If you are a new volunteer, click 'Register with Code'.");
@@ -223,18 +231,70 @@ export default function AdminLogin({ onLogin, config }) {
     setLoading(false);
   };
 
-  // 3. CO-ADMIN REGISTRATION STEP 1 (VERIFY CODE)
-  const handleVerifyRegistrationCode = (e) => {
+  // 3. CO-ADMIN REGISTRATION STEP 1 (VERIFY CODE ACROSS THEATERS)
+  const handleVerifyRegistrationCode = async (e) => {
     e.preventDefault();
     setError("");
-    const entered = inputVal.trim();
-    if (entered === validCoAdminCode) {
-      setVerifiedCode(entered);
-      setRegStep(2);
-      toast.success("Joining code verified! Now set up your Login ID & Password. 🔑");
-    } else {
-      setError("Invalid joining code. Please check with the Master Admin.");
+    const entered = inputVal.trim().toUpperCase();
+
+    if (!entered) {
+      setError("Please enter a joining code.");
+      return;
     }
+
+    setLoading(true);
+
+    try {
+      const { collection, getDocs } = await import("firebase/firestore");
+      
+      let matchedTheater = null;
+      try {
+        const thSnap = await getDocs(collection(db, "theaters"));
+        thSnap.forEach((d) => {
+          const data = d.data();
+          if (data.coAdminCode && data.coAdminCode.toUpperCase() === entered) {
+            matchedTheater = { id: d.id, name: data.name || data.theater };
+          }
+        });
+      } catch (e) {}
+
+      if (!matchedTheater) {
+        try {
+          const cfgSnap = await getDocs(collection(db, "movieConfig"));
+          cfgSnap.forEach((d) => {
+            const data = d.data();
+            if (data.coAdminCode && data.coAdminCode.toUpperCase() === entered) {
+              matchedTheater = { id: d.id, name: data.theater || data.name };
+            }
+          });
+        } catch (e) {}
+      }
+
+      if (!matchedTheater && (entered === (config?.coAdminCode || "COADMIN2026").toUpperCase())) {
+        const fallbackId = config?.id || sessionStorage.getItem("adminTheaterId") || "default-theater";
+        matchedTheater = { id: fallbackId, name: config?.theater || "Cinema Hall" };
+      }
+
+      if (matchedTheater) {
+        setVerifiedCode(entered);
+        setTargetTheaterInfo(matchedTheater);
+        setRegStep(2);
+        toast.success(`Joining code verified for "${matchedTheater.name}"! Now set up your Login ID & Password. 🔑`);
+      } else {
+        setError("Invalid joining code. Please check with your Theater Owner.");
+      }
+    } catch (err) {
+      if (entered === (config?.coAdminCode || "COADMIN2026").toUpperCase()) {
+        const fallbackId = config?.id || sessionStorage.getItem("adminTheaterId") || "default-theater";
+        setVerifiedCode(entered);
+        setTargetTheaterInfo({ id: fallbackId, name: config?.theater || "Cinema Hall" });
+        setRegStep(2);
+        toast.success("Joining code verified! Now set up your Login ID & Password. 🔑");
+      } else {
+        setError("Invalid joining code.");
+      }
+    }
+    setLoading(false);
   };
 
   // 4. CO-ADMIN REGISTRATION STEP 2 (SAVE CREDENTIALS & LOGIN)
@@ -261,6 +321,9 @@ export default function AdminLogin({ onLogin, config }) {
 
     setLoading(true);
     const coId = coAdminRegDetails.loginId.trim().toLowerCase();
+    const assignedTheaterId = targetTheaterInfo?.id || config?.id || sessionStorage.getItem("adminTheaterId") || "default-theater";
+    const assignedTheaterName = targetTheaterInfo?.name || config?.theater || "Cinema Hall";
+
     const newCoAdminRecord = {
       id: coId,
       loginId: coId,
@@ -269,6 +332,8 @@ export default function AdminLogin({ onLogin, config }) {
       phone: coAdminRegDetails.phone.trim(),
       college: coAdminRegDetails.college.trim() || "Telugu Movie Club",
       codeUsed: verifiedCode,
+      theaterId: assignedTheaterId,
+      theaterName: assignedTheaterName,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
       role: "co-admin",
@@ -278,6 +343,9 @@ export default function AdminLogin({ onLogin, config }) {
     try {
       await setDoc(doc(db, "coAdmins", coId), newCoAdminRecord, { merge: true });
       await setDoc(doc(db, "coAdmins", `ca_${coAdminRegDetails.phone.trim()}`), newCoAdminRecord, { merge: true });
+      if (assignedTheaterId && assignedTheaterId !== "default-theater") {
+        await setDoc(doc(db, "theaters", assignedTheaterId, "coAdmins", coId), newCoAdminRecord, { merge: true });
+      }
 
       const localList = JSON.parse(localStorage.getItem("tmt_co_admins_cache") || "[]");
       const filtered = localList.filter((c) => c.loginId !== coId && c.phone !== coAdminRegDetails.phone.trim());
@@ -289,8 +357,10 @@ export default function AdminLogin({ onLogin, config }) {
       sessionStorage.setItem("adminPhone", coAdminRegDetails.phone.trim());
       sessionStorage.setItem("adminCollege", coAdminRegDetails.college.trim());
       sessionStorage.setItem("coAdminLoginId", coId);
+      sessionStorage.setItem("adminTheaterId", assignedTheaterId);
+      sessionStorage.setItem("adminTheaterName", assignedTheaterName);
 
-      toast.success(`Account created! Logged in as ${coAdminRegDetails.name.trim()} 🚀`);
+      toast.success(`Account created! Logged into ${assignedTheaterName} Admin Portal 🚀`);
       onLogin();
     } catch (err) {
       console.error("Co-Admin registration error:", err);

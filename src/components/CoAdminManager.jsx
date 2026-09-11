@@ -10,6 +10,8 @@ export default function CoAdminManager({ config, bookings = [] }) {
   const [newJoiningCode, setNewJoiningCode] = useState(config?.coAdminCode || "COADMIN2026");
   const [updatingCode, setUpdatingCode] = useState(false);
 
+  const activeTheaterId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId");
+
   // Real-time listener for Co-Admins from Firestore with local fallback
   useEffect(() => {
     let unsub = () => {};
@@ -40,6 +42,14 @@ export default function CoAdminManager({ config, bookings = [] }) {
     return () => unsub();
   }, []);
 
+  const filteredCoAdmins = coAdmins.filter((c) => {
+    if (!activeTheaterId || activeTheaterId === "default-theater") return true;
+    return (
+      c.theaterId === activeTheaterId ||
+      (c.codeUsed && c.codeUsed.toUpperCase() === (config?.coAdminCode || "COADMIN2026").toUpperCase())
+    );
+  });
+
   // Delete / Revoke Co-Admin Access
   const handleDeleteCoAdmin = async (coAdmin) => {
     if (!window.confirm(`Are you sure you want to remove co-admin "${coAdmin?.name || ""}" (${coAdmin?.phone || ""})? They will lose access to verify bookings.`)) {
@@ -59,7 +69,11 @@ export default function CoAdminManager({ config, bookings = [] }) {
 
     // 2. Cloud Firestore deletion
     try {
-      await deleteDoc(doc(db, "coAdmins", coAdmin.id));
+      if (coAdmin.id) await deleteDoc(doc(db, "coAdmins", coAdmin.id));
+      if (coAdmin.phone) await deleteDoc(doc(db, "coAdmins", `ca_${coAdmin.phone}`));
+      if (activeTheaterId && coAdmin.id) {
+        await deleteDoc(doc(db, "theaters", activeTheaterId, "coAdmins", coAdmin.id));
+      }
     } catch (err) {
       console.error("Failed to delete co-admin from cloud:", err);
     }
@@ -146,7 +160,7 @@ export default function CoAdminManager({ config, bookings = [] }) {
       <div className="card" style={{ padding: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h3 style={{ color: "#fff", fontSize: "1.1rem", margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
-            <UserCheck size={18} color="var(--gold)" /> Active Co-Admin Team Members ({coAdmins.length})
+            <UserCheck size={18} color="var(--gold)" /> Active Co-Admin Team Members ({filteredCoAdmins.length})
           </h3>
           <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
             Real-time helper activity & verification stats
@@ -155,7 +169,7 @@ export default function CoAdminManager({ config, bookings = [] }) {
 
         {loading ? (
           <div style={{ padding: 30, textAlign: "center", color: "var(--text-muted)" }}>Loading co-admins…</div>
-        ) : coAdmins.length === 0 ? (
+        ) : filteredCoAdmins.length === 0 ? (
           <div style={{ padding: "40px 20px", textAlign: "center", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px dashed var(--border)" }}>
             <UserCheck size={40} color="var(--text-muted)" style={{ margin: "0 auto 10px" }} />
             <h4 style={{ color: "#fff", margin: "0 0 6px" }}>No Co-Admins Joined Yet</h4>
@@ -176,13 +190,14 @@ export default function CoAdminManager({ config, bookings = [] }) {
                   <th>Login ID</th>
                   <th>WhatsApp Phone</th>
                   <th>College / Unit</th>
+                  <th>Assigned Theater</th>
                   <th>Tickets Confirmed</th>
                   <th>Joined Date</th>
                   <th>Actions (Delete)</th>
                 </tr>
               </thead>
               <tbody>
-                {coAdmins.map((admin, idx) => {
+                {filteredCoAdmins.map((admin, idx) => {
                   const confirmedCount = getConfirmedCount(admin.name);
                   return (
                     <tr key={admin.id || idx}>
@@ -211,6 +226,7 @@ export default function CoAdminManager({ config, bookings = [] }) {
                         </a>
                       </td>
                       <td>{admin.college || "Telugu Movie Time"}</td>
+                      <td style={{ color: "var(--gold)", fontWeight: 700 }}>{admin.theaterName || config?.theater || "Cinema Hall"}</td>
                       <td>
                         <span style={{ background: "rgba(0,230,118,0.15)", color: "var(--green)", padding: "3px 8px", borderRadius: 6, fontWeight: 800, fontSize: "0.82rem" }}>
                           ✓ {confirmedCount} tickets
