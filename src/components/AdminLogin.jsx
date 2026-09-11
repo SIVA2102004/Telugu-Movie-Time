@@ -505,12 +505,24 @@ export default function AdminLogin({ onLogin, config }) {
         <h1 className="admin-login__title">TMT Admin Portal</h1>
         <p className="admin-login__sub">Telugu Movie Time · Secure Management</p>
 
-        {/* Mode Toggle Tabs */}
-        <div className="admin-login-tabs" style={{ display: "flex", gap: 4, margin: "16px 0 20px", width: "100%", background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10, flexWrap: "wrap" }}>
+        {/* Mode Toggle Tabs (Responsive auto-layout: Register, Admin, Co-Admin, Master Admin) */}
+        <div className="admin-login-tabs" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))", gap: 6, margin: "16px 0 20px", width: "100%", background: "rgba(255,255,255,0.03)", padding: 6, borderRadius: 10 }}>
+          <button
+            type="button"
+            className={`btn ${loginMode === "owner_register" ? "btn-gold" : "btn-ghost"}`}
+            style={{ padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, fontWeight: 700 }}
+            onClick={() => {
+              setLoginMode("owner_register");
+              setError("");
+            }}
+          >
+            <UserPlus size={13} /> Register
+          </button>
+
           <button
             type="button"
             className={`btn ${loginMode === "owner_login" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 100 }}
+            style={{ padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, fontWeight: 700 }}
             onClick={() => {
               setLoginMode("owner_login");
               setError("");
@@ -518,25 +530,13 @@ export default function AdminLogin({ onLogin, config }) {
               setPasswordVal("");
             }}
           >
-            <Building2 size={13} /> Owner Login
-          </button>
-
-          <button
-            type="button"
-            className={`btn ${loginMode === "owner_register" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 100 }}
-            onClick={() => {
-              setLoginMode("owner_register");
-              setError("");
-            }}
-          >
-            <UserPlus size={13} /> Register Theater
+            <Building2 size={13} /> Admin
           </button>
 
           <button
             type="button"
             className={`btn ${loginMode === "coadmin" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 90 }}
+            style={{ padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, fontWeight: 700 }}
             onClick={() => {
               setLoginMode("coadmin");
               setError("");
@@ -550,7 +550,7 @@ export default function AdminLogin({ onLogin, config }) {
           <button
             type="button"
             className={`btn ${loginMode === "master" ? "btn-gold" : "btn-ghost"}`}
-            style={{ flex: 1, padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, minWidth: 90 }}
+            style={{ padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, fontWeight: 700 }}
             onClick={() => {
               setLoginMode("master");
               setError("");
@@ -558,7 +558,7 @@ export default function AdminLogin({ onLogin, config }) {
               setPasswordVal("");
             }}
           >
-            <KeyRound size={13} /> Super Admin
+            <KeyRound size={13} /> Master Admin
           </button>
         </div>
 
@@ -609,32 +609,8 @@ export default function AdminLogin({ onLogin, config }) {
             {error && <p className="admin-login__error">{error}</p>}
 
             <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8, fontWeight: 800 }}>
-              {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : <><LogIn size={15} /> Sign In to My Theater</>}
+              {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : <><LogIn size={15} /> Sign In to Theater Admin</>}
             </button>
-
-            {/* Quick Demo Sign In Button */}
-            <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(255,215,0,0.06)", border: "1px dashed var(--gold)", borderRadius: 8, textAlign: "center" }}>
-              <span style={{ fontSize: "0.78rem", color: "var(--gold)", fontWeight: 700, display: "block", marginBottom: 6 }}>
-                ⚡ Fast Demo Sign In (For Testing):
-              </span>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                style={{ fontSize: "0.76rem", padding: "4px 10px", width: "100%", border: "1px solid var(--gold)", color: "var(--gold)" }}
-                onClick={() => {
-                  setInputVal("demo@theater.com");
-                  setPasswordVal("demo123");
-                  sessionStorage.setItem("adminAuth", "true");
-                  sessionStorage.setItem("adminRole", "owner");
-                  sessionStorage.setItem("adminName", "Demo Theater Owner");
-                  sessionStorage.setItem("adminTheaterId", "th_demo_123");
-                  toast.success("Welcome to Demo Theater Admin! 🏛️");
-                  onLogin();
-                }}
-              >
-                Sign In as Demo Theater Owner
-              </button>
-            </div>
 
             <div style={{ marginTop: 14, textAlign: "center" }}>
               <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Own a cinema hall? </span>
@@ -960,26 +936,6 @@ export default function AdminLogin({ onLogin, config }) {
           </form>
         )}
 
-        {/* Back to student page link & Wipe Data Fresh Start */}
-        <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <a href="/" style={{ color: "var(--text-muted)", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>
-            <ArrowLeft size={14} /> Back to Movie Booking
-          </a>
-
-          <button
-            type="button"
-            onClick={async () => {
-              if (window.confirm("⚠️ DANGER: Are you sure you want to delete ALL registered accounts, theaters, seating blueprints, payment details, and bookings?\n\nThis will reset the application completely so you can freshly register accounts and payment details.")) {
-                toast.loading("Wiping all system data, accounts, and blueprints...", { duration: 3000 });
-                await resetAllSystemData();
-              }
-            }}
-            style={{ background: "none", border: "none", color: "var(--red)", fontSize: "0.76rem", fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, padding: 0 }}
-            title="Delete all accounts, blueprints, and payment info for a fresh start"
-          >
-            <Trash2 size={13} /> 🧹 Wipe Data & Start Fresh
-          </button>
-        </div>
       </div>
 
       {/* ── FORGOT PASSWORD MODAL ── */}
