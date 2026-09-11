@@ -81,7 +81,11 @@ export default function AdminLogin({ onLogin, config }) {
         toast.success("Welcome to Demo Theater Admin! 🏛️");
         onLogin();
       } else {
-        setError(err.message || "Invalid Email or Password. Please try again or create a new account.");
+        if (err?.code === "auth/configuration-not-found" || err?.message?.includes("auth/configuration-not-found")) {
+          setError("⚠️ Firebase Email/Password Auth is disabled in Firebase Console! Go to Firebase Console -> Authentication -> Sign-in method -> Enable 'Email/Password'.");
+        } else {
+          setError(err.message || "Invalid Email or Password. Please try again or create a new account.");
+        }
       }
     }
     setLoading(false);
