@@ -229,6 +229,14 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
     try {
       await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
 
+      // Always sync master password & joining code to movieConfig/current so Master Admin login works from any session
+      if (form.adminPassword || form.coAdminCode) {
+        await setDoc(doc(db, "movieConfig", "current"), {
+          ...(form.adminPassword ? { adminPassword: form.adminPassword } : {}),
+          ...(form.coAdminCode ? { coAdminCode: form.coAdminCode } : {}),
+        }, { merge: true });
+      }
+
       if (targetDocId && targetDocId !== "current") {
         await setDoc(doc(db, "theaters", targetDocId), {
           screens: updatedScreens,
@@ -237,6 +245,8 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
           upiId: form.upiId,
           payeeName: form.payeeName,
           adminPhone: form.adminPhone,
+          adminPassword: form.adminPassword,
+          coAdminCode: form.coAdminCode,
         }, { merge: true });
       }
 

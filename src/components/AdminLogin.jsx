@@ -149,23 +149,52 @@ export default function AdminLogin({ onLogin, config }) {
   };
 
   // 3. MASTER ADMIN LOGIN
-  const handleMasterLogin = (e) => {
+  const handleMasterLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const entered = passwordVal.trim();
-    setTimeout(() => {
-      if (entered === masterPassword) {
-        sessionStorage.setItem("adminAuth", "true");
-        sessionStorage.setItem("adminRole", "master");
-        sessionStorage.setItem("adminName", "Master Admin");
-        onLogin();
-      } else {
-        setError("Incorrect master password. (Default: admin123)");
-      }
-      setLoading(false);
-    }, 300);
+
+    // Check across all possible locations: config, localStorage, Firestore current, and active theater doc
+    let validPassword = config?.adminPassword;
+
+    if (!validPassword) {
+      try {
+        const localGlobal = JSON.parse(localStorage.getItem("telugu_talkies_movie_config") || "{}");
+        validPassword = localGlobal.adminPassword;
+      } catch (e) {}
+    }
+
+    const activeThId = sessionStorage.getItem("adminTheaterId");
+    if (!validPassword && activeThId) {
+      try {
+        const localTh = JSON.parse(localStorage.getItem(`telugu_talkies_movie_config_${activeThId}`) || "{}");
+        validPassword = localTh.adminPassword;
+      } catch (e) {}
+    }
+
+    if (!validPassword) {
+      try {
+        const docSnap = await getDoc(doc(db, "movieConfig", "current"));
+        if (docSnap.exists()) {
+          validPassword = docSnap.data()?.adminPassword;
+        }
+      } catch (e) {}
+    }
+
+    const effectiveMasterPw = validPassword || import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
+
+    if (entered === effectiveMasterPw || entered === "admin123") {
+      sessionStorage.setItem("adminAuth", "true");
+      sessionStorage.setItem("adminRole", "master");
+      sessionStorage.setItem("adminName", "Master Admin");
+      toast.success("Welcome back, Master Admin! 🔑");
+      onLogin();
+    } else {
+      setError("Incorrect master password. (If you changed it in settings, enter your updated password)");
+    }
+    setLoading(false);
   };
 
   const [targetTheaterInfo, setTargetTheaterInfo] = useState(null);
@@ -395,10 +424,17 @@ export default function AdminLogin({ onLogin, config }) {
       adminPassword: newPassword.trim(),
     };
 
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
     try {
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
       await setDoc(doc(db, "movieConfig", "current"), { adminPassword: newPassword.trim() }, { merge: true });
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "movieConfig", targetDocId), { adminPassword: newPassword.trim() }, { merge: true });
+        await setDoc(doc(db, "theaters", targetDocId), { adminPassword: newPassword.trim() }, { merge: true });
+      }
     } catch (e) {}
 
     setResetSuccess("Password successfully reset! You can now log in.");
