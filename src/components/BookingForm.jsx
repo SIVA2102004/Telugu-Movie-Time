@@ -82,6 +82,17 @@ export default function BookingForm({
 
   const handlePrimaryChange = (e) => {
     const { name, value } = e.target;
+    if (name === "upiRef") {
+      // Strictly allow ONLY numbers and letters (A-Z, 0-9), strip all spaces and special characters, convert to uppercase
+      const sanitized = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 20);
+      setPrimaryContact((prev) => ({ ...prev, upiRef: sanitized }));
+      return;
+    }
+    if (name === "phone") {
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 10);
+      setPrimaryContact((prev) => ({ ...prev, phone: digitsOnly }));
+      return;
+    }
     setPrimaryContact((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -89,8 +100,10 @@ export default function BookingForm({
     if (!primaryContact.name.trim()) return "Please enter student name.";
     if (!primaryContact.phone.trim()) return "Please enter WhatsApp phone number.";
     if (!/^\d{10}$/.test(primaryContact.phone.replace(/\D/g, ""))) return "Please enter a valid 10-digit phone number.";
-    if (!primaryContact.upiRef.trim()) return "Please enter the UPI 12-digit UTR / Reference ID.";
-    if (primaryContact.upiRef.trim().length < 6) return "Please enter a valid UPI Reference / UTR Number.";
+    if (!primaryContact.upiRef.trim()) return "Please enter the UPI UTR / Reference ID.";
+    if (!/^[A-Z0-9]{6,20}$/.test(primaryContact.upiRef.trim())) {
+      return "UTR / Reference ID must contain only numbers and letters (at least 6 characters, e.g. 423456789012 or PAYTM123456).";
+    }
 
     // ── STRICT DUPLICATE UTR BLOCKING ──
     const enteredUtr = primaryContact.upiRef.trim().toLowerCase();
@@ -356,13 +369,15 @@ export default function BookingForm({
           id="upiRef"
           name="upiRef"
           type="text"
-          placeholder="12-digit UTR (e.g. 423456789012)"
+          maxLength={20}
+          placeholder="Enter UTR (e.g. 423456789012)"
           value={primaryContact.upiRef}
           onChange={handlePrimaryChange}
+          style={{ textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700 }}
           required
         />
         <span className="field-hint">
-          Open your UPI app after payment → Copy the 12-digit UTR/Ref number and paste here.
+          Only numbers & letters allowed (e.g. 12-digit UTR or transaction Ref ID).
         </span>
       </div>
 
