@@ -81,7 +81,7 @@ export async function seedFirestoreIfEmpty() {
         payeeName: "My Cinema Hall",
         adminPhone: "9876543210",
         coAdminCode: "COADMIN2026",
-        adminPassword: "admin123",
+        adminPassword: "Siva@200456",
       };
 
       const defaultTheaterId = "th_default_123";
