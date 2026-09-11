@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { DEFAULT_SCREENS, BLUEPRINT_LAYOUT } from "../hooks/useMovieConfig";
+import { DEFAULT_SCREENS, BLUEPRINT_LAYOUT, buildFreshTheaterConfig } from "../hooks/useMovieConfig";
 
 const AuthContext = createContext(null);
 
@@ -99,38 +99,33 @@ export function AuthProvider({ children }) {
       createdAt: serverTimestamp(),
     });
 
-    // Create Initial Theater Document
-    const initialScreens = DEFAULT_SCREENS.map((scr, idx) => ({
-      ...scr,
-      theater: `${theaterName} (${scr.name.split(" - ")[0] || `Screen ${idx + 1}`})`,
-    }));
-
-    const newTheater = {
-      id: theaterId,
-      ownerId: uid,
-      name: theaterName,
-      location: location || "Hyderabad",
-      upiId: `${theaterName.toLowerCase().replace(/[^a-z0-9]/g, "")}@upi`,
-      payeeName: theaterName,
-      adminPhone: "919876543210",
-      screens: initialScreens,
-      activeScreenId: "screen-1",
-      createdAt: new Date().toISOString(),
-    };
+    // Create Initial Fresh Theater Config (100% isolated & clean)
+    const freshConfig = buildFreshTheaterConfig(theaterId, theaterName, location || "Hyderabad", uid);
 
     await setDoc(doc(db, "theaters", theaterId), {
-      ...newTheater,
+      ...freshConfig,
+      name: theaterName,
+      createdAt: serverTimestamp(),
+    });
+
+    await setDoc(doc(db, "movieConfig", theaterId), {
+      ...freshConfig,
       createdAt: serverTimestamp(),
     });
 
     // Create halls subcollections for fast querying
-    for (const scr of initialScreens) {
+    for (const scr of freshConfig.screens) {
       await setDoc(doc(db, "theaters", theaterId, "halls", scr.id), {
         ...scr,
         theaterId,
         ownerId: uid,
       });
     }
+
+    try {
+      localStorage.setItem(`telugu_talkies_movie_config_${theaterId}`, JSON.stringify(freshConfig));
+      localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(freshConfig));
+    } catch (e) {}
 
     setUserProfile(newProfile);
     sessionStorage.setItem("tmt_user_profile", JSON.stringify(newProfile));

@@ -213,6 +213,76 @@ export function sanitizeConfig(cfg) {
   };
 }
 
+export function buildFreshTheaterConfig(theaterId, theaterName, location = "Hyderabad", ownerId = null) {
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const freshScreens = [
+    {
+      id: "screen-1",
+      name: "Screen 1 (Main Hall)",
+      movieName: "",
+      theater: `${theaterName} (Screen 1)`,
+      date: todayStr,
+      showTime: "6:00 PM",
+      pricePerSeat: 200,
+      posterUrl: null,
+      movieTagline: "",
+      movieDescription: "",
+      genre: "Action / Drama · Telugu (U/A)",
+      locationAddress: location,
+      mapsUrl: "",
+      tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+      blockedSeats: [],
+      layout: BLUEPRINT_LAYOUT,
+      isPublished: true,
+    },
+    {
+      id: "screen-2",
+      name: "Screen 2 (Audi 2)",
+      movieName: "",
+      theater: `${theaterName} (Screen 2)`,
+      date: todayStr,
+      showTime: "9:00 PM",
+      pricePerSeat: 200,
+      posterUrl: null,
+      movieTagline: "",
+      movieDescription: "",
+      genre: "Action / Drama · Telugu (U/A)",
+      locationAddress: location,
+      mapsUrl: "",
+      tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+      blockedSeats: [],
+      layout: BLUEPRINT_LAYOUT,
+      isPublished: false,
+    },
+  ];
+
+  return {
+    id: theaterId,
+    ownerId,
+    activeScreenId: "screen-1",
+    screens: freshScreens,
+    movieName: "",
+    date: todayStr,
+    theater: theaterName,
+    location: location,
+    showTime: "6:00 PM",
+    pricePerSeat: 200,
+    enableCategoryPricing: true,
+    posterUrl: null,
+    movieTagline: "",
+    movieDescription: "",
+    genre: "Action / Drama · Telugu (U/A)",
+    tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+    blockedSeats: [],
+    layout: BLUEPRINT_LAYOUT,
+    upiId: `${theaterName.toLowerCase().replace(/[^a-z0-9]/g, "")}@upi`,
+    payeeName: theaterName,
+    adminPhone: "",
+    createdAt: new Date().toISOString(),
+  };
+}
+
 /**
  * Subscribes to movieConfig/[theaterId] in Firestore with cross-tab local storage synchronization.
  */
@@ -222,12 +292,35 @@ export function useMovieConfig(theaterId = null) {
 
   const [config, setConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
         return sanitizeConfig(parsed);
       }
     } catch (e) {}
+
+    if (effectiveTheaterId) {
+      return sanitizeConfig({
+        id: effectiveTheaterId,
+        activeScreenId: "screen-1",
+        screens: [
+          {
+            id: "screen-1",
+            name: "Screen 1 (Main Hall)",
+            movieName: "",
+            theater: "Cinema Hall (Screen 1)",
+            date: new Date().toISOString().split("T")[0],
+            showTime: "6:00 PM",
+            pricePerSeat: 200,
+            posterUrl: null,
+            tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
+            layout: BLUEPRINT_LAYOUT,
+            isPublished: true,
+          },
+        ],
+      });
+    }
+
     return DEFAULT_CONFIG;
   });
 
@@ -237,7 +330,7 @@ export function useMovieConfig(theaterId = null) {
     // 1. Cross-tab and local storage instant sync
     const handleStorage = () => {
       try {
-        const saved = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
+        const saved = localStorage.getItem(storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
           setConfig(sanitizeConfig(parsed));

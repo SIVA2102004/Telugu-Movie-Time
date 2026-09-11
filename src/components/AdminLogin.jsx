@@ -3,7 +3,7 @@ import { db } from "../firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { Lock, Eye, EyeOff, ShieldCheck, KeyRound, UserCheck, ArrowLeft, Info, HelpCircle, RefreshCw, Key, ShieldAlert, User, Phone, CheckCircle2, Building2, UserPlus, LogIn, Trash2 } from "lucide-react";
-import { resetAllSystemData } from "../hooks/useMovieConfig";
+import { DEFAULT_SCREENS, resetAllSystemData, buildFreshTheaterConfig } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./AdminLogin.css";
 
@@ -132,11 +132,17 @@ export default function AdminLogin({ onLogin, config }) {
       console.error("Registration error:", err);
       // Fallback local registration if Firebase Auth offline
       const demoId = `th_${Date.now()}`;
+      const freshConfig = buildFreshTheaterConfig(demoId, ownerReg.theaterName.trim(), ownerReg.location.trim() || "Hyderabad");
+      try {
+        localStorage.setItem(`telugu_talkies_movie_config_${demoId}`, JSON.stringify(freshConfig));
+        localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(freshConfig));
+      } catch (e) {}
+
       sessionStorage.setItem("adminAuth", "true");
       sessionStorage.setItem("adminRole", "owner");
       sessionStorage.setItem("adminName", ownerReg.name.trim());
       sessionStorage.setItem("adminTheaterId", demoId);
-      toast.success(`Theater "${ownerReg.theaterName}" created locally! 🎬`);
+      toast.success(`Theater "${ownerReg.theaterName}" created successfully! 🎬`);
       onLogin();
     }
     setLoading(false);
