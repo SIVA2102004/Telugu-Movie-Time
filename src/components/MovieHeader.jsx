@@ -1,8 +1,14 @@
 import { MapPin, Calendar, Clock } from "lucide-react";
 import "./MovieHeader.css";
 
-export default function MovieHeader({ config = {}, layout = {} }) {
-  const { movieName = "Telugu Movie Time", date = "", theater = "", showTime = "" } = config || {};
+export default function MovieHeader({ config = {}, layout = {}, activeScreen = null }) {
+  const currentScr = activeScreen || (config?.screens || []).find((s) => s.id === config?.activeScreenId) || config?.screens?.[0] || {};
+
+  const movieName = currentScr.movieName || "Telugu Movie Time";
+  const date = currentScr.date || "";
+  const theater = currentScr.theater || "";
+  const showTime = currentScr.showTime || "";
+  const screenBadge = currentScr.name || "Screen 1";
 
   let formattedDate = "";
   if (date) {
@@ -33,23 +39,21 @@ export default function MovieHeader({ config = {}, layout = {} }) {
         <div className="movie-header__movie" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
             <h1 className="movie-header__title" style={{ margin: 0, textAlign: "center" }}>{movieName}</h1>
-            {config?.screens && (
-              <span
-                style={{
-                  background: "linear-gradient(135deg, #FF4444 0%, #B22222 100%)",
-                  color: "#ffffff",
-                  fontWeight: 900,
-                  fontSize: "0.72rem",
-                  padding: "3px 10px",
-                  borderRadius: 6,
-                  letterSpacing: 0.8,
-                  textTransform: "uppercase",
-                  boxShadow: "0 0 10px rgba(255, 68, 68, 0.4)",
-                }}
-              >
-                {config.screens.find((s) => s.id === config.activeScreenId)?.name || "Screen 1"}
-              </span>
-            )}
+            <span
+              style={{
+                background: "linear-gradient(135deg, #FF4444 0%, #B22222 100%)",
+                color: "#ffffff",
+                fontWeight: 900,
+                fontSize: "0.72rem",
+                padding: "3px 10px",
+                borderRadius: 6,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+                boxShadow: "0 0 10px rgba(255, 68, 68, 0.4)",
+              }}
+            >
+              {screenBadge}
+            </span>
           </div>
           <div className="movie-header__meta" style={{ justifyContent: "center" }}>
             {formattedDate && (

@@ -7,45 +7,60 @@ import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
 export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddHall }) {
+  const initialScreens = config?.screens || DEFAULT_SCREENS;
+  const initialActiveId = config?.activeScreenId || "screen-1";
+  const initialActiveScreen = initialScreens.find((s) => s.id === initialActiveId) || initialScreens[0] || {};
+
   const [form, setForm] = useState({
-    movieName: "Telugu Movie Time",
-    date: "2026-08-30",
-    theater: "Rajshree Cinema (Screen 1)",
-    showTime: "6:30 PM",
-    pricePerSeat: 200,
-    tierPrices: {
-      Platinum: 300,
-      Gold: 250,
-      Silver: 200,
-      ...(config?.tierPrices || layout?.tierPrices || {}),
-    },
     upiId: "telugumovietime@upi",
     payeeName: "Telugu Movie Time",
     adminPhone: "919876543210",
     coAdminCode: "COADMIN2026",
     adminPassword: "admin123",
     ...config,
+    movieName: initialActiveScreen.movieName || "PARADISE",
+    date: initialActiveScreen.date || "2026-09-24",
+    theater: initialActiveScreen.theater || "My Cinema Hall",
+    showTime: initialActiveScreen.showTime || "8:00 AM",
+    pricePerSeat: initialActiveScreen.pricePerSeat || 200,
+    posterUrl: initialActiveScreen.posterUrl || null,
+    movieTagline: initialActiveScreen.movieTagline || "",
+    movieDescription: initialActiveScreen.movieDescription || "",
+    genre: initialActiveScreen.genre || "Action / Drama · Telugu (U/A)",
+    locationAddress: initialActiveScreen.locationAddress || "",
+    mapsUrl: initialActiveScreen.mapsUrl || "",
+    tierPrices: initialActiveScreen.tierPrices || config?.tierPrices || layout?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 },
+    enableCategoryPricing: initialActiveScreen.enableCategoryPricing !== false,
   });
 
   const [saving, setSaving] = useState(false);
-  const [blockedInput, setBlockedInput] = useState(() => (config?.blockedSeats || []).join(", "));
+  const [blockedInput, setBlockedInput] = useState(() => (initialActiveScreen.blockedSeats || config?.blockedSeats || []).join(", "));
   const [isEditingBlocked, setIsEditingBlocked] = useState(false);
 
   // Sync state if config changes in background (only if user is not actively editing)
   useEffect(() => {
     if (config) {
+      const activeId = form.activeScreenId || config.activeScreenId || "screen-1";
+      const scrList = config.screens || DEFAULT_SCREENS;
+      const activeScr = scrList.find((s) => s.id === activeId) || scrList[0] || {};
+
       setForm((prev) => ({
         ...prev,
         ...config,
-        tierPrices: {
-          Platinum: 300,
-          Gold: 250,
-          Silver: 200,
-          ...(config.tierPrices || layout?.tierPrices || prev.tierPrices || {}),
-        },
+        movieName: activeScr.movieName || prev.movieName,
+        date: activeScr.date || prev.date,
+        showTime: activeScr.showTime || prev.showTime,
+        theater: activeScr.theater || prev.theater,
+        posterUrl: activeScr.posterUrl !== undefined ? activeScr.posterUrl : prev.posterUrl,
+        movieTagline: activeScr.movieTagline !== undefined ? activeScr.movieTagline : prev.movieTagline,
+        movieDescription: activeScr.movieDescription !== undefined ? activeScr.movieDescription : prev.movieDescription,
+        genre: activeScr.genre || prev.genre,
+        locationAddress: activeScr.locationAddress || prev.locationAddress,
+        mapsUrl: activeScr.mapsUrl || prev.mapsUrl,
+        tierPrices: activeScr.tierPrices || prev.tierPrices,
       }));
       if (!isEditingBlocked) {
-        setBlockedInput((config.blockedSeats || []).join(", "));
+        setBlockedInput((activeScr.blockedSeats || config.blockedSeats || []).join(", "));
       }
     }
   }, [config, layout, isEditingBlocked]);

@@ -51,10 +51,10 @@ export default function StudentPage() {
   const publishedScreens = mergedScreens.filter((s) => s.isPublished !== false);
   const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : mergedScreens.slice(0, 1);
 
-  const currentScreenId = selectedScreenId || "screen-1";
-  const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList.find((s) => s.id === "screen-1") || effectiveScreenList[0] || {};
-  const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
-  const activeScreenName = activeScreen.name || "Screen 1 (Main Hall)";
+  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
+  const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
+  const activePoster = activeScreen.posterUrl || null;
+  const activeScreenName = activeScreen.name || "Screen 1";
 
   // Dynamic layout & tier prices specifically for active screen
   const screenLayout = activeScreen.layout || (currentScreenId === "screen-1" ? config?.layout : null) || layout;
@@ -249,7 +249,7 @@ export default function StudentPage() {
         />
       )}
 
-      <MovieHeader config={{ ...config, movieName: activeScreen.movieName || config?.movieName, date: activeScreen.date || config?.date, showTime: activeScreen.showTime || config?.showTime, theater: activeScreen.theater || config?.theater, activeScreenId: currentScreenId, screens: effectiveScreenList }} layout={screenLayout} />
+      <MovieHeader config={config} layout={layout} activeScreen={activeScreen} />
 
       {/* ── Submitted Confirmation Screen ── */}
       {submitted ? (
@@ -479,7 +479,7 @@ export default function StudentPage() {
                       }}
                     >
                       <span style={{ fontSize: "3.5rem" }}>🎬</span>
-                      <h3 style={{ color: "var(--gold)", marginTop: 12, fontSize: "1.1rem" }}>{activeScreen.movieName || config?.movieName || "Telugu Movie Time"}</h3>
+                      <h3 style={{ color: "var(--gold)", marginTop: 12, fontSize: "1.1rem" }}>{activeScreen.movieName || activeScreenName}</h3>
                     </div>
                   )}
                 </div>
@@ -492,23 +492,23 @@ export default function StudentPage() {
                         {activeScreenName}
                       </span>
                       <span style={{ background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: "0.72rem", padding: "3px 8px", borderRadius: 6, fontWeight: 700 }}>
-                        {activeScreen.genre || config?.genre || "Action / Drama · Telugu (U/A)"}
+                        {activeScreen.genre || "Action / Drama · Telugu (U/A)"}
                       </span>
                       <span style={{ color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700 }}>
-                        From ₹{activeScreen.tierPrices?.Silver || config?.tierPrices?.Silver || activeScreen.pricePerSeat || 200}
+                        From ₹{activeScreen.tierPrices?.Silver || activeScreen.pricePerSeat || 200}
                       </span>
                     </div>
 
                     <h1 style={{ fontSize: "clamp(1.4rem, 4vw, 2.4rem)", color: "#fff", margin: "4px 0 8px", textShadow: "0 2px 10px rgba(0,0,0,0.8)", wordBreak: "break-word" }}>
-                      {activeScreen.movieName || config?.movieName || "PARADISE"}
+                      {activeScreen.movieName || "NEW SHOW"}
                     </h1>
 
                     <p style={{ color: "var(--gold)", fontSize: "clamp(0.85rem, 2vw, 1rem)", fontWeight: 600, fontStyle: "italic", margin: "0 0 12px" }}>
-                      "{activeScreen.movieTagline || config?.movieTagline || "Experience the Grand Telugu Premiere with Student Special Treats!"}"
+                      "{activeScreen.movieTagline || "Experience the Grand Telugu Premiere with Student Special Treats!"}"
                     </p>
 
                     <p style={{ color: "#d0d0e0", fontSize: "clamp(0.82rem, 1.8vw, 0.92rem)", lineHeight: 1.6, margin: "0 0 16px" }}>
-                      {activeScreen.movieDescription || config?.movieDescription || "Join fellow movie enthusiasts for an exclusive cinematic screening organized by Telugu Movie Time! Experience premium Dolby Atmos sound, crystal-clear projection, luxury seating, and exciting Telugu student community vibes."}
+                      {activeScreen.movieDescription || "Join fellow movie enthusiasts for an exclusive cinematic screening organized by Telugu Movie Time! Experience premium Dolby Atmos sound, crystal-clear projection, luxury seating, and exciting Telugu student community vibes."}
                     </p>
                   </div>
 
@@ -516,13 +516,13 @@ export default function StudentPage() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 10 }}>
                     <div style={{ background: "rgba(0,0,0,0.3)", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
                       <div style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>📅 Date & Time</div>
-                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", marginTop: 2 }}>{activeScreen.date || config?.date || formattedDate}</div>
-                      <div style={{ color: "var(--gold)", fontWeight: 800, fontSize: "0.8rem" }}>{activeScreen.showTime || config?.showTime || "8:00 AM"}</div>
+                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", marginTop: 2 }}>{activeScreen.date || formattedDate}</div>
+                      <div style={{ color: "var(--gold)", fontWeight: 800, fontSize: "0.8rem" }}>{activeScreen.showTime || "8:00 AM"}</div>
                     </div>
 
                     <div style={{ background: "rgba(0,0,0,0.3)", padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)" }}>
                       <div style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>🏛️ Cinema Venue</div>
-                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", marginTop: 2 }}>{activeScreen.theater || config?.theater || "Crystal Mall"}</div>
+                      <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.82rem", marginTop: 2 }}>{activeScreen.theater || activeTheaterObj?.name || "Cinema Hall"}</div>
                       <div style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{activeScreenName}</div>
                     </div>
                   </div>
