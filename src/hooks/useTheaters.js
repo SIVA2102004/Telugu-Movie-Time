@@ -19,10 +19,21 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
       unsub = onSnapshot(
         colRef,
         (snap) => {
-          const list = snap.docs.map((d) => ({
+          const rawList = snap.docs.map((d) => ({
             id: d.id,
             ...d.data(),
           }));
+
+          // Deduplicate by theater ID and ownerId
+          const uniqueMap = new Map();
+          rawList.forEach((t) => {
+            const key = t.id || t.ownerId;
+            if (!uniqueMap.has(key)) {
+              uniqueMap.set(key, t);
+            }
+          });
+
+          const list = Array.from(uniqueMap.values());
           setTheaters(list);
 
           // Find current active theater for owner or selected ID

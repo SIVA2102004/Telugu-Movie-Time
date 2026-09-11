@@ -18,9 +18,24 @@ const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function StudentPage() {
   const { theaters } = useTheaters();
-  const [selectedTheaterId, setSelectedTheaterId] = useState(null);
+
+  // Read URL search parameter e.g. ?theater=th_xxx or ?t=th_xxx
+  const urlParams = new URLSearchParams(window.location.search);
+  const theaterFromUrl = urlParams.get("theater") || urlParams.get("t");
+
+  const [selectedTheaterId, setSelectedTheaterId] = useState(() => theaterFromUrl || null);
   const [activeView, setActiveView] = useState("movie"); // "movie" (Overview) or "booking" (Seat Selection)
   const [selectedScreenId, setSelectedScreenId] = useState(null);
+
+  // Re-sync URL parameter if theaters change or parameter is set
+  useEffect(() => {
+    if (theaterFromUrl && theaters.length > 0) {
+      const match = theaters.find((t) => t.id === theaterFromUrl);
+      if (match) {
+        setSelectedTheaterId(match.id);
+      }
+    }
+  }, [theaterFromUrl, theaters]);
 
   // Active Theater Selection
   const activeTheaterObj = theaters.find((t) => t.id === selectedTheaterId) || (theaters.length > 0 ? theaters[0] : null);
@@ -355,8 +370,8 @@ export default function StudentPage() {
       ) : (
         /* ── Standard Booking & Movie Overview Page ── */
         <main className="student-page">
-          {/* Multi-Tenant Theater Selector Bar */}
-          {theaters.length > 1 && (
+          {/* Multi-Tenant Theater Selector Bar (Hidden when locked to specific theater URL) */}
+          {theaters.length > 1 && !theaterFromUrl && (
             <div style={{ background: "rgba(255, 215, 0, 0.08)", padding: "10px 16px", borderRadius: 12, border: "1px solid var(--gold)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", margin: "0 auto 16px", maxWidth: 700 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gold)", fontWeight: 800, fontSize: "0.85rem" }}>
                 <Building2 size={16} /> Select Cinema Hall / Theater:

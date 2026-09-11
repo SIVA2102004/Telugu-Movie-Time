@@ -279,32 +279,34 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => {
-                  const studentUrl = window.location.origin;
+                  const studentUrl = activeTheaterId && activeTheaterId !== "default-theater"
+                    ? `${window.location.origin}/?theater=${activeTheaterId}`
+                    : window.location.origin;
                   if (navigator.share) {
                     navigator.share({
-                      title: `Book Tickets — ${config?.movieName || "Telugu Movie Time"}`,
+                      title: `Book Tickets — ${config?.movieName || currentTheater?.name || "Telugu Movie Time"}`,
                       url: studentUrl,
                     });
                   } else {
                     navigator.clipboard.writeText(studentUrl);
-                    toast.success("Student Portal link copied to clipboard! 📋");
+                    toast.success(`Copied direct Student Booking Portal link for "${currentTheater?.name || "Theater"}"! 📋`);
                   }
                 }}
                 className="btn btn-gold"
                 style={{ padding: "6px 12px", fontSize: "0.78rem", gap: 5, fontWeight: 700 }}
-                title="Copy / Share Student Booking Portal link"
+                title="Copy / Share Student Booking Portal link for your theater"
               >
                 <Share2 size={14} /> Share Student Portal
               </button>
 
               {/* Open Student Portal in new tab */}
               <a
-                href="/"
+                href={activeTheaterId && activeTheaterId !== "default-theater" ? `/?theater=${activeTheaterId}` : "/"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-ghost"
                 style={{ padding: "6px 10px", fontSize: "0.78rem", gap: 5, color: "#4fc3f7" }}
-                title="Open live student booking portal"
+                title="Open live student booking portal for your theater"
               >
                 <Film size={14} /> Open Portal ↗
               </a>
