@@ -51,10 +51,10 @@ export default function StudentPage() {
   const publishedScreens = mergedScreens.filter((s) => s.isPublished !== false);
   const effectiveScreenList = publishedScreens.length > 0 ? publishedScreens : mergedScreens.slice(0, 1);
 
-  const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
-  const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
+  const currentScreenId = selectedScreenId || "screen-1";
+  const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList.find((s) => s.id === "screen-1") || effectiveScreenList[0] || {};
   const activePoster = activeScreen.posterUrl || config?.posterUrl || null;
-  const activeScreenName = activeScreen.name || "Screen 1";
+  const activeScreenName = activeScreen.name || "Screen 1 (Main Hall)";
 
   // Dynamic layout & tier prices specifically for active screen
   const screenLayout = activeScreen.layout || (currentScreenId === "screen-1" ? config?.layout : null) || layout;
@@ -249,7 +249,7 @@ export default function StudentPage() {
         />
       )}
 
-      <MovieHeader config={config} layout={layout} />
+      <MovieHeader config={{ ...config, movieName: activeScreen.movieName || config?.movieName, date: activeScreen.date || config?.date, showTime: activeScreen.showTime || config?.showTime, theater: activeScreen.theater || config?.theater, activeScreenId: currentScreenId, screens: effectiveScreenList }} layout={screenLayout} />
 
       {/* ── Submitted Confirmation Screen ── */}
       {submitted ? (
