@@ -47,6 +47,31 @@ export default function AdminLogin({ onLogin, config }) {
   const [resetError, setResetError] = useState("");
   const [resetSuccess, setResetSuccess] = useState("");
 
+  // Security Rate Limiting & Anti-Brute-Force Protection
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState(0);
+
+  const checkLockout = () => {
+    if (Date.now() < lockoutUntil) {
+      const remainingSecs = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      setError(`🔒 SECURITY LOCKOUT ACTIVE: Too many failed login attempts. Try again in ${remainingSecs}s.`);
+      setLoading(false);
+      return true;
+    }
+    return false;
+  };
+
+  const recordFailedAttempt = () => {
+    const nextCount = failedAttempts + 1;
+    setFailedAttempts(nextCount);
+    if (nextCount >= 5) {
+      const lockEnd = Date.now() + 30 * 1000;
+      setLockoutUntil(lockEnd);
+      setFailedAttempts(0);
+      setError("🚨 SECURITY ALERT: 5 Failed login attempts detected! Portal locked for 30s to prevent brute-force attacks.");
+    }
+  };
+
   const masterPassword = config?.adminPassword || import.meta.env.VITE_ADMIN_PASSWORD || "admin123";
   const validCoAdminCode = config?.coAdminCode || "COADMIN2026";
   const securityPin = config?.securityPin || "9999";
@@ -147,6 +172,7 @@ export default function AdminLogin({ onLogin, config }) {
   // 3. MASTER ADMIN LOGIN
   const handleMasterLogin = async (e) => {
     e.preventDefault();
+    if (checkLockout()) return;
     setLoading(true);
     setError("");
 
@@ -231,13 +257,15 @@ export default function AdminLogin({ onLogin, config }) {
         localStorage.setItem("telugu_talkies_movie_config", JSON.stringify({ ...(config || {}), adminPassword: entered }));
       } catch (e) {}
 
+      setFailedAttempts(0);
       sessionStorage.setItem("adminAuth", "true");
       sessionStorage.setItem("adminRole", "master");
       sessionStorage.setItem("adminName", "Master Admin");
       toast.success("Welcome back, Master Admin! 🔑");
       onLogin();
     } else {
-      setError("Incorrect master password. Please enter your updated password.");
+      recordFailedAttempt();
+      setError("Incorrect master password. Please check your credentials.");
     }
     setLoading(false);
   };

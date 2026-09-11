@@ -1,5 +1,7 @@
 {
   "rules": {
+    ".read": true,
+    ".write": true,
     "seats": {
       ".read": true,
       ".write": true

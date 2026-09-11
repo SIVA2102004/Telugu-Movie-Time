@@ -1,21 +1,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Movie config — anyone can read, no public writes
-    match /movieConfig/{docId} {
-      allow read: if true;
-      allow write: if true; // Relax for internal tool — admin writes from browser
+    
+    // Helper authentication check
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Bookings — anyone can create (student submits form)
-    // Anyone can read (admin dashboard reads all)
-    // Anyone can update (admin confirms/cancels from browser)
+    // Public read for published movie config and screens
+    match /movieConfig/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+
+    // Theater multi-tenant collection
+    match /theaters/{theaterId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+
+      match /halls/{hallId} {
+        allow read: if true;
+        allow write: if isAuthenticated();
+      }
+      
+      match /coAdmins/{coId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    // Ticket bookings collection
     match /bookings/{bookingId} {
-      allow read:   if true;
+      allow read: if true;
       allow create: if true;
-      allow update: if true;
-      allow delete: if false;
+      allow update, delete: if isAuthenticated();
+    }
+
+    // User account profiles
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if isOwner(userId) || isAuthenticated();
+    }
+
+    // Realtime seat locks
+    match /activeLocks/{lockId} {
+      allow read, write: if true;
+    }
+
+    // Co-Admins collection
+    match /coAdmins/{coId} {
+      allow read: if true;
+      allow write: if true;
     }
   }
 }
