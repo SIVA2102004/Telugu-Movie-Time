@@ -504,13 +504,21 @@ export default function StudentPage() {
                       {activeScreen.movieName || "NEW SHOW"}
                     </h1>
 
-                    <p style={{ color: "var(--gold)", fontSize: "clamp(0.85rem, 2vw, 1rem)", fontWeight: 600, fontStyle: "italic", margin: "0 0 12px" }}>
-                      "{activeScreen.movieTagline || "Experience the Grand Telugu Premiere with Student Special Treats!"}"
-                    </p>
+                    {activeScreen.movieTagline ? (
+                      <p style={{ color: "var(--gold)", fontSize: "clamp(0.85rem, 2vw, 1rem)", fontWeight: 600, fontStyle: "italic", margin: "0 0 12px" }}>
+                        "{activeScreen.movieTagline}"
+                      </p>
+                    ) : null}
 
-                    <p style={{ color: "#d0d0e0", fontSize: "clamp(0.82rem, 1.8vw, 0.92rem)", lineHeight: 1.6, margin: "0 0 16px" }}>
-                      {activeScreen.movieDescription || "Join fellow movie enthusiasts for an exclusive cinematic screening organized by Telugu Movie Time! Experience premium Dolby Atmos sound, crystal-clear projection, luxury seating, and exciting Telugu student community vibes."}
-                    </p>
+                    {activeScreen.movieDescription ? (
+                      <p style={{ color: "#d0d0e0", fontSize: "clamp(0.82rem, 1.8vw, 0.92rem)", lineHeight: 1.6, margin: "0 0 16px" }}>
+                        {activeScreen.movieDescription}
+                      </p>
+                    ) : (
+                      <p style={{ color: "#d0d0e0", fontSize: "clamp(0.82rem, 1.8vw, 0.92rem)", lineHeight: 1.6, margin: "0 0 16px" }}>
+                        Select your seats below to complete your ticket booking.
+                      </p>
+                    )}
                   </div>
 
                   {/* Highlights Grid */}
