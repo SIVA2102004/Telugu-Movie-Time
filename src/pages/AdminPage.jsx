@@ -29,6 +29,49 @@ export default function AdminPage() {
   // Multi-tenant theaters & halls hook
   const { theaters, currentTheater, addHall } = useTheaters(ownerId, theaterId);
 
+  // PWA Install prompt listener
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstalled, setIsInstalled] = useState(
+    window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true
+  );
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      toast.success("TMT Admin App installed successfully! 📱");
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
+
+  const installApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setIsInstalled(true);
+        setDeferredPrompt(null);
+      }
+    } else {
+      toast("To install on iPhone/Safari: Tap 'Share' → 'Add to Home Screen'. On Android/Chrome: Tap '⋮' → 'Install App'.", {
+        duration: 6000,
+        icon: "📱",
+      });
+    }
+  };
+
   // Modal state for adding a new Cinema Hall
   const [showAddHallModal, setShowAddHallModal] = useState(false);
   const [newHallForm, setNewHallForm] = useState({
