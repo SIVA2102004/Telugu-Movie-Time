@@ -152,22 +152,28 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
         console.warn("Firestore theater update notice:", e);
       }
 
-      // Synchronize with movieConfig/current so multi-screen manager & booking pages update instantly
+      // Synchronize with movieConfig/[activeId] so multi-screen manager & booking pages update instantly per theater
       try {
-        const savedConfigStr = localStorage.getItem("telugu_talkies_movie_config");
+        const storageKey = activeId ? `telugu_talkies_movie_config_${activeId}` : "telugu_talkies_movie_config";
+        const savedConfigStr = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
         let currentConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
         const configScreens = currentConfig.screens || DEFAULT_SCREENS;
         const nextConfigScreens = [...configScreens, newHall];
         const nextConfig = {
           ...currentConfig,
+          id: activeId,
           screens: nextConfigScreens,
           activeScreenId: newHallId,
         };
 
+        localStorage.setItem(storageKey, JSON.stringify(nextConfig));
         localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextConfig));
         window.dispatchEvent(new Event("storage"));
 
-        await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
+        await setDoc(doc(db, "movieConfig", activeId), nextConfig, { merge: true });
+        if (activeId !== "current") {
+          await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
+        }
       } catch (err) {
         console.warn("Movie config sync notice:", err);
       }

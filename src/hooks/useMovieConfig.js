@@ -214,12 +214,15 @@ export function sanitizeConfig(cfg) {
 }
 
 /**
- * Subscribes to movieConfig/current in Firestore with cross-tab local storage synchronization.
+ * Subscribes to movieConfig/[theaterId] in Firestore with cross-tab local storage synchronization.
  */
-export function useMovieConfig() {
+export function useMovieConfig(theaterId = null) {
+  const effectiveTheaterId = theaterId || sessionStorage.getItem("adminTheaterId") || null;
+  const storageKey = effectiveTheaterId ? `telugu_talkies_movie_config_${effectiveTheaterId}` : "telugu_talkies_movie_config";
+
   const [config, setConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem("telugu_talkies_movie_config");
+      const saved = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
       if (saved) {
         const parsed = JSON.parse(saved);
         return sanitizeConfig(parsed);
@@ -234,7 +237,7 @@ export function useMovieConfig() {
     // 1. Cross-tab and local storage instant sync
     const handleStorage = () => {
       try {
-        const saved = localStorage.getItem("telugu_talkies_movie_config");
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
         if (saved) {
           const parsed = JSON.parse(saved);
           setConfig(sanitizeConfig(parsed));
@@ -245,10 +248,13 @@ export function useMovieConfig() {
     window.addEventListener("storage", handleStorage);
 
     // 2. Real-time Firestore sync
-    let unsubscribe = () => {};
+    let unsubscribeConfig = () => {};
+    let unsubscribeTheater = () => {};
+
     try {
-      const docRef = doc(db, "movieConfig", "current");
-      unsubscribe = onSnapshot(
+      const targetDocId = effectiveTheaterId || "current";
+      const docRef = doc(db, "movieConfig", targetDocId);
+      unsubscribeConfig = onSnapshot(
         docRef,
         (snap) => {
           if (snap.exists()) {
@@ -256,8 +262,30 @@ export function useMovieConfig() {
             const sanitized = sanitizeConfig(data);
             setConfig(sanitized);
             try {
-              localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(sanitized));
+              localStorage.setItem(storageKey, JSON.stringify(sanitized));
             } catch (e) {}
+          } else if (effectiveTheaterId) {
+            // Fallback: listen to theaters collection document for initialized owner
+            const thRef = doc(db, "theaters", effectiveTheaterId);
+            unsubscribeTheater = onSnapshot(thRef, (thSnap) => {
+              if (thSnap.exists()) {
+                const thData = thSnap.data();
+                const constructed = sanitizeConfig({
+                  id: thData.id,
+                  theater: thData.name,
+                  upiId: thData.upiId,
+                  payeeName: thData.payeeName,
+                  adminPhone: thData.adminPhone,
+                  screens: thData.screens || DEFAULT_SCREENS,
+                  activeScreenId: thData.activeScreenId || "screen-1",
+                  ownerId: thData.ownerId,
+                });
+                setConfig(constructed);
+                try {
+                  localStorage.setItem(storageKey, JSON.stringify(constructed));
+                } catch (e) {}
+              }
+            });
           }
         },
         (error) => {
@@ -270,9 +298,10 @@ export function useMovieConfig() {
 
     return () => {
       window.removeEventListener("storage", handleStorage);
-      unsubscribe();
+      unsubscribeConfig();
+      unsubscribeTheater();
     };
-  }, []);
+  }, [effectiveTheaterId, storageKey]);
 
   const layout = config.layout || BLUEPRINT_LAYOUT;
 

@@ -83,13 +83,14 @@ export default function AdminPage() {
   });
 
   // Filter bookings strictly by active theater for owner isolation
-  const activeTheaterId = currentTheater?.id || theaterId;
+  const [selectedAdminTheaterId, setSelectedAdminTheaterId] = useState(null);
+  const activeTheaterId = selectedAdminTheaterId || currentTheater?.id || theaterId;
   const { bookings = [], setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings(
-    isMasterAdmin ? null : activeTheaterId,
-    isMasterAdmin ? null : ownerId
+    isMasterAdmin && !selectedAdminTheaterId ? null : activeTheaterId,
+    isMasterAdmin && !selectedAdminTheaterId ? null : ownerId
   );
 
-  const { config = {}, layout = {} } = useMovieConfig();
+  const { config = {}, layout = {} } = useMovieConfig(activeTheaterId);
   const activeScreenId = config?.activeScreenId || "screen-1";
   const { seatMap = {} } = useSeats(activeScreenId, activeTheaterId);
 
@@ -227,11 +228,27 @@ export default function AdminPage() {
 
               {/* Theater Badge & Active Screen Pill */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                {currentTheater && (
+                {isMasterAdmin && theaters.length > 0 ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255, 215, 0, 0.12)", border: "1px solid var(--gold)", padding: "3px 10px", borderRadius: 20 }}>
+                    <Building2 size={13} color="var(--gold)" />
+                    <span style={{ fontSize: "0.76rem", color: "var(--gold)", fontWeight: 800 }}>Super Admin View:</span>
+                    <select
+                      style={{ background: "#1A1A2E", color: "#fff", border: "1px solid var(--gold)", padding: "2px 8px", borderRadius: 12, fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+                      value={activeTheaterId || ""}
+                      onChange={(e) => setSelectedAdminTheaterId(e.target.value)}
+                    >
+                      {theaters.map((th) => (
+                        <option key={th.id} value={th.id}>
+                          {th.name} ({th.location || "Hyderabad"})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : currentTheater ? (
                   <span style={{ fontSize: "0.76rem", background: "rgba(255,215,0,0.12)", border: "1px solid var(--gold)", color: "var(--gold)", fontWeight: 800, padding: "3px 10px", borderRadius: 20, display: "flex", alignItems: "center", gap: 4 }}>
                     <Building2 size={13} /> {currentTheater.name}
                   </span>
-                )}
+                ) : null}
                 {isTheaterOwner && (
                   <button
                     type="button"

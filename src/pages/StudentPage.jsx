@@ -17,22 +17,23 @@ import "./StudentPage.css";
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function StudentPage() {
-  const { config, layout, getSeatPrice, getSeatTier } = useMovieConfig();
   const { theaters } = useTheaters();
-
   const [selectedTheaterId, setSelectedTheaterId] = useState(null);
   const [activeView, setActiveView] = useState("movie"); // "movie" (Overview) or "booking" (Seat Selection)
   const [selectedScreenId, setSelectedScreenId] = useState(null);
-  const [selectedSeats, setSelectedSeats] = useState([]);
+
+  // Active Theater Selection
+  const activeTheaterObj = theaters.find((t) => t.id === selectedTheaterId) || (theaters.length > 0 ? theaters[0] : null);
+  const effectiveTheaterId = activeTheaterObj?.id || "default-theater";
+
+  const { config, layout, getSeatPrice, getSeatTier } = useMovieConfig(effectiveTheaterId);
+
   const [submitted, setSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
   const [lockTimer, setLockTimer] = useState(null);
   const timerRef = useRef(null);
   const lockStartRef = useRef(null);
-
-  // Active Theater Selection
-  const activeTheaterObj = theaters.find((t) => t.id === selectedTheaterId) || (theaters.length > 0 ? theaters[0] : null);
-  const effectiveTheaterId = activeTheaterObj?.id || config?.id || "default-theater";
+  const [selectedSeats, setSelectedSeats] = useState([]);
 
   // Merge screens: start with activeTheaterObj.screens if available, but allow config.screens (which has live admin edits) to take precedence for each screen ID!
   const configScreens = config?.screens || DEFAULT_SCREENS;

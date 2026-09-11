@@ -216,20 +216,24 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
 
     setForm(updated);
 
-    // Instant local save and cross-tab event dispatch
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
+    // Instant local save and cross-tab event dispatch per theater
     try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     // Cloud firestore save
     try {
-      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
 
-      const activeTheaterId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId");
-      if (activeTheaterId) {
-        await setDoc(doc(db, "theaters", activeTheaterId), {
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "theaters", targetDocId), {
           screens: updatedScreens,
+          activeScreenId: form.activeScreenId,
+          name: form.theater || form.name,
           upiId: form.upiId,
           payeeName: form.payeeName,
           adminPhone: form.adminPhone,
