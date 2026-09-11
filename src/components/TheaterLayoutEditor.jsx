@@ -441,19 +441,29 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       blueprintImageUrl: activeScreenId === "screen-1" ? (blueprintUrl || null) : (config?.blueprintImageUrl || null),
     };
 
-    // Instant local save
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
+    // Instant local save per theater + global
     try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updatedData));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updatedData));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
-    // Cloud firestore save
+    // Cloud firestore save to movieConfig/[targetDocId] AND theaters/[targetDocId]
     try {
-      await setDoc(doc(db, "movieConfig", "current"), updatedData, { merge: true });
+      await setDoc(doc(db, "movieConfig", targetDocId), updatedData, { merge: true });
 
-      const activeTheaterId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId");
-      if (activeTheaterId) {
-        await setDoc(doc(db, "theaters", activeTheaterId), { screens: updatedScreens }, { merge: true });
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(
+          doc(db, "theaters", targetDocId),
+          {
+            screens: updatedScreens,
+            activeScreenId: config?.activeScreenId || "screen-1",
+            layout: updatedData.layout,
+          },
+          { merge: true }
+        );
       }
 
       toast.success(`Layout for ${currentScreenObj.name} Saved Instantly! 🚀`);

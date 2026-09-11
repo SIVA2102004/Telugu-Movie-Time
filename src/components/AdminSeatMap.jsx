@@ -138,13 +138,19 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
       blockedSeats: selectedScreenId === (config?.activeScreenId || "screen-1") ? blockedList : config?.blockedSeats,
     };
 
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
     try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
     try {
-      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "theaters", targetDocId), { screens: updatedScreens }, { merge: true });
+      }
       toast.success(`Saved blocked seats for ${currentScreen?.name}! 🚀`);
     } catch (err) {
       toast.success("Saved locally! ✅");

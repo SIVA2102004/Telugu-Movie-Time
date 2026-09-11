@@ -277,10 +277,16 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
 
     setForm(updated);
 
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
     try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
-      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "theaters", targetDocId), { screens: updatedScreens, activeScreenId: nextActiveId }, { merge: true });
+      }
       const pubCount = updatedScreens.filter((s) => s.isPublished).length;
       toast.success(`🎉 Updated! ${pubCount} Screen${pubCount > 1 ? "s are" : " is"} now LIVE on Student Portal!`);
     } catch (e) {
@@ -295,12 +301,14 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
       reader.onload = () => {
         const posterData = reader.result;
         setForm((prev) => {
+          const targetDocId = prev?.id || prev?.theaterId || config?.id || sessionStorage.getItem("adminTheaterId") || "current";
           const currentId = prev.activeScreenId || "screen-1";
           const updatedScreens = (prev.screens || DEFAULT_SCREENS).map((s) =>
             s.id === currentId ? { ...s, posterUrl: posterData } : s
           );
           const nextState = { ...prev, posterUrl: posterData, screens: updatedScreens };
           try {
+            localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(nextState));
             localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextState));
             window.dispatchEvent(new Event("storage"));
           } catch (err) {}

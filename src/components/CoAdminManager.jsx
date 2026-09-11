@@ -79,10 +79,16 @@ export default function CoAdminManager({ config, bookings = [] }) {
       coAdminCode: newJoiningCode.trim().toUpperCase(),
     };
 
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
     try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
-      await setDoc(doc(db, "movieConfig", "current"), { coAdminCode: newJoiningCode.trim().toUpperCase() }, { merge: true });
+      await setDoc(doc(db, "movieConfig", targetDocId), { coAdminCode: newJoiningCode.trim().toUpperCase() }, { merge: true });
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "theaters", targetDocId), { coAdminCode: newJoiningCode.trim().toUpperCase() }, { merge: true });
+      }
       toast.success("Joining Code updated live! 🔑");
     } catch (err) {
       toast.success("Updated joining code locally! 🔑");
