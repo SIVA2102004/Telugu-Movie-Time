@@ -228,6 +228,7 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
     // Cloud firestore save
     try {
       await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
 
       // Always sync master password & joining code to movieConfig/current so Master Admin login works from any session
       if (form.adminPassword || form.coAdminCode) {

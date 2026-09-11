@@ -60,7 +60,12 @@ export default function StudentPage() {
   });
   configScreens.forEach((cfgScr) => {
     const existing = mergedScreensMap.get(cfgScr.id) || {};
-    mergedScreensMap.set(cfgScr.id, { ...existing, ...cfgScr });
+    const mergedLayout = cfgScr.layout || existing.layout;
+    mergedScreensMap.set(cfgScr.id, {
+      ...existing,
+      ...cfgScr,
+      layout: mergedLayout || existing.layout,
+    });
   });
 
   const mergedScreens = Array.from(mergedScreensMap.values());
@@ -73,7 +78,7 @@ export default function StudentPage() {
   const activeScreenName = activeScreen.name || "Screen 1";
 
   // Dynamic layout & tier prices specifically for active screen
-  const screenLayout = activeScreen.layout || (currentScreenId === "screen-1" ? config?.layout : null) || layout;
+  const screenLayout = activeScreen?.layout || config?.layout || layout;
   const screenTierPrices = activeScreen.tierPrices || screenLayout?.tierPrices || config?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
   const isCategoryPricingEnabled = activeScreen.enableCategoryPricing !== false && config?.enableCategoryPricing !== false;
 

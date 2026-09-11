@@ -450,9 +450,10 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
 
-    // Cloud firestore save to movieConfig/[targetDocId] AND theaters/[targetDocId]
+    // Cloud firestore save to movieConfig/[targetDocId], movieConfig/current AND theaters/[targetDocId]
     try {
       await setDoc(doc(db, "movieConfig", targetDocId), updatedData, { merge: true });
+      await setDoc(doc(db, "movieConfig", "current"), updatedData, { merge: true });
 
       if (targetDocId && targetDocId !== "current") {
         await setDoc(
