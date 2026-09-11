@@ -1,20 +1,32 @@
-import { IndianRupee, Tag, ShieldAlert, KeyRound, UserCheck, Smartphone, QrCode, ShieldCheck, Copy, Download, Check } from "lucide-react";
+import { useState } from "react";
+import { IndianRupee, Tag, ShieldAlert, KeyRound, UserCheck, Smartphone, QrCode, ShieldCheck, Copy, Download, Check, Building2 } from "lucide-react";
+import { DEFAULT_SCREENS, BLUEPRINT_LAYOUT } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./AdminStats.css";
 
-export default function AdminStats({ bookings, config, layout, onInstallApp, isInstalled }) {
-  // Compute total actual seats directly from dynamic layout
-  const totalSeats = layout?.rows && layout?.seats
-    ? layout.rows.reduce((sum, r) => {
-        return sum + (layout.seats[r] || []).filter((s) => s !== null).length;
+export default function AdminStats({ bookings = [], config = {}, layout = {}, onInstallApp, isInstalled }) {
+  const screens = config?.screens || DEFAULT_SCREENS;
+  const [selectedScreenId, setSelectedScreenId] = useState(
+    config?.activeScreenId || screens[0]?.id || "screen-1"
+  );
+
+  const activeScreen = screens.find((s) => s.id === selectedScreenId) || screens[0] || {};
+  const activeLayout = activeScreen?.layout || (selectedScreenId === "screen-1" ? BLUEPRINT_LAYOUT : null) || config?.layout || layout || BLUEPRINT_LAYOUT;
+
+  // Compute total actual seats directly from selected screen's layout
+  const totalSeats = activeLayout?.rows && activeLayout?.seats
+    ? activeLayout.rows.reduce((sum, r) => {
+        return sum + (activeLayout.seats[r] || []).filter((s) => s !== null).length;
       }, 0)
     : 274;
 
-  const blockedSeatsCount = (config?.blockedSeats || []).length;
+  const blockedSeatsCount = (activeScreen?.blockedSeats || config?.blockedSeats || []).length;
 
-  const confirmed = bookings.filter((b) => b.status === "confirmed");
-  const pending   = bookings.filter((b) => b.status === "pending");
-  const cancelled = bookings.filter((b) => b.status === "cancelled");
+  const screenBookings = (bookings || []).filter(
+    (b) => !b.screenId || b.screenId === selectedScreenId
+  );
+  const confirmed = screenBookings.filter((b) => b.status === "confirmed");
+  const pending   = screenBookings.filter((b) => b.status === "pending");
 
   const confirmedSeatCount = confirmed.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
   const pendingSeatCount   = pending.reduce((sum, b) => sum + (b.seats?.length || 0), 0);
@@ -23,13 +35,13 @@ export default function AdminStats({ bookings, config, layout, onInstallApp, isI
   // Available = Total seats in layout minus booked/pending/admin blocked
   const available = Math.max(0, totalSeats - confirmedSeatCount - pendingSeatCount - blockedSeatsCount);
 
-  // Calculate potential full-house revenue based on category tier pricing
-  const rowTiers = layout?.rowTiers || {};
-  const tierPrices = config?.tierPrices || layout?.tierPrices || { Platinum: 300, Gold: 250, Silver: 200 };
+  // Calculate category tier breakdown for selected screen
+  const rowTiers = activeLayout?.rowTiers || {};
+  const tierPrices = activeScreen?.tierPrices || activeLayout?.tierPrices || config?.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 };
 
-  const tierBreakdown = (layout?.rows || []).reduce((acc, rowLabel) => {
+  const tierBreakdown = (activeLayout?.rows || []).reduce((acc, rowLabel) => {
     const tier = rowTiers[rowLabel] || "Silver";
-    const seatsInRow = (layout?.seats?.[rowLabel] || []).filter((s) => s !== null).length;
+    const seatsInRow = (activeLayout?.seats?.[rowLabel] || []).filter((s) => s !== null).length;
     acc[tier] = (acc[tier] || 0) + seatsInRow;
     return acc;
   }, {});
@@ -38,7 +50,7 @@ export default function AdminStats({ bookings, config, layout, onInstallApp, isI
     {
       label: "Total Hall Seats",
       value: totalSeats,
-      sub: `${layout?.rows?.length || 0} rows in layout`,
+      sub: `${activeLayout?.rows?.length || 0} rows in layout`,
       color: "var(--gold)",
       bg: "rgba(255,215,0,0.08)",
     },
@@ -79,6 +91,29 @@ export default function AdminStats({ bookings, config, layout, onInstallApp, isI
 
   return (
     <div className="admin-overview-wrapper">
+      {/* Screen selector pills for overview stats */}
+      <div style={{ background: "rgba(255,215,0,0.06)", border: "1px solid var(--gold)", borderRadius: 10, padding: "10px 16px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <span style={{ fontSize: "0.85rem", color: "var(--gold)", fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+          🖥️ View Overview Stats For Screen:
+        </span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {screens.map((scr) => {
+            const isSelected = scr.id === selectedScreenId;
+            return (
+              <button
+                key={scr.id}
+                type="button"
+                className={`btn ${isSelected ? "btn-gold" : "btn-ghost"}`}
+                style={{ padding: "5px 12px", fontSize: "0.78rem", fontWeight: 700 }}
+                onClick={() => setSelectedScreenId(scr.id)}
+              >
+                {scr.name}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="admin-stats">
         {cards.map((c) => (
           <div key={c.label} className="stat-card card" style={{ borderColor: c.color + "55", background: c.bg }}>
