@@ -394,13 +394,18 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       const downloadUrl = await getDownloadURL(sRef);
       setBlueprintUrl(downloadUrl);
       setBlueprintPreview(downloadUrl);
-      // Automatically offer or auto-apply the curved amphitheater layout matching this uploaded blueprint
-      setLayout(JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)));
-      toast.success("Seating order automatically updated from blueprint! (8 Curved Rows · 152 Seats) 🎯", { duration: 5000 });
+      // Automatically auto-apply the layout matching this screen's uploaded blueprint
+      const targetLayout = activeScreenId === "screen-3" ? CURVED_AMPHITHEATER_LAYOUT : BLUEPRINT_LAYOUT;
+      setLayout(JSON.parse(JSON.stringify(targetLayout)));
+      const infoMsg = activeScreenId === "screen-3"
+        ? "Seating order automatically updated from blueprint! (8 Curved Rows · 152 Seats) 🎯"
+        : "Seating order automatically updated from Screen 1 blueprint! (15 Rows · 18 Seats in Rows B-I · 244 Seats) 🎯";
+      toast.success(infoMsg, { duration: 5000 });
     } catch (err) {
       console.warn("Cloud storage upload notice:", err);
       // Even if cloud storage is slow or times out, localUrl/base64 is preserved in editor
-      setLayout(JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)));
+      const targetLayout = activeScreenId === "screen-3" ? CURVED_AMPHITHEATER_LAYOUT : BLUEPRINT_LAYOUT;
+      setLayout(JSON.parse(JSON.stringify(targetLayout)));
       toast.success("Seating order updated to match blueprint layout! 🎯");
     } finally {
       setUploading(false);
@@ -421,14 +426,14 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
   const TEMPLATES = [
     {
+      name: "⭐ Screen 1 Blueprint (Recliner A1-A16, Gold B-I 18 Seats, J-O 14 Seats · 244 Seats)",
+      highlight: true,
+      build: () => JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT)),
+    },
+    {
       name: "🏛️ Amphitheater / Curved Fan (8 Rows · 152 Seats)",
       highlight: true,
       build: () => JSON.parse(JSON.stringify(CURVED_AMPHITHEATER_LAYOUT)),
-    },
-    {
-      name: "⭐ Hall 1 Classic (Recliner, Gold, Silver · 274 Seats)",
-      highlight: true,
-      build: () => JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT)),
     },
     {
       name: "Default 10×10",
