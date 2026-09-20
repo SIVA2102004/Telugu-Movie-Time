@@ -17,7 +17,7 @@ import "./StudentPage.css";
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export default function StudentPage() {
-  const { theaters } = useTheaters();
+  const { theaters, loading: theatersLoading } = useTheaters();
 
   // Read URL search parameter e.g. ?theater=th_xxx or ?t=th_xxx
   const urlParams = new URLSearchParams(window.location.search);
@@ -27,21 +27,20 @@ export default function StudentPage() {
   const [activeView, setActiveView] = useState("movie"); // "movie" (Overview) or "booking" (Seat Selection)
   const [selectedScreenId, setSelectedScreenId] = useState(null);
 
-  // Re-sync URL parameter if theaters change or parameter is set
+  // Re-sync URL parameter if set
   useEffect(() => {
-    if (theaterFromUrl && theaters.length > 0) {
-      const match = theaters.find((t) => t.id === theaterFromUrl);
-      if (match) {
-        setSelectedTheaterId(match.id);
-      }
+    if (theaterFromUrl) {
+      setSelectedTheaterId(theaterFromUrl);
     }
-  }, [theaterFromUrl, theaters]);
+  }, [theaterFromUrl]);
 
-  // Active Theater Selection
+  // Active Theater Selection: prioritize selectedTheaterId (which is theaterFromUrl) immediately!
   const activeTheaterObj = theaters.find((t) => t.id === selectedTheaterId) || (theaters.length > 0 ? theaters[0] : null);
-  const effectiveTheaterId = activeTheaterObj?.id || "default-theater";
+  const effectiveTheaterId = selectedTheaterId || activeTheaterObj?.id || "default-theater";
 
-  const { config, layout, getSeatPrice, getSeatTier } = useMovieConfig(effectiveTheaterId);
+  const { config, layout, loading: configLoading, getSeatPrice, getSeatTier } = useMovieConfig(effectiveTheaterId);
+
+  const isDataLoading = (theatersLoading && theaters.length === 0) || (configLoading && !config);
 
   const [submitted, setSubmitted] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
@@ -373,7 +372,7 @@ export default function StudentPage() {
             </button>
           </div>
         </main>
-      ) : !hasPublishedScreens ? (
+      ) : !hasPublishedScreens && !isDataLoading ? (
         /* ── Booking Closed (All Screens Unpublished) ── */
         <main className="student-page">
           <div className="card" style={{ maxWidth: 540, margin: "60px auto", textAlign: "center", padding: "40px 24px", background: "rgba(26,26,46,0.9)", border: "1px solid var(--border)", borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.6)" }}>
@@ -395,6 +394,14 @@ export default function StudentPage() {
                 <MessageCircle size={18} /> Contact Admin Helpline
               </a>
             )}
+          </div>
+        </main>
+      ) : !hasPublishedScreens && isDataLoading ? (
+        /* ── Instant Loading State (Prevents Unpublish Flash) ── */
+        <main className="student-page" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+          <div style={{ textAlign: "center", color: "var(--gold)" }}>
+            <div className="spinner" style={{ margin: "0 auto 16px", width: 36, height: 36, border: "3px solid rgba(255,215,0,0.2)", borderTopColor: "var(--gold)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <p style={{ fontSize: "1.05rem", fontWeight: 600 }}>Loading theater showtimes…</p>
           </div>
         </main>
       ) : (
