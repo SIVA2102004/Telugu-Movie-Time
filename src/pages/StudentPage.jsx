@@ -89,15 +89,15 @@ export default function StudentPage() {
 
   const getScreenSeatPrice = (seatId) => {
     if (!isCategoryPricingEnabled) {
-      return Number(activeScreen.pricePerSeat || effectiveConfig?.pricePerSeat || 200);
+      return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
     }
-    if (!seatId) return Number(activeScreen.pricePerSeat || effectiveConfig?.pricePerSeat || 200);
+    if (!seatId) return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
     const row = seatId.charAt(0);
     const tier = screenLayout?.rowTiers?.[row] || "Silver";
     if (screenTierPrices[tier] !== undefined) {
       return Number(screenTierPrices[tier]);
     }
-    return Number(activeScreen.pricePerSeat || effectiveConfig?.pricePerSeat || 200);
+    return Number(activeScreen.pricePerSeat || config?.pricePerSeat || 200);
   };
 
   const getScreenSeatTier = (seatId) => {
