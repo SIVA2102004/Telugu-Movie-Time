@@ -46,6 +46,7 @@ export function useSeats(screenId = "screen-1", theaterId = null) {
     let currentRTDB = {};
     let currentLocks = {};
     let currentBookings = {};
+    let lastJSON = "";
 
     const recomputeSeats = () => {
       const merged = {
@@ -53,9 +54,13 @@ export function useSeats(screenId = "screen-1", theaterId = null) {
         ...currentRTDB,
         ...currentLocks,
       };
+      const jsonStr = JSON.stringify(merged);
+      if (jsonStr === lastJSON) return;
+      lastJSON = jsonStr;
+
       setSeatMap(merged);
       try {
-        localStorage.setItem(cacheKey, JSON.stringify(merged));
+        localStorage.setItem(cacheKey, jsonStr);
       } catch (e) {}
     };
 

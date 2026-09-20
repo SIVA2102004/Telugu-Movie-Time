@@ -24,6 +24,8 @@ export function useBookings(filterTheaterId = null, filterOwnerId = null) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const lastJSONRef = useRef("");
+
   // Helper to deduplicate, sort, filter, and save bookings
   const updateBookings = useCallback((list) => {
     if (!Array.isArray(list)) return;
@@ -31,7 +33,11 @@ export function useBookings(filterTheaterId = null, filterOwnerId = null) {
     list.forEach((b) => {
       if (b && b.id) {
         // Enforce owner / theater isolation filter
-        if (filterTheaterId && b.theaterId && b.theaterId !== filterTheaterId) return;
+        if (filterTheaterId && filterTheaterId !== "default-theater" && filterTheaterId !== "current") {
+          if (b.theaterId && b.theaterId !== filterTheaterId && b.theaterId !== "default-theater" && b.theaterId !== "current") {
+            return;
+          }
+        }
         if (filterOwnerId && b.ownerId && b.ownerId !== filterOwnerId) return;
         map.set(b.id, b);
       }
@@ -40,9 +46,13 @@ export function useBookings(filterTheaterId = null, filterOwnerId = null) {
     const sorted = Array.from(map.values());
     sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
+    const jsonStr = JSON.stringify(sorted);
+    if (jsonStr === lastJSONRef.current) return;
+    lastJSONRef.current = jsonStr;
+
     setBookings(sorted);
     try {
-      localStorage.setItem("telugu_talkies_bookings_cache", JSON.stringify(sorted));
+      localStorage.setItem("telugu_talkies_bookings_cache", jsonStr);
     } catch (e) {}
   }, [filterTheaterId, filterOwnerId]);
 
@@ -82,7 +92,7 @@ export function useBookings(filterTheaterId = null, filterOwnerId = null) {
     };
     window.addEventListener("storage", handleStorageChange);
 
-    // 2. Real-Time Cloud Firestore Listener
+    // 2. Real-Time Cloud Firestore Listener (sub-second push updates)
     let unsubscribe = () => {};
     try {
       unsubscribe = onSnapshot(
@@ -104,18 +114,11 @@ export function useBookings(filterTheaterId = null, filterOwnerId = null) {
       );
     } catch (e) {}
 
-    // 3. Periodic cloud refresh safeguard every 3 seconds
-    refreshBookings();
-    const interval = setInterval(() => {
-      refreshBookings();
-    }, 3000);
-
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      clearInterval(interval);
       unsubscribe();
     };
-  }, [refreshBookings, updateBookings]);
+  }, [updateBookings]);
 
   return { bookings, setBookings, loading, refreshing, refreshBookings };
 }
