@@ -19,7 +19,16 @@ export default function CoAdminManager({ config, bookings = [] }) {
       unsub = onSnapshot(
         collection(db, "coAdmins"),
         (snap) => {
-          const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          const rawList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+          // Deduplicate by unique loginId or phone number
+          const uniqueMap = new Map();
+          rawList.forEach((item) => {
+            const key = (item.loginId || item.phone || item.id || "").toLowerCase();
+            if (key && !uniqueMap.has(key)) {
+              uniqueMap.set(key, item);
+            }
+          });
+          const list = Array.from(uniqueMap.values());
           setCoAdmins(list);
           try {
             localStorage.setItem("tmt_co_admins_cache", JSON.stringify(list));
@@ -44,9 +53,11 @@ export default function CoAdminManager({ config, bookings = [] }) {
 
   const filteredCoAdmins = coAdmins.filter((c) => {
     if (!activeTheaterId || activeTheaterId === "default-theater") return true;
+    const currentCode = (config?.coAdminCode || "COADMIN2026").toUpperCase();
+    const usedCode = (c.codeUsed || "").toUpperCase();
     return (
       c.theaterId === activeTheaterId ||
-      (c.codeUsed && c.codeUsed.toUpperCase() === (config?.coAdminCode || "COADMIN2026").toUpperCase())
+      (usedCode && usedCode === currentCode)
     );
   });
 

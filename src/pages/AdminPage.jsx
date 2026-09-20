@@ -84,7 +84,9 @@ export default function AdminPage() {
 
   // Filter bookings strictly by active theater for owner isolation
   const [selectedAdminTheaterId, setSelectedAdminTheaterId] = useState(null);
-  const activeTheaterId = selectedAdminTheaterId || currentTheater?.id || theaterId;
+  const storedTheaterId = sessionStorage.getItem("adminTheaterId");
+  const activeTheaterId = selectedAdminTheaterId || theaterId || storedTheaterId || currentTheater?.id || "default-theater";
+
   const { bookings = [], setBookings, loading: bLoading, refreshing, refreshBookings } = useBookings(
     isMasterAdmin && !selectedAdminTheaterId ? null : activeTheaterId,
     isMasterAdmin && !selectedAdminTheaterId ? null : ownerId
@@ -94,8 +96,8 @@ export default function AdminPage() {
   const activeScreenId = config?.activeScreenId || "screen-1";
   const { seatMap = {} } = useSeats(activeScreenId, activeTheaterId);
 
-  // Tab definitions available to all authenticated admins & theater owners
-  const allowedTabs = [
+  // Tab definitions: Co-Admins see all theater management modules EXCEPT the Co-Admin management tab itself
+  const allTabs = [
     { id: "overview",  label: "Overview",         icon: LayoutDashboard },
     { id: "bookings",  label: "Bookings",          icon: List },
     { id: "seatmap",   label: "Seat Map",          icon: Map },
@@ -103,6 +105,11 @@ export default function AdminPage() {
     { id: "layout",    label: "Layout Editor",     icon: LayoutTemplate },
     { id: "config",    label: "Movie Config",      icon: Settings },
   ];
+
+  const allowedTabs = allTabs.filter((t) => {
+    if (adminRole === "co-admin" && t.id === "coadmins") return false;
+    return true;
+  });
 
   const [activeTab, setActiveTab] = useState("overview");
   const [layoutScreenId, setLayoutScreenId] = useState("screen-1");
