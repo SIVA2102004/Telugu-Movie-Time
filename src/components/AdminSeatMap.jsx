@@ -88,12 +88,26 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     if (readOnly) return;
 
     const rowSlots = screenLayout?.seats?.[rowLabel] || [];
-    let seatNum = 0;
+    const totalCols = rowSlots.length;
+    const seatDirection = screenLayout?.seatDirection || "ltr";
+    const isRTL = seatDirection === "rtl";
+    const isFixed = screenLayout?.numberingMode !== "sequential";
+    const activeSlots = rowSlots.filter((s) => s !== null).length;
+
+    let seqNum = 0;
     const rowSeatIds = [];
-    rowSlots.forEach((slot) => {
+    rowSlots.forEach((slot, idx) => {
       if (slot !== null) {
-        seatNum++;
-        rowSeatIds.push(`${rowLabel}${seatNum}`);
+        seqNum++;
+        let num;
+        if (typeof slot === "number") {
+          num = slot;
+        } else if (isFixed) {
+          num = isRTL ? (totalCols - idx) : (idx + 1);
+        } else {
+          num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
+        }
+        rowSeatIds.push(`${rowLabel}${num}`);
       }
     });
 
@@ -253,10 +267,16 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
       <div className="seatmap-grid" style={{ maxWidth: 880, margin: "0 auto" }}>
         {displayRows.map((rowLabel) => {
           const rowSlots = screenLayout?.seats?.[rowLabel] || [];
+          const totalCols = rowSlots.length;
           const tier = rowTiers[rowLabel] || "Silver";
           const tierPrice = tierPrices[tier] || 200;
 
-          let seatNum = 0;
+          const seatDirection = screenLayout?.seatDirection || "ltr";
+          const isRTL = seatDirection === "rtl";
+          const isFixed = screenLayout?.numberingMode !== "sequential";
+          const activeSlots = rowSlots.filter((s) => s !== null).length;
+
+          let seqNum = 0;
           return (
             <div className="seatmap-row" key={rowLabel}>
               <div className="seatmap-row-label-group">
@@ -280,8 +300,16 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
                     return <span key={`gap-${idx}`} className="seat-gap" />;
                   }
 
-                  seatNum++;
-                  const num = seatNum;
+                  seqNum++;
+                  let num;
+                  if (typeof slot === "number") {
+                    num = slot;
+                  } else if (isFixed) {
+                    num = isRTL ? (totalCols - idx) : (idx + 1);
+                  } else {
+                    num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
+                  }
+
                   const seatId = `${rowLabel}${num}`;
                   const isBlocked = blockedSeats.has(seatId);
                   const status = isBlocked ? "blocked" : (seatStatusMap[seatId] || "available");
@@ -289,7 +317,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
                   return (
                     <button
-                      key={seatId}
+                      key={`${rowLabel}-${idx}-${num}`}
                       type="button"
                       className={`seat seat--${status} ${!readOnly ? "seat--clickable" : ""} seat--tier-${tier.toLowerCase()}`}
                       onClick={() => toggleSeatBlock(seatId)}

@@ -223,20 +223,44 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     });
   };
 
+  const toggleSeatDirection = () => {
+    setLayout((prev) => {
+      const nextDir = prev.seatDirection === "rtl" ? "ltr" : "rtl";
+      toast.success(`Seat numbers set to ${nextDir === "rtl" ? "Right-to-Left (N ➔ 1)" : "Left-to-Right (1 ➔ N)"}! ↔️`);
+      return { ...prev, seatDirection: nextDir };
+    });
+  };
+
+  const toggleNumberingMode = () => {
+    setLayout((prev) => {
+      const nextMode = prev.numberingMode === "sequential" ? "fixed" : "sequential";
+      toast.success(`Numbering mode set to ${nextMode === "fixed" ? "Fixed Column (numbers don't shift when blocked)" : "Sequential"}! 🔢`);
+      return { ...prev, numberingMode: nextMode };
+    });
+  };
+
   const toggleSlot = (rowLabel, slotIdx) => {
     setLayout((prev) => {
       const row = [...(prev.seats[rowLabel] || [])];
+      const isFixed = prev.numberingMode !== "sequential";
+      const isRTL = prev.seatDirection === "rtl";
+      const totalCols = row.length;
+
+      const fixedNum = isRTL ? (totalCols - slotIdx) : (slotIdx + 1);
+
       if (row[slotIdx] === null) {
-        const maxNum = row.filter((s) => s !== null).reduce((m, s) => Math.max(m, s), 0);
-        row[slotIdx] = maxNum + 1;
+        row[slotIdx] = fixedNum;
+      } else {
+        row[slotIdx] = null;
+      }
+
+      if (!isFixed) {
         let n = 0;
         const renumbered = row.map((s) => (s === null ? null : ++n));
         return { ...prev, seats: { ...prev.seats, [rowLabel]: renumbered } };
       } else {
-        row[slotIdx] = null;
-        let n = 0;
-        const renumbered = row.map((s) => (s === null ? null : ++n));
-        return { ...prev, seats: { ...prev.seats, [rowLabel]: renumbered } };
+        const fixedRow = row.map((s, i) => (s === null ? null : (isRTL ? (totalCols - i) : (i + 1))));
+        return { ...prev, seats: { ...prev.seats, [rowLabel]: fixedRow } };
       }
     });
   };
@@ -251,8 +275,10 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
   const clearGaps = (rowLabel) => {
     setLayout((prev) => {
+      const isRTL = prev.seatDirection === "rtl";
       const row = (prev.seats[rowLabel] || []).filter((s) => s !== null);
-      const renumbered = row.map((_, i) => i + 1);
+      const total = row.length;
+      const renumbered = row.map((_, i) => (isRTL ? (total - i) : (i + 1)));
       return { ...prev, seats: { ...prev.seats, [rowLabel]: renumbered } };
     });
   };
@@ -735,6 +761,28 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
               title="Swap / reverse seating order from front to back"
             >
               <ArrowDownUp size={13} /> Swap Row Order
+            </button>
+
+            {/* Seat Numbering Direction Toggle (LTR vs RTL) */}
+            <button
+              type="button"
+              className={`btn ${layout.seatDirection === "rtl" ? "btn-gold" : "btn-ghost"}`}
+              style={{ fontSize: "0.75rem", padding: "4px 10px" }}
+              onClick={toggleSeatDirection}
+              title="Toggle seat numbering direction: Left-to-Right (1➔N) vs Right-to-Left (N➔1)"
+            >
+              ↔️ Seat Numbers: <strong>{layout.seatDirection === "rtl" ? "Right ➔ Left (N ➔ 1)" : "Left ➔ Right (1 ➔ N)"}</strong>
+            </button>
+
+            {/* Numbering Mode Toggle (Fixed Column vs Sequential) */}
+            <button
+              type="button"
+              className={`btn ${layout.numberingMode === "sequential" ? "btn-ghost" : "btn-gold"}`}
+              style={{ fontSize: "0.75rem", padding: "4px 10px" }}
+              onClick={toggleNumberingMode}
+              title="Fixed Column mode keeps original seat numbers intact so blocking a seat does NOT shift other seat numbers"
+            >
+              🔢 Mode: <strong>{layout.numberingMode === "sequential" ? "Sequential" : "Fixed Column (No Shift)"}</strong>
             </button>
           </div>
 

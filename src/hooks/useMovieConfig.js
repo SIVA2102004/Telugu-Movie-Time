@@ -183,6 +183,8 @@ export function sanitizeLayout(layout) {
     rowTiers: layout.rowTiers ? { ...layout.rowTiers } : {},
     tierPrices: layout.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 },
     screenPosition: layout.screenPosition || "top",
+    seatDirection: layout.seatDirection || "ltr",
+    numberingMode: layout.numberingMode || "fixed",
   };
 }
 

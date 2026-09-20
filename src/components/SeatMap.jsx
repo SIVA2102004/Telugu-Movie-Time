@@ -178,10 +178,16 @@ export default function SeatMap({
       <div className="seatmap-grid">
         {displayRows.map((rowLabel) => {
           const rowSlots = layout.seats[rowLabel] || [];
+          const totalCols = rowSlots.length;
           const tier = rowTiers[rowLabel] || "Silver";
           const tierPrice = tierPrices[tier];
 
-          let seatNum = 0;
+          const seatDirection = layout?.seatDirection || "ltr";
+          const isRTL = seatDirection === "rtl";
+          const isFixed = layout?.numberingMode !== "sequential";
+          const activeSlots = rowSlots.filter((s) => s !== null).length;
+
+          let seqNum = 0;
           return (
             <div className="seatmap-row" key={rowLabel}>
               <div className="seatmap-row-label-group">
@@ -197,15 +203,23 @@ export default function SeatMap({
                     return <span key={`gap-${idx}`} className="seat-gap" />;
                   }
 
-                  seatNum++;
-                  const num = seatNum;
+                  seqNum++;
+                  let num;
+                  if (typeof slot === "number") {
+                    num = slot;
+                  } else if (isFixed) {
+                    num = isRTL ? (totalCols - idx) : (idx + 1);
+                  } else {
+                    num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
+                  }
+
                   const seatId = `${rowLabel}${num}`;
                   const status = getSeatStatus(seatId);
                   const clickable = !readOnly && canToggle(seatId);
 
                   return (
                     <SeatButton
-                      key={seatId}
+                      key={`${rowLabel}-${idx}-${num}`}
                       seatId={seatId}
                       num={num}
                       status={status}
