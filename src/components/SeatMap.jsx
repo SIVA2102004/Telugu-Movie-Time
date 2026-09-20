@@ -186,6 +186,8 @@ export default function SeatMap({
           const isRTL = seatDirection === "rtl";
           const isFixed = layout?.numberingMode === "fixed";
           const activeSlots = rowSlots.filter((s) => s !== null).length;
+          const numsInRow = rowSlots.filter((s) => typeof s === "number");
+          const maxRowSeatNum = numsInRow.length > 0 ? Math.max(...numsInRow) : activeSlots;
 
           let seqNum = 0;
           return (
@@ -204,9 +206,14 @@ export default function SeatMap({
                   }
 
                   seqNum++;
-                  const num = isFixed
-                    ? (isRTL ? (totalCols - idx) : (idx + 1))
-                    : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
+                  let num;
+                  if (typeof slot === "number") {
+                    num = isRTL ? (maxRowSeatNum - slot + 1) : slot;
+                  } else if (isFixed) {
+                    num = isRTL ? (totalCols - idx) : (idx + 1);
+                  } else {
+                    num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
+                  }
 
                   const seatId = `${rowLabel}${num}`;
                   const status = getSeatStatus(seatId);

@@ -17,10 +17,15 @@ export function computeRowSeats(rowSlots, isRTL, isFixed) {
   if (!Array.isArray(rowSlots)) return [];
   const totalCols = rowSlots.length;
   const activeSlots = rowSlots.filter((s) => s !== null).length;
+  const numsInRow = rowSlots.filter((s) => typeof s === "number");
+  const maxRowSeatNum = numsInRow.length > 0 ? Math.max(...numsInRow) : activeSlots;
   let seqNum = 0;
   return rowSlots.map((slot, idx) => {
     if (slot === null) return null;
     seqNum++;
+    if (typeof slot === "number") {
+      return isRTL ? (maxRowSeatNum - slot + 1) : slot;
+    }
     return isFixed
       ? (isRTL ? (totalCols - idx) : (idx + 1))
       : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
@@ -274,17 +279,21 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   const toggleSlot = (rowLabel, slotIdx) => {
     setLayout((prev) => {
       const row = [...(prev.seats[rowLabel] || [])];
-      const isFixed = prev.numberingMode === "fixed";
-      const isRTL = prev.seatDirection === "rtl";
-
+      
       if (row[slotIdx] === null) {
-        row[slotIdx] = 1;
+        let restored = slotIdx + 1;
+        for (let i = slotIdx - 1; i >= 0; i--) {
+          if (typeof row[i] === "number") {
+            restored = row[i] + 1;
+            break;
+          }
+        }
+        row[slotIdx] = restored;
       } else {
         row[slotIdx] = null;
       }
 
-      const recalculatedRow = computeRowSeats(row, isRTL, isFixed);
-      return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
+      return { ...prev, seats: { ...prev.seats, [rowLabel]: row } };
     });
   };
 
@@ -879,15 +888,21 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
                         const isFixed = layout.numberingMode === "fixed";
                         const totalCols = rowSlots.length;
                         const activeSlots = rowSlots.filter((s) => s !== null).length;
+                        const numsInRow = rowSlots.filter((s) => typeof s === "number");
+                        const maxRowSeatNum = numsInRow.length > 0 ? Math.max(...numsInRow) : activeSlots;
                         let seqNum = 0;
 
                         return rowSlots.map((slot, slotIdx) => {
                           let displayNum = null;
                           if (slot !== null) {
                             seqNum++;
-                            displayNum = isFixed
-                              ? (isRTL ? (totalCols - slotIdx) : (slotIdx + 1))
-                              : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
+                            if (typeof slot === "number") {
+                              displayNum = isRTL ? (maxRowSeatNum - slot + 1) : slot;
+                            } else if (isFixed) {
+                              displayNum = isRTL ? (totalCols - slotIdx) : (slotIdx + 1);
+                            } else {
+                              displayNum = isRTL ? (activeSlots - seqNum + 1) : seqNum;
+                            }
                           }
 
                           return (
