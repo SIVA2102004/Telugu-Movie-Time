@@ -68,9 +68,14 @@ export default function StudentPage() {
   });
 
   const mergedScreens = Array.from(mergedScreensMap.values());
-  const publishedScreens = mergedScreens.filter((s) => s.isPublished !== false);
+  // Screen is published if isPublished is true or undefined (default true for main hall)
+  let publishedScreens = mergedScreens.filter((s) => s.isPublished !== false);
+  // Fallback: If no screen is published, default to Screen 1 or the first available screen so booking stays open
+  if (publishedScreens.length === 0 && mergedScreens.length > 0) {
+    publishedScreens = [mergedScreens[0]];
+  }
   const hasPublishedScreens = publishedScreens.length > 0;
-  const effectiveScreenList = hasPublishedScreens ? publishedScreens : mergedScreens.slice(0, 1);
+  const effectiveScreenList = hasPublishedScreens ? publishedScreens : DEFAULT_SCREENS;
 
   const currentScreenId = selectedScreenId || config?.activeScreenId || effectiveScreenList[0]?.id || "screen-1";
   const activeScreen = effectiveScreenList.find((s) => s.id === currentScreenId) || effectiveScreenList[0] || {};
