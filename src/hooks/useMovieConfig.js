@@ -300,34 +300,15 @@ export function useMovieConfig(theaterId = null) {
 
   const [config, setConfig] = useState(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return sanitizeConfig(parsed);
+      const savedSpecific = localStorage.getItem(storageKey);
+      if (savedSpecific) {
+        return sanitizeConfig(JSON.parse(savedSpecific));
+      }
+      const savedGlobal = localStorage.getItem("telugu_talkies_movie_config");
+      if (savedGlobal) {
+        return sanitizeConfig(JSON.parse(savedGlobal));
       }
     } catch (e) {}
-
-    if (effectiveTheaterId) {
-      return sanitizeConfig({
-        id: effectiveTheaterId,
-        activeScreenId: "screen-1",
-        screens: [
-          {
-            id: "screen-1",
-            name: "Screen 1 (Main Hall)",
-            movieName: "",
-            theater: "Cinema Hall (Screen 1)",
-            date: new Date().toISOString().split("T")[0],
-            showTime: "6:00 PM",
-            pricePerSeat: 200,
-            posterUrl: null,
-            tierPrices: { Platinum: 500, Gold: 320, Silver: 200 },
-            layout: BLUEPRINT_LAYOUT,
-            isPublished: true,
-          },
-        ],
-      });
-    }
 
     return DEFAULT_CONFIG;
   });
@@ -338,7 +319,7 @@ export function useMovieConfig(theaterId = null) {
     // 1. Cross-tab and local storage instant sync
     const handleStorage = () => {
       try {
-        const saved = localStorage.getItem(storageKey);
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
         if (saved) {
           const parsed = JSON.parse(saved);
           setConfig(sanitizeConfig(parsed));
@@ -351,6 +332,7 @@ export function useMovieConfig(theaterId = null) {
     // 2. Real-time Firestore sync
     let unsubscribeConfig = () => {};
     let unsubscribeTheater = () => {};
+    let unsubscribeCurrent = () => {};
 
     try {
       const targetDocId = effectiveTheaterId || "current";
@@ -365,28 +347,36 @@ export function useMovieConfig(theaterId = null) {
             try {
               localStorage.setItem(storageKey, JSON.stringify(sanitized));
             } catch (e) {}
-          } else if (effectiveTheaterId) {
-            // Fallback: listen to theaters collection document for initialized owner
-            const thRef = doc(db, "theaters", effectiveTheaterId);
-            unsubscribeTheater = onSnapshot(thRef, (thSnap) => {
-              if (thSnap.exists()) {
-                const thData = thSnap.data();
-                const constructed = sanitizeConfig({
-                  id: thData.id,
-                  theater: thData.name,
-                  upiId: thData.upiId,
-                  payeeName: thData.payeeName,
-                  adminPhone: thData.adminPhone,
-                  screens: thData.screens || DEFAULT_SCREENS,
-                  activeScreenId: thData.activeScreenId || "screen-1",
-                  ownerId: thData.ownerId,
-                });
-                setConfig(constructed);
-                try {
-                  localStorage.setItem(storageKey, JSON.stringify(constructed));
-                } catch (e) {}
+          } else {
+            // Fallback 1: Listen to master movieConfig/current document
+            const currentRef = doc(db, "movieConfig", "current");
+            unsubscribeCurrent = onSnapshot(currentRef, (currSnap) => {
+              if (currSnap.exists()) {
+                const sanitized = sanitizeConfig(currSnap.data());
+                setConfig(sanitized);
               }
             });
+
+            // Fallback 2: Listen to theaters collection document
+            if (effectiveTheaterId) {
+              const thRef = doc(db, "theaters", effectiveTheaterId);
+              unsubscribeTheater = onSnapshot(thRef, (thSnap) => {
+                if (thSnap.exists()) {
+                  const thData = thSnap.data();
+                  const constructed = sanitizeConfig({
+                    id: thData.id,
+                    theater: thData.name,
+                    upiId: thData.upiId,
+                    payeeName: thData.payeeName,
+                    adminPhone: thData.adminPhone,
+                    screens: thData.screens || DEFAULT_SCREENS,
+                    activeScreenId: thData.activeScreenId || "screen-1",
+                    ownerId: thData.ownerId,
+                  });
+                  setConfig(constructed);
+                }
+              });
+            }
           }
         },
         (error) => {
@@ -401,6 +391,7 @@ export function useMovieConfig(theaterId = null) {
       window.removeEventListener("storage", handleStorage);
       unsubscribeConfig();
       unsubscribeTheater();
+      unsubscribeCurrent();
     };
   }, [effectiveTheaterId, storageKey]);
 
