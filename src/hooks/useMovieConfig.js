@@ -176,6 +176,20 @@ export function sanitizeLayout(layout) {
   if (!layout || !Array.isArray(layout.rows) || !layout.seats || typeof layout.seats !== "object") {
     return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
   }
+
+  // Auto-upgrade legacy layout (if Row B has >= 20 seats or Row B seat 5 is contiguous instead of aisle gap, or Row J starts at seat 1 without left gaps)
+  const bRow = layout.seats.B || [];
+  const jRow = layout.seats.J || [];
+  const isLegacyLayout = (
+    bRow.length >= 20 ||
+    bRow[4] === 5 ||
+    (jRow.length > 0 && jRow[0] === 1)
+  );
+
+  if (isLegacyLayout) {
+    return JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
+  }
+
   return {
     ...layout,
     rows: [...layout.rows],
