@@ -99,14 +99,9 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     rowSlots.forEach((slot, idx) => {
       if (slot !== null) {
         seqNum++;
-        let num;
-        if (typeof slot === "number") {
-          num = slot;
-        } else if (isFixed) {
-          num = isRTL ? (totalCols - idx) : (idx + 1);
-        } else {
-          num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
-        }
+        const num = isFixed
+          ? (isRTL ? (totalCols - idx) : (idx + 1))
+          : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
         rowSeatIds.push(`${rowLabel}${num}`);
       }
     });
@@ -301,14 +296,9 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
                   }
 
                   seqNum++;
-                  let num;
-                  if (typeof slot === "number") {
-                    num = slot;
-                  } else if (isFixed) {
-                    num = isRTL ? (totalCols - idx) : (idx + 1);
-                  } else {
-                    num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
-                  }
+                  const num = isFixed
+                    ? (isRTL ? (totalCols - idx) : (idx + 1))
+                    : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
 
                   const seatId = `${rowLabel}${num}`;
                   const isBlocked = blockedSeats.has(seatId);

@@ -204,14 +204,9 @@ export default function SeatMap({
                   }
 
                   seqNum++;
-                  let num;
-                  if (typeof slot === "number") {
-                    num = slot;
-                  } else if (isFixed) {
-                    num = isRTL ? (totalCols - idx) : (idx + 1);
-                  } else {
-                    num = isRTL ? (activeSlots - seqNum + 1) : seqNum;
-                  }
+                  const num = isFixed
+                    ? (isRTL ? (totalCols - idx) : (idx + 1))
+                    : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
 
                   const seatId = `${rowLabel}${num}`;
                   const status = getSeatStatus(seatId);

@@ -13,6 +13,28 @@ const MAX_COLS = 30;
 
 const DEFAULT_TIERS = ["Platinum", "Gold", "Silver"];
 
+export function computeRowSeats(rowSlots, isRTL, isFixed) {
+  if (!Array.isArray(rowSlots)) return [];
+  const totalCols = rowSlots.length;
+  const activeSlots = rowSlots.filter((s) => s !== null).length;
+  let seqNum = 0;
+  return rowSlots.map((slot, idx) => {
+    if (slot === null) return null;
+    seqNum++;
+    return isFixed
+      ? (isRTL ? (totalCols - idx) : (idx + 1))
+      : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
+  });
+}
+
+export function recalculateAllSeats(seats, isRTL, isFixed) {
+  const newSeats = {};
+  Object.keys(seats || {}).forEach((r) => {
+    newSeats[r] = computeRowSeats(seats[r], isRTL, isFixed);
+  });
+  return newSeats;
+}
+
 export default function TheaterLayoutEditor({ config, selectedScreenId: initialScreenId }) {
   const screens = config?.screens || DEFAULT_SCREENS;
 
@@ -208,8 +230,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       const seatSlots = current.filter((s) => s !== null);
       let newRow;
       if (count > seatSlots.length) {
-        const next = seatSlots.length + 1;
-        const toAdd = Array.from({ length: count - seatSlots.length }, (_, i) => next + i);
+        const toAdd = Array.from({ length: count - seatSlots.length }, () => 1);
         newRow = [...current, ...toAdd];
       } else {
         let removed = 0;
@@ -219,23 +240,34 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
           return true;
         }).reverse();
       }
-      return { ...prev, seats: { ...prev.seats, [rowLabel]: newRow } };
+      const isFixed = prev.numberingMode !== "sequential";
+      const isRTL = prev.seatDirection === "rtl";
+      const recalculatedRow = computeRowSeats(newRow, isRTL, isFixed);
+      return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
     });
   };
 
   const toggleSeatDirection = () => {
     setLayout((prev) => {
       const nextDir = prev.seatDirection === "rtl" ? "ltr" : "rtl";
+      const isRTL = nextDir === "rtl";
+      const isFixed = prev.numberingMode !== "sequential";
+      const seats = recalculateAllSeats(prev.seats, isRTL, isFixed);
+
       toast.success(`Seat numbers set to ${nextDir === "rtl" ? "Right-to-Left (N ➔ 1)" : "Left-to-Right (1 ➔ N)"}! ↔️`);
-      return { ...prev, seatDirection: nextDir };
+      return { ...prev, seatDirection: nextDir, seats };
     });
   };
 
   const toggleNumberingMode = () => {
     setLayout((prev) => {
       const nextMode = prev.numberingMode === "sequential" ? "fixed" : "sequential";
+      const isRTL = prev.seatDirection === "rtl";
+      const isFixed = nextMode === "fixed";
+      const seats = recalculateAllSeats(prev.seats, isRTL, isFixed);
+
       toast.success(`Numbering mode set to ${nextMode === "fixed" ? "Fixed Column (numbers don't shift when blocked)" : "Sequential"}! 🔢`);
-      return { ...prev, numberingMode: nextMode };
+      return { ...prev, numberingMode: nextMode, seats };
     });
   };
 
@@ -244,24 +276,15 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       const row = [...(prev.seats[rowLabel] || [])];
       const isFixed = prev.numberingMode !== "sequential";
       const isRTL = prev.seatDirection === "rtl";
-      const totalCols = row.length;
-
-      const fixedNum = isRTL ? (totalCols - slotIdx) : (slotIdx + 1);
 
       if (row[slotIdx] === null) {
-        row[slotIdx] = fixedNum;
+        row[slotIdx] = 1;
       } else {
         row[slotIdx] = null;
       }
 
-      if (!isFixed) {
-        let n = 0;
-        const renumbered = row.map((s) => (s === null ? null : ++n));
-        return { ...prev, seats: { ...prev.seats, [rowLabel]: renumbered } };
-      } else {
-        const fixedRow = row.map((s, i) => (s === null ? null : (isRTL ? (totalCols - i) : (i + 1))));
-        return { ...prev, seats: { ...prev.seats, [rowLabel]: fixedRow } };
-      }
+      const recalculatedRow = computeRowSeats(row, isRTL, isFixed);
+      return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
     });
   };
 
@@ -269,17 +292,20 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     setLayout((prev) => {
       const row = [...(prev.seats[rowLabel] || [])];
       row.splice(slotIdx + 1, 0, null);
-      return { ...prev, seats: { ...prev.seats, [rowLabel]: row } };
+      const isFixed = prev.numberingMode !== "sequential";
+      const isRTL = prev.seatDirection === "rtl";
+      const recalculatedRow = computeRowSeats(row, isRTL, isFixed);
+      return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
     });
   };
 
   const clearGaps = (rowLabel) => {
     setLayout((prev) => {
+      const isFixed = prev.numberingMode !== "sequential";
       const isRTL = prev.seatDirection === "rtl";
       const row = (prev.seats[rowLabel] || []).filter((s) => s !== null);
-      const total = row.length;
-      const renumbered = row.map((_, i) => (isRTL ? (total - i) : (i + 1)));
-      return { ...prev, seats: { ...prev.seats, [rowLabel]: renumbered } };
+      const recalculatedRow = computeRowSeats(row, isRTL, isFixed);
+      return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
     });
   };
 
@@ -843,22 +869,40 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
                     {/* Seat slots */}
                     <div className="tle-seat-row">
-                      {rowSlots.map((slot, slotIdx) => (
-                        <div key={slotIdx} className="tle-slot-group">
-                          <button
-                            className={`tle-seat-btn ${slot === null ? "tle-seat-btn--gap" : "tle-seat-btn--seat"} tle-seat-btn--tier-${currentTier.toLowerCase()}`}
-                            onClick={() => toggleSlot(rowLabel, slotIdx)}
-                            title={slot === null ? "Gap — click to restore as seat" : `Seat ${rowLabel}${slot} (${currentTier} - ₹${tierPrices[currentTier]})`}
-                          >
-                            {slot !== null ? slot : "·"}
-                          </button>
-                          <button
-                            className="tle-insert-gap"
-                            onClick={() => insertGapAfter(rowLabel, slotIdx)}
-                            title="Insert aisle gap here"
-                          >|</button>
-                        </div>
-                      ))}
+                      {(() => {
+                        const isRTL = layout.seatDirection === "rtl";
+                        const isFixed = layout.numberingMode !== "sequential";
+                        const totalCols = rowSlots.length;
+                        const activeSlots = rowSlots.filter((s) => s !== null).length;
+                        let seqNum = 0;
+
+                        return rowSlots.map((slot, slotIdx) => {
+                          let displayNum = null;
+                          if (slot !== null) {
+                            seqNum++;
+                            displayNum = isFixed
+                              ? (isRTL ? (totalCols - slotIdx) : (slotIdx + 1))
+                              : (isRTL ? (activeSlots - seqNum + 1) : seqNum);
+                          }
+
+                          return (
+                            <div key={slotIdx} className="tle-slot-group">
+                              <button
+                                className={`tle-seat-btn ${slot === null ? "tle-seat-btn--gap" : "tle-seat-btn--seat"} tle-seat-btn--tier-${currentTier.toLowerCase()}`}
+                                onClick={() => toggleSlot(rowLabel, slotIdx)}
+                                title={slot === null ? "Gap — click to restore as seat" : `Seat ${rowLabel}${displayNum} (${currentTier} - ₹${tierPrices[currentTier]})`}
+                              >
+                                {displayNum !== null ? displayNum : "·"}
+                              </button>
+                              <button
+                                className="tle-insert-gap"
+                                onClick={() => insertGapAfter(rowLabel, slotIdx)}
+                                title="Insert aisle gap here"
+                              >|</button>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
 
                     {/* Seat count input (right) */}
