@@ -303,10 +303,11 @@
 .tle-rows {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin: 8px 0 16px;
-  align-items: center;
-  width: 100%;
+  align-items: flex-start;
+  width: max-content;
+  min-width: 100%;
 }
 
 .tle-row {
@@ -314,15 +315,24 @@
   align-items: center;
   gap: clamp(3px, 0.8vw, 6px);
   min-width: max-content;
-  justify-content: center;
+  justify-content: flex-start;
+  position: relative;
 }
 
-/* Row controls (label + tier badge + arrows) */
+/* Row controls (label + tier badge + arrows) - Sticky on left edge */
 .tle-row-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--surface, #131326);
+  padding: 3px 6px 3px 2px;
+  border-radius: 4px;
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 215, 0, 0.15);
 }
 
 .tle-row-label-input {
@@ -428,12 +438,20 @@
   color: var(--gold);
 }
 
-/* Row meta (count + clear) */
+/* Row meta (count + clear) - Sticky on right edge */
 .tle-row-meta {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  position: sticky;
+  right: 0;
+  z-index: 10;
+  background: var(--surface, #131326);
+  padding: 3px 2px 3px 6px;
+  border-radius: 4px;
+  box-shadow: -3px 0 8px rgba(0, 0, 0, 0.5);
+  border-left: 1px solid rgba(255, 215, 0, 0.15);
 }
 
 .tle-count-control {
@@ -531,3 +549,63 @@
 }
 .tle-dot--seat { background: var(--green); }
 .tle-dot--gap  { background: var(--surface2); border: 1px dashed var(--border); }
+
+/* ── Mobile responsiveness for Layout Editor ── */
+@media (max-width: 768px) {
+  .tle-editor-card {
+    padding: 10px 8px;
+  }
+
+  .tle-row-controls {
+    padding: 2px 4px 2px 2px;
+    gap: 2px;
+  }
+
+  .tle-row-label-input {
+    width: 24px;
+    font-size: 0.7rem;
+    padding: 2px 1px;
+  }
+
+  .tle-tier-select {
+    font-size: 0.65rem;
+    padding: 2px 2px;
+    max-width: 72px;
+  }
+
+  .tle-arrow-btn {
+    width: 16px;
+    height: 14px;
+  }
+
+  .tle-seat-btn {
+    width: 25px;
+    height: 25px;
+    font-size: 0.58rem;
+  }
+
+  .tle-insert-gap {
+    height: 25px;
+  }
+
+  .tle-row-meta {
+    padding: 2px 2px 2px 4px;
+    gap: 2px;
+  }
+
+  .tle-count-input {
+    width: 32px;
+    font-size: 0.7rem;
+    padding: 1px 2px;
+  }
+
+  .tle-count-btn {
+    width: 20px;
+    height: 20px;
+  }
+
+  .tle-clear-gaps-btn {
+    width: 22px;
+    height: 22px;
+  }
+}
