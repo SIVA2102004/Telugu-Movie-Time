@@ -83,8 +83,62 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     });
   };
 
-  // Block or unblock entire row
-  const toggleRowBlock = (rowLabel) => {
+  const [clickMode, setClickMode] = useState("block"); // "block" (Grey 🔒) or "booked" (Red 🔴)
+
+  // Handle seat click based on clickMode (block vs booked)
+  const handleSeatClick = async (seatId) => {
+    if (readOnly) return;
+
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+
+    if (clickMode === "booked") {
+      const isAlreadyBooked = seatStatusMap[seatId] === "booked";
+      if (isAlreadyBooked) {
+        try {
+          const { getDocs, collection, query, where, deleteDoc } = await import("firebase/firestore");
+          const q = query(collection(db, "bookings"), where("seats", "array-contains", seatId));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) {
+            if (d.data().screenId === selectedScreenId || d.data().screenId === (currentScreen?.id || "screen-1")) {
+              await deleteDoc(d.ref);
+            }
+          }
+          toast.success(`Seat ${seatId} marked as Available 🟢`);
+        } catch (e) {
+          toast.error("Failed to unmark booking");
+        }
+      } else {
+        try {
+          const bookingId = `admin_bkg_${selectedScreenId}_${seatId}_${Date.now()}`;
+          await setDoc(doc(db, "bookings", bookingId), {
+            id: bookingId,
+            screenId: selectedScreenId,
+            theaterId: targetDocId,
+            name: "Admin Reserved",
+            email: "admin@theater.com",
+            phone: "0000000000",
+            upiId: "ADMIN-RESERVED",
+            seats: [seatId],
+            totalAmount: 0,
+            status: "confirmed",
+            createdAt: new Date().toISOString(),
+          });
+          setBlockedSeats((prev) => {
+            const next = new Set(prev);
+            next.delete(seatId);
+            return next;
+          });
+          toast.success(`Seat ${seatId} marked as CONFIRMED BOOKED 🔴`);
+        } catch (e) {
+          toast.error("Failed to mark seat as booked");
+        }
+      }
+    } else {
+      toggleSeatBlock(seatId);
+    }
+  };
+
+  const handleRowClick = async (rowLabel) => {
     if (readOnly) return;
 
     const rowSlots = screenLayout?.seats?.[rowLabel] || [];
@@ -113,18 +167,49 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
       }
     });
 
-    setBlockedSeats((prev) => {
-      const next = new Set(prev);
-      const allBlocked = rowSeatIds.every((id) => next.has(id));
-      if (allBlocked) {
-        rowSeatIds.forEach((id) => next.delete(id));
-        toast.success(`Row ${rowLabel} unblocked`);
+    if (clickMode === "booked") {
+      const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+      const allBooked = rowSeatIds.every((id) => seatStatusMap[id] === "booked");
+
+      if (allBooked) {
+        try {
+          const { getDocs, collection, query, where, deleteDoc } = await import("firebase/firestore");
+          for (const seatId of rowSeatIds) {
+            const q = query(collection(db, "bookings"), where("seats", "array-contains", seatId));
+            const snap = await getDocs(q);
+            snap.docs.forEach(async (d) => {
+              if (d.data().screenId === selectedScreenId) await deleteDoc(d.ref);
+            });
+          }
+          toast.success(`Row ${rowLabel} unbooked 🟢`);
+        } catch (e) {}
       } else {
-        rowSeatIds.forEach((id) => next.add(id));
-        toast(`Row ${rowLabel} blocked`, { icon: "🔒" });
+        try {
+          const bookingId = `admin_bkg_${selectedScreenId}_${rowLabel}_${Date.now()}`;
+          await setDoc(doc(db, "bookings", bookingId), {
+            id: bookingId,
+            screenId: selectedScreenId,
+            theaterId: targetDocId,
+            name: "Admin Reserved Row",
+            email: "admin@theater.com",
+            phone: "0000000000",
+            upiId: "ADMIN-RESERVED",
+            seats: rowSeatIds,
+            totalAmount: 0,
+            status: "confirmed",
+            createdAt: new Date().toISOString(),
+          });
+          setBlockedSeats((prev) => {
+            const next = new Set(prev);
+            rowSeatIds.forEach((id) => next.delete(id));
+            return next;
+          });
+          toast.success(`Row ${rowLabel} marked as CONFIRMED BOOKED 🔴`);
+        } catch (e) {}
       }
-      return next;
-    });
+    } else {
+      toggleRowBlock(rowLabel);
+    }
   };
 
   const clearAllBlocks = () => {
@@ -206,37 +291,30 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
           <p className="admin-seatmap-sub">
             {readOnly
               ? "View live confirmed (Red), pending verification (Orange), and available seats (Green)."
-              : "Click any seat or row button to toggle Available (Green) vs Blocked (Grey)"}
+              : "Click any seat or row button to toggle seat status. Choose Click Mode below:"}
           </p>
         </div>
 
         {!readOnly && (
-          <div className="admin-seatmap-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => {
-                const rowSlots = screenLayout?.seats?.["A"] || [];
-                let seatNum = 0;
-                const rowASeats = [];
-                rowSlots.forEach((slot) => {
-                  if (slot !== null) {
-                    seatNum++;
-                    rowASeats.push(`A${seatNum}`);
-                  }
-                });
-                setBlockedSeats((prev) => {
-                  const next = new Set(prev);
-                  rowASeats.forEach((id) => next.delete(id));
-                  return next;
-                });
-                toast.success("Row A unblocked and made 100% Available! 🟢");
-              }}
-              style={{ fontSize: "0.8rem", padding: "6px 12px", color: "var(--green)", borderColor: "var(--green)" }}
-              title="Instantly unblock all seats in Row A"
-            >
-              🔓 Unblock Row A
-            </button>
+          <div className="admin-seatmap-actions" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,0.06)", padding: 4, borderRadius: 8, border: "1px solid var(--border)" }}>
+              <button
+                type="button"
+                className={`btn ${clickMode === "block" ? "btn-gold" : "btn-ghost"}`}
+                style={{ padding: "6px 14px", fontSize: "0.8rem", fontWeight: 700, borderRadius: 6 }}
+                onClick={() => setClickMode("block")}
+              >
+                🔒 Block Mode (Grey ⬛)
+              </button>
+              <button
+                type="button"
+                className={`btn ${clickMode === "booked" ? "btn-danger" : "btn-ghost"}`}
+                style={{ padding: "6px 14px", fontSize: "0.8rem", fontWeight: 700, borderRadius: 6, background: clickMode === "booked" ? "#E50914" : "", color: "#FFF" }}
+                onClick={() => setClickMode("booked")}
+              >
+                🔴 Mark Booked (Red 🔴)
+              </button>
+            </div>
 
             {blockedSeats.size > 0 && (
               <button className="btn btn-ghost" onClick={clearAllBlocks} style={{ fontSize: "0.8rem" }}>
@@ -287,9 +365,9 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
                 <button
                   type="button"
                   className={`admin-row-toggle-btn ${readOnly ? "admin-row-toggle-btn--readonly" : ""}`}
-                  onClick={() => toggleRowBlock(rowLabel)}
+                  onClick={() => handleRowClick(rowLabel)}
                   disabled={readOnly}
-                  title={readOnly ? `Row ${rowLabel}` : `Click to block/unblock entire Row ${rowLabel}`}
+                  title={readOnly ? `Row ${rowLabel}` : `Click to toggle Row ${rowLabel} as ${clickMode === "booked" ? "Booked (Red)" : "Blocked (Grey)"}`}
                 >
                   {rowLabel}
                 </button>
@@ -324,7 +402,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
                       key={`${rowLabel}-${idx}-${num}`}
                       type="button"
                       className={`seat seat--${status} ${!readOnly ? "seat--clickable" : ""} seat--tier-${tier.toLowerCase()}`}
-                      onClick={() => toggleSeatBlock(seatId)}
+                      onClick={() => handleSeatClick(seatId)}
                       disabled={readOnly}
                       title={
                         booker
