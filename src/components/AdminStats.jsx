@@ -151,25 +151,13 @@ export default function AdminStats({ bookings = [], config = {}, layout = {}, on
         </div>
       </div>
 
-      {/* ── ADMIN & CO-ADMIN CREDENTIALS & SYSTEM DETAILS CARD ── */}
+      {/* ── CO-ADMIN CREDENTIALS & SYSTEM DETAILS CARD ── */}
       <div className="card admin-credentials-card" style={{ marginTop: 20, padding: "20px 24px" }}>
         <h3 style={{ fontSize: "1.05rem", color: "var(--gold)", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          <ShieldCheck size={20} /> Admin & Co-Admin Credentials & Live Settings
+          <ShieldCheck size={20} /> Co-Admin Access & Live Settings
         </h3>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-          {/* Master Admin Details */}
-          <div style={{ background: "var(--surface2)", padding: 16, borderRadius: 8, border: "1px solid var(--border)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gold)", fontWeight: 700, marginBottom: 8 }}>
-              <KeyRound size={16} /> Master Admin Access
-            </div>
-            <div style={{ fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: 6 }}>
-              <div><strong>Role:</strong> Master Administrator</div>
-              <div><strong>Password:</strong> <code style={{ color: "var(--gold)", background: "rgba(255,215,0,0.1)", padding: "2px 6px", borderRadius: 4 }}>{config?.adminPassword || "admin123"}</code></div>
-              <div><strong>Master Recovery PIN:</strong> <code style={{ color: "#4fc3f7" }}>9999</code></div>
-              <small style={{ color: "var(--text-muted)", marginTop: 4 }}>Full control: Edit movie, pricing, layout & delete/confirm bookings.</small>
-            </div>
-          </div>
 
           {/* Co-Admin Joining Code */}
           <div style={{ background: "var(--surface2)", padding: 16, borderRadius: 8, border: "1px solid var(--border)" }}>

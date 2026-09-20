@@ -558,7 +558,7 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
             name="adminPassword"
             type="password"
             placeholder="Master admin password"
-            value={form.adminPassword || "admin123"}
+            value={form.adminPassword || ""}
             onChange={handleChange}
           />
         </div>

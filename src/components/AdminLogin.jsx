@@ -824,7 +824,7 @@ export default function AdminLogin({ onLogin, config }) {
                   type={showPw ? "text" : "password"}
                   value={passwordVal}
                   onChange={(e) => setPasswordVal(e.target.value)}
-                  placeholder="Enter master password (default: admin123)"
+                  placeholder="Enter master password"
                   autoFocus
                   required
                 />
@@ -989,12 +989,12 @@ export default function AdminLogin({ onLogin, config }) {
               <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Reset Admin Password</h3>
             </div>
             <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginBottom: 14 }}>
-              Verify identity with Master Security PIN (<code style={{ color: "var(--gold)" }}>9999</code>) or Last 4 Digits of Admin WhatsApp number.
+              Verify identity with Master Security PIN or Last 4 Digits of Admin WhatsApp number.
             </p>
 
             <form onSubmit={handleResetPassword}>
               <div className="form-field" style={{ marginBottom: 12 }}>
-                <label className="label">Master Security PIN (Default: 9999)</label>
+                <label className="label">Master Security PIN</label>
                 <input
                   className="input"
                   type="password"
