@@ -559,7 +559,7 @@ export default function AdminLogin({ onLogin, config }) {
 
           <button
             type="button"
-            className={`btn ${loginMode === "coadmin" ? "btn-gold" : "btn-ghost"}`}
+            className={`btn ${loginMode === "coadmin" || loginMode === "register" ? "btn-gold" : "btn-ghost"}`}
             style={{ padding: "8px 4px", fontSize: "0.76rem", justifyContent: "center", borderRadius: 8, fontWeight: 700 }}
             onClick={() => {
               setLoginMode("coadmin");
@@ -779,6 +779,23 @@ export default function AdminLogin({ onLogin, config }) {
             <button className="btn btn-gold admin-login__btn" disabled={loading} style={{ width: "100%", marginTop: 8 }}>
               {loading ? <span className="spinner" style={{ width: 18, height: 18 }} /> : "Login as Co-Admin 🚀"}
             </button>
+
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>New Volunteer / Co-Admin? </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginMode("register");
+                  setRegStep(1);
+                  setError("");
+                  setInputVal("");
+                  setPasswordVal("");
+                }}
+                style={{ background: "none", border: "none", color: "var(--gold)", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
+              >
+                Register with Code 🔑
+              </button>
+            </div>
           </form>
         )}
 
