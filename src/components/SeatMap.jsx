@@ -184,7 +184,7 @@ export default function SeatMap({
 
           const seatDirection = layout?.seatDirection || "ltr";
           const isRTL = seatDirection === "rtl";
-          const isFixed = layout?.numberingMode !== "sequential";
+          const isFixed = layout?.numberingMode === "fixed";
           const activeSlots = rowSlots.filter((s) => s !== null).length;
 
           let seqNum = 0;

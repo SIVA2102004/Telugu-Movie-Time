@@ -240,7 +240,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
           return true;
         }).reverse();
       }
-      const isFixed = prev.numberingMode !== "sequential";
+      const isFixed = prev.numberingMode === "fixed";
       const isRTL = prev.seatDirection === "rtl";
       const recalculatedRow = computeRowSeats(newRow, isRTL, isFixed);
       return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
@@ -251,7 +251,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     setLayout((prev) => {
       const nextDir = prev.seatDirection === "rtl" ? "ltr" : "rtl";
       const isRTL = nextDir === "rtl";
-      const isFixed = prev.numberingMode !== "sequential";
+      const isFixed = prev.numberingMode === "fixed";
       const seats = recalculateAllSeats(prev.seats, isRTL, isFixed);
 
       toast.success(`Seat numbers set to ${nextDir === "rtl" ? "Right-to-Left (N ➔ 1)" : "Left-to-Right (1 ➔ N)"}! ↔️`);
@@ -274,7 +274,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   const toggleSlot = (rowLabel, slotIdx) => {
     setLayout((prev) => {
       const row = [...(prev.seats[rowLabel] || [])];
-      const isFixed = prev.numberingMode !== "sequential";
+      const isFixed = prev.numberingMode === "fixed";
       const isRTL = prev.seatDirection === "rtl";
 
       if (row[slotIdx] === null) {
@@ -292,7 +292,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     setLayout((prev) => {
       const row = [...(prev.seats[rowLabel] || [])];
       row.splice(slotIdx + 1, 0, null);
-      const isFixed = prev.numberingMode !== "sequential";
+      const isFixed = prev.numberingMode === "fixed";
       const isRTL = prev.seatDirection === "rtl";
       const recalculatedRow = computeRowSeats(row, isRTL, isFixed);
       return { ...prev, seats: { ...prev.seats, [rowLabel]: recalculatedRow } };
@@ -301,7 +301,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
   const clearGaps = (rowLabel) => {
     setLayout((prev) => {
-      const isFixed = prev.numberingMode !== "sequential";
+      const isFixed = prev.numberingMode === "fixed";
       const isRTL = prev.seatDirection === "rtl";
       const row = (prev.seats[rowLabel] || []).filter((s) => s !== null);
       const recalculatedRow = computeRowSeats(row, isRTL, isFixed);
@@ -876,7 +876,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
                     <div className="tle-seat-row">
                       {(() => {
                         const isRTL = layout.seatDirection === "rtl";
-                        const isFixed = layout.numberingMode !== "sequential";
+                        const isFixed = layout.numberingMode === "fixed";
                         const totalCols = rowSlots.length;
                         const activeSlots = rowSlots.filter((s) => s !== null).length;
                         let seqNum = 0;

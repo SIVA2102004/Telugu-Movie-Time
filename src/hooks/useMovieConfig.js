@@ -6,6 +6,8 @@ import { doc, onSnapshot } from "firebase/firestore";
 export const BLUEPRINT_LAYOUT = {
   rows: ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"],
   screenPosition: "top",
+  seatDirection: "ltr",
+  numberingMode: "sequential",
   rowTiers: {
     A: "Platinum",
     B: "Gold",
@@ -183,7 +185,8 @@ export function sanitizeLayout(layout) {
   const isLegacyLayout = (
     bRow.length >= 20 ||
     bRow[4] === 5 ||
-    (jRow.length > 0 && jRow[0] === 1)
+    (jRow.length > 0 && jRow[0] === 1) ||
+    layout.numberingMode === "fixed"
   );
 
   if (isLegacyLayout) {
@@ -198,7 +201,7 @@ export function sanitizeLayout(layout) {
     tierPrices: layout.tierPrices || { Platinum: 500, Gold: 320, Silver: 200 },
     screenPosition: layout.screenPosition || "top",
     seatDirection: layout.seatDirection || "ltr",
-    numberingMode: layout.numberingMode || "fixed",
+    numberingMode: layout.numberingMode || "sequential",
   };
 }
 

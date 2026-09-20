@@ -91,7 +91,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
     const totalCols = rowSlots.length;
     const seatDirection = screenLayout?.seatDirection || "ltr";
     const isRTL = seatDirection === "rtl";
-    const isFixed = screenLayout?.numberingMode !== "sequential";
+    const isFixed = screenLayout?.numberingMode === "fixed";
     const activeSlots = rowSlots.filter((s) => s !== null).length;
 
     let seqNum = 0;
@@ -268,7 +268,7 @@ export default function AdminSeatMap({ seatMap, bookings, config, layout, readOn
 
           const seatDirection = screenLayout?.seatDirection || "ltr";
           const isRTL = seatDirection === "rtl";
-          const isFixed = screenLayout?.numberingMode !== "sequential";
+          const isFixed = screenLayout?.numberingMode === "fixed";
           const activeSlots = rowSlots.filter((s) => s !== null).length;
 
           let seqNum = 0;
