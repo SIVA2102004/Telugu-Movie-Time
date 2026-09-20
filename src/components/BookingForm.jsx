@@ -83,9 +83,9 @@ export default function BookingForm({
   const handlePrimaryChange = (e) => {
     const { name, value } = e.target;
     if (name === "upiRef") {
-      // Strictly allow ONLY numbers and letters (A-Z, 0-9), strip all spaces and special characters, convert to uppercase
-      const sanitized = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 20);
-      setPrimaryContact((prev) => ({ ...prev, upiRef: sanitized }));
+      // Strictly allow ONLY digits (0-9), strip all letters, spaces, and special characters, max 12 digits
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 12);
+      setPrimaryContact((prev) => ({ ...prev, upiRef: digitsOnly }));
       return;
     }
     if (name === "phone") {
@@ -100,30 +100,30 @@ export default function BookingForm({
     if (!primaryContact.name.trim()) return "Please enter student name.";
     if (!primaryContact.phone.trim()) return "Please enter WhatsApp phone number.";
     if (!/^\d{10}$/.test(primaryContact.phone.replace(/\D/g, ""))) return "Please enter a valid 10-digit phone number.";
-    if (!primaryContact.upiRef.trim()) return "Please enter the UPI UTR / Reference ID.";
-    if (!/^[A-Z0-9]{6,20}$/.test(primaryContact.upiRef.trim())) {
-      return "UTR / Reference ID must contain only numbers and letters (at least 6 characters, e.g. 423456789012 or PAYTM123456).";
+    if (!primaryContact.upiRef.trim()) return "Please enter the 12-digit UTR / UPI Reference Number.";
+    if (!/^\d{12}$/.test(primaryContact.upiRef.trim())) {
+      return "UTR Number must contain exactly 12 digits (numbers only, no letters allowed, e.g. 423456789012).";
     }
 
-    // ── STRICT DUPLICATE UTR BLOCKING ──
-    const enteredUtr = primaryContact.upiRef.trim().toLowerCase();
-    
+    // ── STRICT UNIQUE 12-DIGIT UTR BLOCKING ──
+    const enteredUtr = primaryContact.upiRef.trim();
+
     // Check against existingBookings prop
     const duplicateInCloud = (existingBookings || []).some(
-      (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
+      (b) => b.status !== "cancelled" && String(b.upiId || "").trim() === enteredUtr
     );
     if (duplicateInCloud) {
-      return "⚠️ This UTR / Reference ID has already been used for another booking! Duplicate UTRs are not allowed.";
+      return `⚠️ This 12-digit UTR Number (${enteredUtr}) has already been used for another booking! Duplicate UTRs are not allowed.`;
     }
 
     // Check against local bookings cache
     try {
       const localCache = JSON.parse(localStorage.getItem("telugu_talkies_bookings_cache") || "[]");
       const duplicateInLocal = localCache.some(
-        (b) => b.status !== "cancelled" && String(b.upiId || "").trim().toLowerCase() === enteredUtr
+        (b) => b.status !== "cancelled" && String(b.upiId || "").trim() === enteredUtr
       );
       if (duplicateInLocal) {
-        return "⚠️ This UTR / Reference ID is already in use! Each transaction must have a unique UTR.";
+        return `⚠️ This 12-digit UTR Number (${enteredUtr}) is already in use! Each booking must have a unique UTR.`;
       }
     } catch (e) {}
 
@@ -362,22 +362,24 @@ export default function BookingForm({
       {/* UTR Input */}
       <div className="form-field" style={{ marginTop: 16 }}>
         <label className="label" htmlFor="upiRef">
-          UTR / UPI Transaction Reference ID *
+          12-Digit UTR / UPI Reference Number *
         </label>
         <input
           className="input"
           id="upiRef"
           name="upiRef"
           type="text"
-          maxLength={20}
-          placeholder="Enter UTR (e.g. 423456789012)"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={12}
+          placeholder="Enter 12-digit UTR (e.g. 423456789012)"
           value={primaryContact.upiRef}
           onChange={handlePrimaryChange}
-          style={{ textTransform: "uppercase", letterSpacing: "1px", fontWeight: 700 }}
+          style={{ letterSpacing: "1px", fontWeight: 700 }}
           required
         />
         <span className="field-hint">
-          Only numbers & letters allowed (e.g. 12-digit UTR or transaction Ref ID).
+          Must contain exactly 12 digits (numbers only, no letters allowed). Each UTR must be unique.
         </span>
       </div>
 
