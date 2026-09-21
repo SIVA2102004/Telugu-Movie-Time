@@ -229,8 +229,7 @@ export default function TicketViewPage() {
         {/* Gate Instructions */}
         <div style={{ marginTop: 16, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 16px", maxWidth: 600, width: "100%", fontSize: "clamp(0.72rem, 1.8vw, 0.8rem)", color: "var(--text-muted)", lineHeight: 1.5 }}>
           <p style={{ margin: "0 0 4px", color: "var(--gold)", fontWeight: 700 }}>📌 Gate Instructions:</p>
-          <p style={{ margin: 0 }}>• Please present your physical ticket card at the entry gate of <strong>Crystal Mall</strong>.</p>
-          <p style={{ margin: 0 }}>• Please collect the physical movie ticket one day before the show time.</p>
+          <p style={{ margin: 0 }}>• Please present this downloaded ticket card at the entry gate of <strong>Crystal Mall</strong>.</p>
           <p style={{ margin: 0 }}>• Show time is <strong>8:00 AM, 24-09-2026</strong>. Please arrive 15 minutes before the show.</p>
         </div>
       </div>

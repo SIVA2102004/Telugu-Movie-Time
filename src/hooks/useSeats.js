@@ -46,22 +46,21 @@ export function useSeats(screenId = "screen-1", theaterId = null) {
     let currentRTDB = {};
     let currentLocks = {};
     let currentBookings = {};
-    let lastJSON = "";
+    let animId = null;
 
     const recomputeSeats = () => {
-      const merged = {
-        ...currentBookings,
-        ...currentRTDB,
-        ...currentLocks,
-      };
-      const jsonStr = JSON.stringify(merged);
-      if (jsonStr === lastJSON) return;
-      lastJSON = jsonStr;
-
-      setSeatMap(merged);
-      try {
-        localStorage.setItem(cacheKey, jsonStr);
-      } catch (e) {}
+      if (animId) cancelAnimationFrame(animId);
+      animId = requestAnimationFrame(() => {
+        const merged = {
+          ...currentBookings,
+          ...currentRTDB,
+          ...currentLocks,
+        };
+        setSeatMap(merged);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(merged));
+        } catch (e) {}
+      });
     };
 
     // 2. Realtime Database listener per theater + screen
@@ -146,6 +145,7 @@ export function useSeats(screenId = "screen-1", theaterId = null) {
     return () => {
       window.removeEventListener("storage", handleStorage);
       if (throttleRef.current) clearTimeout(throttleRef.current);
+      if (animId) cancelAnimationFrame(animId);
       unsubRTDB();
       unsubActiveLocks();
       unsubFirestore();

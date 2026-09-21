@@ -52,7 +52,7 @@ export default function CoAdminManager({ config, bookings = [] }) {
   }, []);
 
   const filteredCoAdmins = coAdmins.filter((c) => {
-    if (!activeTheaterId || activeTheaterId === "default-theater" || !c.theaterId) return true;
+    if (!activeTheaterId || activeTheaterId === "default-theater") return true;
     const currentCode = (config?.coAdminCode || "COADMIN2026").toUpperCase();
     const usedCode = (c.codeUsed || "").toUpperCase();
     return (
