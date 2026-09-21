@@ -332,6 +332,61 @@
   gap: 8px;
 }
 
+.payment-box__app-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.payment-app-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.payment-app-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.payment-app-btn--phonepe {
+  background: linear-gradient(135deg, #5f259f 0%, #3e1273 100%);
+  color: #ffffff !important;
+  border-color: #7b33cb;
+}
+
+.payment-app-btn--gpay {
+  background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+  color: #ffffff !important;
+  border-color: #4285f4;
+}
+
+.payment-app-btn--paytm {
+  background: linear-gradient(135deg, #00baf2 0%, #002e6e 100%);
+  color: #ffffff !important;
+  border-color: #00d2ff;
+}
+
+.payment-app-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 480px) {
   .booking-form {
     padding: 14px 10px;

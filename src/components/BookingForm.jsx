@@ -349,14 +349,53 @@ export default function BookingForm({
           </button>
         </div>
 
-        {/* Mobile UPI Deep Link */}
-        <a
-          href={upiIntentUrl}
-          className="btn btn-outline payment-box__pay-app-btn"
-          style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
-        >
-          <Smartphone size={16} /> Pay ₹{computedAmount} via GPay / PhonePe / Paytm
-        </a>
+        {/* ── Direct Payment App Redirect Buttons ── */}
+        <div className="payment-box__app-grid">
+          <div style={{ width: "100%", textAlign: "center", margin: "6px 0 2px", fontSize: "0.8rem", color: "var(--gold)", fontWeight: 800 }}>
+            ⚡ Tap your Payment App to Pay Instantly:
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, width: "100%" }}>
+            {/* PhonePe Button */}
+            <a
+              href={phonepeUrl}
+              className="payment-app-btn payment-app-btn--phonepe"
+              title="Open PhonePe app to pay instantly"
+            >
+              <span className="payment-app-badge">🟣</span>
+              <span>PhonePe</span>
+            </a>
+
+            {/* Google Pay (GPay) Button */}
+            <a
+              href={gpayUrl}
+              className="payment-app-btn payment-app-btn--gpay"
+              title="Open Google Pay app to pay instantly"
+            >
+              <span className="payment-app-badge">🔵</span>
+              <span>Google Pay</span>
+            </a>
+
+            {/* Paytm Button */}
+            <a
+              href={paytmUrl}
+              className="payment-app-btn payment-app-btn--paytm"
+              title="Open Paytm app to pay instantly"
+            >
+              <span className="payment-app-badge">🔷</span>
+              <span>Paytm</span>
+            </a>
+          </div>
+
+          {/* Universal UPI App Redirect */}
+          <a
+            href={upiIntentUrl}
+            className="btn btn-gold payment-box__pay-app-btn"
+            style={{ width: "100%", justifyContent: "center", marginTop: 4, fontWeight: 800 }}
+          >
+            <Smartphone size={16} /> Pay ₹{computedAmount} via Any UPI App (Bhim, Cred, etc.) 📲
+          </a>
+        </div>
       </div>
 
       {/* UTR Input */}
