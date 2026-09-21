@@ -512,11 +512,9 @@ export default function BookingTable({
             </button>
           )}
 
-          {isMasterAdmin && (
-            <button className="btn btn-outline" onClick={exportCSV}>
-              <Download size={14} /> Export CSV
-            </button>
-          )}
+          <button className="btn btn-outline" onClick={exportCSV} title="Export confirmed bookings to CSV file">
+            <Download size={14} /> Export CSV
+          </button>
 
           {isMasterAdmin && (
             <button
@@ -547,7 +545,7 @@ export default function BookingTable({
         Showing <strong>{filtered.length}</strong> of <strong>{safeBookings.length}</strong> bookings
         {!isMasterAdmin && (
           <span style={{ marginLeft: 8, color: "#4fc3f7", fontSize: "0.75rem", fontWeight: 700 }}>
-            (Co-Admin Mode: Ticket Verification & Confirmation Access)
+            (Co-Admin Mode: Full Ticket & Booking Management Access)
           </span>
         )}
       </p>

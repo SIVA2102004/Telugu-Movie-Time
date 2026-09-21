@@ -256,17 +256,15 @@ export default function AdminPage() {
                     <Building2 size={13} /> {currentTheater.name}
                   </span>
                 ) : null}
-                {isTheaterOwner && (
-                  <button
-                    type="button"
-                    className="btn btn-gold"
-                    style={{ padding: "3px 10px", fontSize: "0.75rem", fontWeight: 800, gap: 4 }}
-                    onClick={() => setShowAddHallModal(true)}
-                    title="Add a new Cinema Hall under your theater"
-                  >
-                    <Plus size={13} /> Add Hall
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn btn-gold"
+                  style={{ padding: "3px 10px", fontSize: "0.75rem", fontWeight: 800, gap: 4 }}
+                  onClick={() => setShowAddHallModal(true)}
+                  title="Add a new Cinema Hall / Screen under your theater"
+                >
+                  <Plus size={13} /> Add Hall
+                </button>
               </div>
             </div>
 
