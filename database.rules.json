@@ -1,8 +1,28 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true,
+    ".read": false,
+    ".write": false,
     "seats": {
+      ".read": true,
+      ".write": true
+    },
+    "seats_screen-1": {
+      ".read": true,
+      ".write": true
+    },
+    "seats_screen-2": {
+      ".read": true,
+      ".write": true
+    },
+    "seats_screen-3": {
+      ".read": true,
+      ".write": true
+    },
+    "seats_screen-4": {
+      ".read": true,
+      ".write": true
+    },
+    "activeLocks": {
       ".read": true,
       ".write": true
     }
