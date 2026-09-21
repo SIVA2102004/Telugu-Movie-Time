@@ -99,7 +99,8 @@ export default function VintageTicketModal({
         `🏫 *College:* ${booking.college || ""} (${booking.year || ""})\n\n` +
         `✅ *STATUS: CONFIRMED*\n\n` +
         `📌 *Instructions:*\n` +
-        `• Please show this ticket image at the entry gate.\n` +
+        `• Please show your physical ticket card at the entry gate.\n` +
+        `• Please collect the physical movie ticket one day before the show time.\n` +
         `• Please arrive 15 minutes before the show.\n\n` +
         `Enjoy the show together! 🍿🎉\n- Telugu Movie Time Admin`;
 

@@ -101,7 +101,8 @@ export default function BookingTable({
       `👉 *View & Download Official Digital Ticket Card:*\n` +
       `${ticketDownloadUrl}\n\n` +
       `📌 *Instructions:*\n` +
-      `• Please show your digital ticket card at the entry gate.\n` +
+      `• Please show your physical ticket card at the entry gate.\n` +
+      `• Please collect the physical movie ticket one day before the show time.\n` +
       `• Please arrive 15 minutes before the show.\n\n` +
       `🍿 *Enjoy the show together with Telugu Movie Time!* 🎉🎬`
     );
