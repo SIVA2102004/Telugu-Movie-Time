@@ -408,7 +408,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
       setLayout(JSON.parse(JSON.stringify(targetLayout)));
       const infoMsg = activeScreenId === "screen-3"
         ? "Seating order automatically updated from blueprint! (8 Curved Rows · 152 Seats) 🎯"
-        : "Seating order automatically updated from Screen 1 blueprint! (15 Rows · 18 Seats in Rows B-I · 244 Seats) 🎯";
+        : "Seating order automatically updated from blueprint! (14 Rows · Row A Recliner 1-18, Rows B-N Gold 20 Seats · 278 Seats) 🎯";
       toast.success(infoMsg, { duration: 5000 });
     } catch (err) {
       console.warn("Cloud storage upload notice:", err);
@@ -435,7 +435,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
   const TEMPLATES = [
     {
-      name: "⭐ Screen 1 Blueprint (Recliner A1-A16, Gold B-I 18 Seats, J-O 14 Seats · 244 Seats)",
+      name: "⭐ Hall Blueprint (Recliner A1-A18, Gold B-N 20 Seats · 278 Seats)",
       highlight: true,
       build: () => JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT)),
     },
@@ -469,7 +469,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
   const applyTemplate = (tmpl) => {
     if (tmpl.highlight) {
       setLayout(tmpl.build());
-      toast.success("Blueprint layout (274 seats · Row A Platinum, Rows B-O Gold) applied! ✅");
+      toast.success("Blueprint layout (278 seats · Row A Recliner 1-18, Rows B-N Gold 20 Seats) applied! ✅");
     } else {
       if (window.confirm(`Apply template "${tmpl.name}"?`)) {
         setLayout(tmpl.build());
@@ -614,11 +614,11 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
               onClick={() => {
                 const blueprint = JSON.parse(JSON.stringify(BLUEPRINT_LAYOUT));
                 setLayout(blueprint);
-                toast.success("Applied & Auto-Aligned exact 274-seat Hall Blueprint (Row A Recliner to Row O Gold)! ✨");
+                toast.success("Applied & Auto-Aligned exact 278-seat Hall Blueprint (Row A Recliner to Row N Gold)! ✨");
               }}
-              title="Click to instantly auto-align the entire layout to the exact 274-seat theater blueprint"
+              title="Click to instantly auto-align the layout to the physical 278-seat theater blueprint"
             >
-              ✨ Auto-Align Blueprint (274 Seats)
+              ✨ Auto-Align Blueprint (278 Seats)
             </button>
           )}
           <button className="btn btn-ghost" onClick={() => setShowHelp((v) => !v)}>
@@ -638,7 +638,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
         <div className="tle-help card">
           <strong>How to use Tier Pricing & Layout:</strong>
           <ul>
-            <li>✨ <strong>Auto-Align:</strong> Click "Auto-Align Blueprint" to instantly restore the 274-seat hall map (Row A Recliner, Rows B-O Gold).</li>
+            <li>✨ <strong>Auto-Align:</strong> Click "Auto-Align Blueprint" to instantly restore the 278-seat hall map (Row A Recliner 1-18, Rows B-N Gold 20 Seats).</li>
             <li>🏷️ <strong>Category Pricing:</strong> Set price for Platinum, Gold, and Silver in the Category Rates card.</li>
             <li>💺 <strong>Row Tier:</strong> Select Platinum/Gold/Silver next to each row in the grid.</li>
             <li>🟢 <strong>Seats:</strong> Click any green seat to toggle into gap/aisle.</li>
