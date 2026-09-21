@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
-import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag, Trash2, Plus } from "lucide-react";
+import { Save, QrCode, Smartphone, CreditCard, KeyRound, UserCheck, ShieldCheck, Copy, IndianRupee, Tag, Trash2, Plus, Pencil } from "lucide-react";
 import { DEFAULT_SCREENS, resetAllSystemData } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
@@ -36,6 +36,17 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
   const [saving, setSaving] = useState(false);
   const [blockedInput, setBlockedInput] = useState(() => (initialActiveScreen.blockedSeats || config?.blockedSeats || []).join(", "));
   const [isEditingBlocked, setIsEditingBlocked] = useState(false);
+
+  // Modal state for editing an existing Cinema Hall / Screen
+  const [editingHall, setEditingHall] = useState(null);
+  const [editHallForm, setEditHallForm] = useState({
+    name: "",
+    movieName: "",
+    showTime: "",
+    pricePerSeat: 200,
+    date: "",
+    isPublished: true,
+  });
 
   // Sync state if config changes in background (only if user is not actively editing)
   useEffect(() => {
@@ -299,6 +310,126 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
     }
   };
 
+  const handleOpenEditHallModal = (screen) => {
+    setEditingHall(screen);
+    setEditHallForm({
+      name: screen.name || "",
+      movieName: screen.movieName || "",
+      showTime: screen.showTime || "6:00 PM",
+      pricePerSeat: screen.pricePerSeat || 200,
+      date: screen.date || new Date().toISOString().split("T")[0],
+      isPublished: screen.isPublished !== false,
+    });
+  };
+
+  const handleUpdateHallSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingHall) return;
+    if (!editHallForm.name.trim()) {
+      toast.error("Please enter a Hall Name.");
+      return;
+    }
+
+    const updatedScreens = screens.map((s) => {
+      if (s.id === editingHall.id) {
+        return {
+          ...s,
+          name: editHallForm.name.trim(),
+          movieName: editHallForm.movieName.trim(),
+          showTime: editHallForm.showTime.trim(),
+          pricePerSeat: Number(editHallForm.pricePerSeat) || 200,
+          date: editHallForm.date,
+          isPublished: editHallForm.isPublished,
+        };
+      }
+      return s;
+    });
+
+    const updated = {
+      ...form,
+      screens: updatedScreens,
+      ...(form.activeScreenId === editingHall.id
+        ? {
+            movieName: editHallForm.movieName.trim(),
+            showTime: editHallForm.showTime.trim(),
+            pricePerSeat: Number(editHallForm.pricePerSeat) || 200,
+            date: editHallForm.date,
+          }
+        : {}),
+    };
+
+    setForm(updated);
+
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
+
+    try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
+      localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(updated));
+      localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+
+      await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", "default-theater"), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "theaters", targetDocId), { screens: updatedScreens }, { merge: true });
+      }
+
+      toast.success(`Cinema Hall "${editHallForm.name}" updated successfully! 🎬`);
+      setEditingHall(null);
+    } catch (err) {
+      toast.error("Failed to update hall: " + err.message);
+    }
+  };
+
+  const handleDeleteHall = async (screenId, screenName) => {
+    if (screens.length <= 1) {
+      toast.error("A theater must have at least one cinema hall.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete Cinema Hall "${screenName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    const updatedScreens = screens.filter((s) => s.id !== screenId);
+    const nextActiveId = updatedScreens[0]?.id || "screen-1";
+    const nextActiveScr = updatedScreens[0] || {};
+
+    const updated = {
+      ...form,
+      activeScreenId: nextActiveId,
+      screens: updatedScreens,
+      movieName: nextActiveScr.movieName || form.movieName,
+      showTime: nextActiveScr.showTime || form.showTime,
+      pricePerSeat: nextActiveScr.pricePerSeat || form.pricePerSeat,
+    };
+
+    setForm(updated);
+
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
+
+    try {
+      localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
+      localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(updated));
+      localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
+      window.dispatchEvent(new Event("storage"));
+
+      await setDoc(doc(db, "movieConfig", targetDocId), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", "default-theater"), updated, { merge: true });
+      await setDoc(doc(db, "movieConfig", "current"), updated, { merge: true });
+
+      if (targetDocId && targetDocId !== "current") {
+        await setDoc(doc(db, "theaters", targetDocId), { screens: updatedScreens, activeScreenId: nextActiveId }, { merge: true });
+      }
+
+      toast.success(`Cinema Hall "${screenName}" deleted successfully! 🗑️`);
+    } catch (err) {
+      toast.error("Failed to delete hall: " + err.message);
+    }
+  };
+
   const handlePosterUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -390,22 +521,32 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
                     🎬 {screen.movieName}
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                    ⏰ {screen.showTime} · {screen.theater}
-                    <div style={{ display: "flex", gap: 6, width: "100%", marginTop: 8 }}>
+                    ⏰ {screen.showTime} · ₹{screen.pricePerSeat || 200}/seat
+                    <div style={{ display: "flex", gap: 6, width: "100%", marginTop: 8, flexWrap: "wrap" }}>
                       <button
                         type="button"
                         className={`btn ${isEditing ? "btn-gold" : "btn-ghost"}`}
-                        style={{ flex: 1, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
+                        style={{ flex: 1, minWidth: 100, padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
                         onClick={() => handleSelectScreen(screen.id)}
                       >
                         {isEditing ? "Editing Screen ✏️" : "Select & Edit"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700, borderColor: "var(--gold)", color: "var(--gold)" }}
+                        onClick={() => handleOpenEditHallModal(screen)}
+                        title="Edit name, showtime, price, and movie details for this hall"
+                      >
+                        <Pencil size={12} /> Edit
                       </button>
 
                       {onOpenLayout && (
                         <button
                           type="button"
                           className="btn btn-outline"
-                          style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700, borderColor: "var(--gold)", color: "var(--gold)" }}
+                          style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700, borderColor: "#4fc3f7", color: "#4fc3f7" }}
                           onClick={() => {
                             handleSelectScreen(screen.id);
                             onOpenLayout(screen.id);
@@ -418,12 +559,22 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
 
                       <button
                         type="button"
-                        className={`btn ${isLive ? "btn-red" : "btn-outline"}`}
+                        className={`btn ${isLive ? "btn-green" : "btn-outline"}`}
                         style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
                         onClick={() => handleTogglePublishScreen(screen.id)}
                         title={isLive ? "Click to take this screen offline" : "Click to publish this screen live for student bookings"}
                       >
                         {isLive ? "Unpublish" : "Publish Live"}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-red"
+                        style={{ padding: "5px 8px", fontSize: "0.75rem", fontWeight: 700 }}
+                        onClick={() => handleDeleteHall(screen.id, screen.name)}
+                        title="Delete this cinema hall"
+                      >
+                        <Trash2 size={12} /> Delete
                       </button>
                     </div>
                   </div>
@@ -644,6 +795,108 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
       <button className="btn btn-gold" style={{ alignSelf: "flex-start", marginTop: 16 }} disabled={saving}>
         {saving ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Saving…</> : <><Save size={15} /> Save All Settings</>}
       </button>
+
+      {/* ── EDIT CINEMA HALL MODAL OVERLAY ── */}
+      {editingHall && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div className="card" style={{ maxWidth: 480, width: "100%", background: "#1A1A2E", border: "1px solid var(--gold)", padding: 24, borderRadius: 16, boxShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>
+            <h2 style={{ margin: "0 0 8px", fontSize: "1.2rem", color: "var(--gold)", display: "flex", alignItems: "center", gap: 8 }}>
+              <Pencil size={18} /> Edit Cinema Hall — {editingHall.name}
+            </h2>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0 0 16px" }}>
+              Update name, movie show details, and pricing for this hall.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label className="label">Hall / Screen Name *</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={editHallForm.name}
+                  onChange={(e) => setEditHallForm({ ...editHallForm, name: e.target.value })}
+                  placeholder="e.g. Screen-3 or Audi 3"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="label">Movie Name</label>
+                <input
+                  className="input"
+                  type="text"
+                  value={editHallForm.movieName}
+                  onChange={(e) => setEditHallForm({ ...editHallForm, movieName: e.target.value })}
+                  placeholder="e.g. PARADISE"
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <label className="label">Show Time</label>
+                  <input
+                    className="input"
+                    type="text"
+                    value={editHallForm.showTime}
+                    onChange={(e) => setEditHallForm({ ...editHallForm, showTime: e.target.value })}
+                    placeholder="e.g. 8:00 PM"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="label">Base Seat Price (₹)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    value={editHallForm.pricePerSeat}
+                    onChange={(e) => setEditHallForm({ ...editHallForm, pricePerSeat: e.target.value })}
+                    placeholder="200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Show Date</label>
+                <input
+                  className="input"
+                  type="date"
+                  value={editHallForm.date}
+                  onChange={(e) => setEditHallForm({ ...editHallForm, date: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="label">Status</label>
+                <select
+                  className="input"
+                  value={editHallForm.isPublished ? "live" : "offline"}
+                  onChange={(e) => setEditHallForm({ ...editHallForm, isPublished: e.target.value === "live" })}
+                >
+                  <option value="live">✓ Live on Student Booking Portal</option>
+                  <option value="offline">✕ Offline (Hidden from Booking)</option>
+                </select>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginTop: 12, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setEditingHall(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-gold"
+                  style={{ fontWeight: 800 }}
+                  onClick={handleUpdateHallSubmit}
+                >
+                  Update Cinema Hall 💾
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

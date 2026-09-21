@@ -484,7 +484,7 @@ export default function AdminPage() {
                   value={newHallForm.layoutType}
                   onChange={(e) => setNewHallForm({ ...newHallForm, layoutType: e.target.value })}
                 >
-                  <option value="standard">Classic Hall (15 Rows · 274 Seats)</option>
+                  <option value="standard">Hall Blueprint (14 Rows · Recliner A1-A18, Gold B-N 20 Seats · 278 Seats)</option>
                   <option value="amphitheater">Amphitheater / Curved Fan (8 Rows · 152 Seats)</option>
                 </select>
               </div>

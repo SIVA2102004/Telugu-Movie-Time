@@ -149,7 +149,7 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
         isPublished: true,
       };
 
-      const updatedScreens = [...existingScreens, newHall];
+      const updatedScreens = [...existingScreens.filter((s) => s.id !== newHallId), newHall];
 
       const updatedTheater = {
         ...targetTheater,
@@ -163,28 +163,30 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
         console.warn("Firestore theater update notice:", e);
       }
 
-      // Synchronize with movieConfig/[activeId] so multi-screen manager & booking pages update instantly per theater
+      // Synchronize with movieConfig so multi-screen manager & booking pages update instantly
       try {
         const storageKey = activeId ? `telugu_talkies_movie_config_${activeId}` : "telugu_talkies_movie_config";
         const savedConfigStr = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
         let currentConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
         const configScreens = currentConfig.screens || DEFAULT_SCREENS;
-        const nextConfigScreens = [...configScreens, newHall];
+        const nextConfigScreens = [...configScreens.filter((s) => s.id !== newHallId), newHall];
         const nextConfig = {
           ...currentConfig,
           id: activeId,
+          theaterId: activeId,
           screens: nextConfigScreens,
           activeScreenId: newHallId,
         };
 
         localStorage.setItem(storageKey, JSON.stringify(nextConfig));
+        localStorage.setItem(`telugu_talkies_movie_config_${activeId}`, JSON.stringify(nextConfig));
+        localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(nextConfig));
         localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextConfig));
         window.dispatchEvent(new Event("storage"));
 
         await setDoc(doc(db, "movieConfig", activeId), nextConfig, { merge: true });
-        if (activeId !== "current") {
-          await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
-        }
+        await setDoc(doc(db, "movieConfig", "default-theater"), nextConfig, { merge: true });
+        await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
       } catch (err) {
         console.warn("Movie config sync notice:", err);
       }
@@ -197,11 +199,11 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
   // 4. Update an existing Cinema Hall inside a theater
   const updateHall = useCallback(
     async (theaterId, hallId, updatedData) => {
-      if (!theaterId) return;
-      const targetTheater = theaters.find((t) => t.id === theaterId) || currentTheater;
-      if (!targetTheater) return;
+      const activeId = theaterId || currentTheater?.id || "default-theater";
+      let targetTheater = theaters.find((t) => t.id === activeId) || currentTheater;
 
-      const updatedScreens = (targetTheater.screens || []).map((scr) => {
+      const existingScreens = targetTheater?.screens || DEFAULT_SCREENS;
+      const updatedScreens = existingScreens.map((scr) => {
         if (scr.id === hallId) {
           return { ...scr, ...updatedData };
         }
@@ -213,7 +215,38 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
         screens: updatedScreens,
       };
 
-      await setDoc(doc(db, "theaters", theaterId), updatedTheater, { merge: true });
+      try {
+        await setDoc(doc(db, "theaters", activeId), updatedTheater, { merge: true });
+      } catch (e) {}
+
+      try {
+        const storageKey = activeId ? `telugu_talkies_movie_config_${activeId}` : "telugu_talkies_movie_config";
+        const savedConfigStr = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
+        let currentConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
+        const configScreens = (currentConfig.screens || DEFAULT_SCREENS).map((scr) => {
+          if (scr.id === hallId) {
+            return { ...scr, ...updatedData };
+          }
+          return scr;
+        });
+
+        const nextConfig = {
+          ...currentConfig,
+          id: activeId,
+          theaterId: activeId,
+          screens: configScreens,
+        };
+
+        localStorage.setItem(storageKey, JSON.stringify(nextConfig));
+        localStorage.setItem(`telugu_talkies_movie_config_${activeId}`, JSON.stringify(nextConfig));
+        localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(nextConfig));
+        localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextConfig));
+        window.dispatchEvent(new Event("storage"));
+
+        await setDoc(doc(db, "movieConfig", activeId), nextConfig, { merge: true });
+        await setDoc(doc(db, "movieConfig", "default-theater"), nextConfig, { merge: true });
+        await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
+      } catch (err) {}
     },
     [theaters, currentTheater]
   );
@@ -221,23 +254,51 @@ export function useTheaters(ownerId = null, activeTheaterId = null) {
   // 5. Delete a Cinema Hall
   const deleteHall = useCallback(
     async (theaterId, hallId) => {
-      if (!theaterId) return;
-      const targetTheater = theaters.find((t) => t.id === theaterId) || currentTheater;
-      if (!targetTheater) return;
+      const activeId = theaterId || currentTheater?.id || "default-theater";
+      let targetTheater = theaters.find((t) => t.id === activeId) || currentTheater;
 
-      if ((targetTheater.screens || []).length <= 1) {
+      const existingScreens = targetTheater?.screens || DEFAULT_SCREENS;
+      if (existingScreens.length <= 1) {
         throw new Error("A theater must have at least one cinema hall.");
       }
 
-      const updatedScreens = (targetTheater.screens || []).filter((s) => s.id !== hallId);
+      const updatedScreens = existingScreens.filter((s) => s.id !== hallId);
+      const nextActiveId = updatedScreens[0]?.id || "screen-1";
 
       const updatedTheater = {
         ...targetTheater,
         screens: updatedScreens,
-        activeScreenId: updatedScreens[0]?.id || "screen-1",
+        activeScreenId: nextActiveId,
       };
 
-      await setDoc(doc(db, "theaters", theaterId), updatedTheater, { merge: true });
+      try {
+        await setDoc(doc(db, "theaters", activeId), updatedTheater, { merge: true });
+      } catch (e) {}
+
+      try {
+        const storageKey = activeId ? `telugu_talkies_movie_config_${activeId}` : "telugu_talkies_movie_config";
+        const savedConfigStr = localStorage.getItem(storageKey) || localStorage.getItem("telugu_talkies_movie_config");
+        let currentConfig = savedConfigStr ? JSON.parse(savedConfigStr) : {};
+        const configScreens = (currentConfig.screens || DEFAULT_SCREENS).filter((s) => s.id !== hallId);
+
+        const nextConfig = {
+          ...currentConfig,
+          id: activeId,
+          theaterId: activeId,
+          screens: configScreens,
+          activeScreenId: nextActiveId,
+        };
+
+        localStorage.setItem(storageKey, JSON.stringify(nextConfig));
+        localStorage.setItem(`telugu_talkies_movie_config_${activeId}`, JSON.stringify(nextConfig));
+        localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(nextConfig));
+        localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(nextConfig));
+        window.dispatchEvent(new Event("storage"));
+
+        await setDoc(doc(db, "movieConfig", activeId), nextConfig, { merge: true });
+        await setDoc(doc(db, "movieConfig", "default-theater"), nextConfig, { merge: true });
+        await setDoc(doc(db, "movieConfig", "current"), nextConfig, { merge: true });
+      } catch (err) {}
     },
     [theaters, currentTheater]
   );
