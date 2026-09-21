@@ -216,11 +216,12 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
 
     setForm(updated);
 
-    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
 
     // Instant local save and cross-tab event dispatch per theater
     try {
       localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
+      localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(updated));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updated));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}

@@ -326,7 +326,7 @@ export function useMovieConfig(theaterId = null) {
         (snap) => {
           if (snap.exists()) {
             const data = snap.data();
-            const sanitized = sanitizeConfig(data);
+            const sanitized = sanitizeConfig({ id: snap.id, theaterId: snap.id, ...data });
             setConfig(sanitized);
             try {
               localStorage.setItem(storageKey, JSON.stringify(sanitized));
@@ -336,7 +336,7 @@ export function useMovieConfig(theaterId = null) {
             const currentRef = doc(db, "movieConfig", "current");
             unsubscribeCurrent = onSnapshot(currentRef, (currSnap) => {
               if (currSnap.exists()) {
-                const sanitized = sanitizeConfig(currSnap.data());
+                const sanitized = sanitizeConfig({ id: "current", theaterId: "current", ...currSnap.data() });
                 setConfig(sanitized);
               }
             });
@@ -348,7 +348,8 @@ export function useMovieConfig(theaterId = null) {
                 if (thSnap.exists()) {
                   const thData = thSnap.data();
                   const constructed = sanitizeConfig({
-                    id: thData.id,
+                    id: thSnap.id,
+                    theaterId: thSnap.id,
                     theater: thData.name,
                     upiId: thData.upiId,
                     payeeName: thData.payeeName,

@@ -487,6 +487,8 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     setSaving(true);
     lastSavedLayoutStrRef.current = JSON.stringify(layout);
 
+    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
+
     // Save layout into the specific active screen in screens array
     const updatedScreens = screens.map((s) => {
       if (s.id === activeScreenId) {
@@ -502,16 +504,17 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
 
     const updatedData = {
       ...config,
+      id: targetDocId,
+      theaterId: targetDocId,
       screens: updatedScreens,
-      layout: activeScreenId === (config?.activeScreenId || "screen-1") ? layout : config?.layout,
+      layout: activeScreenId === (config?.activeScreenId || "screen-1") ? layout : (config?.layout || layout),
       blueprintImageUrl: activeScreenId === "screen-1" ? (blueprintUrl || null) : (config?.blueprintImageUrl || null),
     };
 
-    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "current";
-
-    // Instant local save per theater + global
+    // Instant local save per theater + global + default-theater
     try {
       localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updatedData));
+      localStorage.setItem("telugu_talkies_movie_config_default-theater", JSON.stringify(updatedData));
       localStorage.setItem("telugu_talkies_movie_config", JSON.stringify(updatedData));
       window.dispatchEvent(new Event("storage"));
     } catch (e) {}
