@@ -229,12 +229,8 @@ export default function BookingTable({
     });
   };
 
-  // ── 3. DELETE BOOKING (Master Admin only) ───────────────────────────────
+  // ── 3. DELETE BOOKING ───────────────────────────────
   const deleteBooking = (booking) => {
-    if (!isMasterAdmin) {
-      toast.error("Permission denied: Only Master Admin can delete records.");
-      return;
-    }
     if (!booking || !booking.id) return;
 
     const bScreen = booking.screenId || "screen-1";
@@ -275,14 +271,10 @@ export default function BookingTable({
     });
   };
 
-  // ── 4. EDIT BOOKING (Master Admin only) ───────────────────────────────────
+  // ── 4. EDIT BOOKING ───────────────────────────────────
   const saveEditedBooking = (e) => {
     e.preventDefault();
     if (!editingBooking || !editingBooking.id) return;
-    if (!isMasterAdmin) {
-      toast.error("Permission denied: Only Master Admin can edit bookings.");
-      return;
-    }
 
     const updatedBooking = { ...editingBooking };
 
@@ -648,8 +640,8 @@ export default function BookingTable({
                         </button>
                       )}
 
-                      {/* Cancel (Master Admin Only) */}
-                      {isMasterAdmin && b?.status !== "cancelled" && (
+                      {/* Cancel */}
+                      {b?.status !== "cancelled" && (
                         <button
                           className="btn btn-red"
                           style={{ padding: "5px 8px" }}
@@ -660,29 +652,25 @@ export default function BookingTable({
                         </button>
                       )}
 
-                      {/* Edit Booking (Master Admin Only) */}
-                      {isMasterAdmin && (
-                        <button
-                          className="btn btn-ghost"
-                          style={{ padding: "5px 8px", color: "var(--gold)" }}
-                          onClick={() => setEditingBooking({ ...b, seatsInput: (Array.isArray(b?.seats) ? b.seats : []).join(", ") })}
-                          title="Edit Booking Details"
-                        >
-                          <Edit3 size={13} />
-                        </button>
-                      )}
+                      {/* Edit Booking */}
+                      <button
+                        className="btn btn-ghost"
+                        style={{ padding: "5px 8px", color: "var(--gold)" }}
+                        onClick={() => setEditingBooking({ ...b, seatsInput: (Array.isArray(b?.seats) ? b.seats : []).join(", ") })}
+                        title="Edit Booking Details"
+                      >
+                        <Edit3 size={13} />
+                      </button>
 
-                      {/* Delete Booking (Master Admin Only) */}
-                      {isMasterAdmin && (
-                        <button
-                          className="btn btn-ghost"
-                          style={{ padding: "5px 8px", color: "var(--red)" }}
-                          onClick={() => deleteBooking(b)}
-                          title="Permanently Delete Booking"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                      {/* Delete Booking */}
+                      <button
+                        className="btn btn-ghost"
+                        style={{ padding: "5px 8px", color: "var(--red)" }}
+                        onClick={() => deleteBooking(b)}
+                        title="Permanently Delete Booking"
+                      >
+                        <Trash2 size={13} />
+                      </button>
 
                       {/* Vintage Ticket Preview & WhatsApp Send */}
                       <button
@@ -722,7 +710,7 @@ export default function BookingTable({
       )}
 
       {/* Edit Booking Modal */}
-      {isMasterAdmin && editingBooking && (
+      {editingBooking && (
         <div className="bt-modal-backdrop" onClick={() => setEditingBooking(null)}>
           <div className="bt-modal card" onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: "var(--gold)", marginBottom: 14 }}>Edit Booking</h3>
