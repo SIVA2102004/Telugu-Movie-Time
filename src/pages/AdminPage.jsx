@@ -410,10 +410,10 @@ export default function AdminPage() {
               <CoAdminManager config={config} bookings={bookings} />
             )}
             {activeTab === "layout" && (
-              <TheaterLayoutEditor config={config} selectedScreenId={layoutScreenId} />
+              <TheaterLayoutEditor config={config} selectedScreenId={layoutScreenId} activeTheaterId={activeTheaterId} />
             )}
             {activeTab === "config" && (
-              <MovieConfigEditor config={config} layout={layout} onOpenLayout={handleOpenLayoutForScreen} onAddHall={() => setShowAddHallModal(true)} />
+              <MovieConfigEditor config={config} layout={layout} onOpenLayout={handleOpenLayoutForScreen} onAddHall={() => setShowAddHallModal(true)} activeTheaterId={activeTheaterId} />
             )}
           </div>
         </main>

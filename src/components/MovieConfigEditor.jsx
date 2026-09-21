@@ -6,7 +6,7 @@ import { DEFAULT_SCREENS, resetAllSystemData } from "../hooks/useMovieConfig";
 import toast from "react-hot-toast";
 import "./MovieConfigEditor.css";
 
-export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddHall }) {
+export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddHall, activeTheaterId }) {
   const initialScreens = config?.screens || DEFAULT_SCREENS;
   const initialActiveId = config?.activeScreenId || "screen-1";
   const initialActiveScreen = initialScreens.find((s) => s.id === initialActiveId) || initialScreens[0] || {};
@@ -323,44 +323,58 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
   };
 
   const handleUpdateHallSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!editingHall) return;
     if (!editHallForm.name.trim()) {
       toast.error("Please enter a Hall Name.");
       return;
     }
 
+    const newName = editHallForm.name.trim();
+    const newMovieName = editHallForm.movieName.trim() || "PARADISE";
+    const newShowTime = editHallForm.showTime.trim() || "6:00 PM";
+    const newPrice = Number(editHallForm.pricePerSeat) || 200;
+    const newDate = editHallForm.date || new Date().toISOString().split("T")[0];
+
+    const rawTheaterName = config?.theater || "Cinema Hall";
+    const baseTheaterName = rawTheaterName.replace(/\s*\([^)]*\)/g, "").trim();
+    const fullHallTheaterName = `${baseTheaterName} (${newName})`;
+
     const updatedScreens = screens.map((s) => {
       if (s.id === editingHall.id) {
         return {
           ...s,
-          name: editHallForm.name.trim(),
-          movieName: editHallForm.movieName.trim(),
-          showTime: editHallForm.showTime.trim(),
-          pricePerSeat: Number(editHallForm.pricePerSeat) || 200,
-          date: editHallForm.date,
+          name: newName,
+          movieName: newMovieName,
+          showTime: newShowTime,
+          pricePerSeat: newPrice,
+          date: newDate,
+          theater: fullHallTheaterName,
           isPublished: editHallForm.isPublished,
         };
       }
       return s;
     });
 
+    const isCurrentActive = form.activeScreenId === editingHall.id;
+
     const updated = {
       ...form,
       screens: updatedScreens,
-      ...(form.activeScreenId === editingHall.id
+      ...(isCurrentActive
         ? {
-            movieName: editHallForm.movieName.trim(),
-            showTime: editHallForm.showTime.trim(),
-            pricePerSeat: Number(editHallForm.pricePerSeat) || 200,
-            date: editHallForm.date,
+            movieName: newMovieName,
+            showTime: newShowTime,
+            pricePerSeat: newPrice,
+            date: newDate,
+            theater: fullHallTheaterName,
           }
         : {}),
     };
 
     setForm(updated);
 
-    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
+    const targetDocId = activeTheaterId || config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
 
     try {
       localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));
@@ -376,9 +390,10 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
         await setDoc(doc(db, "theaters", targetDocId), { screens: updatedScreens }, { merge: true });
       }
 
-      toast.success(`Cinema Hall "${editHallForm.name}" updated successfully! 🎬`);
+      toast.success(`Cinema Hall "${newName}" updated successfully! 🎬`);
       setEditingHall(null);
     } catch (err) {
+      console.error("Update hall error:", err);
       toast.error("Failed to update hall: " + err.message);
     }
   };
@@ -408,7 +423,7 @@ export default function MovieConfigEditor({ config, layout, onOpenLayout, onAddH
 
     setForm(updated);
 
-    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
+    const targetDocId = activeTheaterId || config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
 
     try {
       localStorage.setItem(`telugu_talkies_movie_config_${targetDocId}`, JSON.stringify(updated));

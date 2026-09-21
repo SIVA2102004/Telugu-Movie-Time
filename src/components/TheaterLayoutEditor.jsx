@@ -40,7 +40,7 @@ export function recalculateAllSeats(seats, isRTL, isFixed) {
   return newSeats;
 }
 
-export default function TheaterLayoutEditor({ config, selectedScreenId: initialScreenId }) {
+export default function TheaterLayoutEditor({ config, selectedScreenId: initialScreenId, activeTheaterId }) {
   const screens = config?.screens || DEFAULT_SCREENS;
 
   const [activeScreenId, setActiveScreenId] = useState(
@@ -487,7 +487,7 @@ export default function TheaterLayoutEditor({ config, selectedScreenId: initialS
     setSaving(true);
     lastSavedLayoutStrRef.current = JSON.stringify(layout);
 
-    const targetDocId = config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
+    const targetDocId = activeTheaterId || config?.id || config?.theaterId || sessionStorage.getItem("adminTheaterId") || "default-theater";
 
     // Save layout into the specific active screen in screens array
     const updatedScreens = screens.map((s) => {
